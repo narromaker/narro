@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Narro</title>
+
+<style>
+  :root {
+    --bg: #0f1220;
+    --card: #161a33;
+    --text: #ffffff;
+    --muted: #9aa0c3;
+    --accent: #6cf2c2;
+    --danger: #ff6b6b;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont;
+    color: var(--text);
+  }
+
+  .app {
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 2rem;
+  }
+
+  .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .stats-btn {
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1.2rem;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 16px;
+  }
+
+  input[type="number"] {
+    width: 100%;
+    font-size: 1.4rem;
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    text-align: center;
+  }
+
+  button {
+    width: 100%;
+    margin-top: 12px;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    font-size: 1rem;
+    background: var(--accent);
+    color: #000;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  .feedback {
+    margin-top: 12px;
+    font-size: 1.1rem;
+  }
+
+  .guess-count {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .bar-wrap {
+    margin-top: 20px;
+  }
+
+  .bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .bar {
+    position: relative;
+    height: 14px;
+    background: #2a2f55;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+
+  .bar.active {
+    box-shadow: 0 0 8px rgba(108,242,194,0.25);
+  }
+
+  .bar-fill {
+    position: absolute;
+    height: 100%;
+    background: var(--accent);
+    transition: left 0.3s ease, width 0.3s ease;
+  }
+
+  .pulse {
+    animation: pulse 0.4s ease;
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+
+  .share button {
+    padding: 10px;
+    font-size: 0.9rem;
+    border-radius: 10px;
+  }
+
+  .countdown {
+    margin-top: 12px;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .modal-card {
+    background: var(--card);
+    padding: 20px;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 320px;
+  }
+
+  canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+  }
+</style>
+</head>
+
+<body>
+<div class="app">
+
+  <div class="top-row">
+    <h1>Narro</h1>
+    <div class="stats-btn" id="statsBtn">ⓘ</div>
+  </div>
+
+  <div class="card">
+    <input id="guessInput" type="number" placeholder="Guess a number" />
+    <button id="guessBtn">Guess</button>
+    <div class="feedback" id="feedback"></div>
+    <div class="guess-count" id="guessCount">0 / 7 guesses</div>
+
+    <div class="bar-wrap">
+      <div class="bar-labels">
+        <span id="minLabel">1</span>
+        <span id="maxLabel">10,000</span>
+      </div>
+      <div class="bar" id="bar">
+        <div class="bar-fill" id="barFill"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="share">
+    <button id="shareBtn" disabled>Share</button>
+  </div>
+
+  <div class="countdown" id="countdown"></div>
+
+</div>
+
+<div class="modal" id="statsModal">
+  <div class="modal-card">
+    <p><strong>Stats</strong></p>
+    <p id="statsGames"></p>
+    <p id="statsWins"></p>
+    <p id="statsAvg"></p>
+    <p id="statsBest"></p>
+    <button onclick="statsModal.style.display='none'">Close</button>
+  </div>
+</div>
+
+<canvas id="confetti"></canvas>
+
+<script>
+/* ---------- EASTERN TIME HELPERS ---------- */
+function getEasternDateParts() {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  });
+  const parts = formatter.formatToParts(now);
+  const get = t => parts.find(p => p.type === t).value;
+  return { year: get("year"), month: get("month"), day: get("day") };
+}
+
+/* ---------- DAILY NUMBER ---------- */
+const { year, month, day } = getEasternDateParts();
+const todayKey = `${year}-${month}-${day}`;
+
+function seededNumber(seed) {
+  let h = 0;
+  for (let c of seed) h = Math.imul(31, h) + c.charCodeAt(0);
+  return Math.abs(h % 10000) + 1;
+}
+
+const secret = seededNumber(todayKey);
+
+/* ---------- STATE ---------- */
+let min = 1, max = 10000;
+let guesses = [];
+let gameOver = false;
+
+/* ---------- ELEMENTS ---------- */
+const input = guessInput;
+const btn = guessBtn;
+const feedback = document.getElementById("feedback");
+const barFill = document.getElementById("barFill");
+const bar = document.getElementById("bar");
+
+/* ---------- ADAPTIVE SENTIMENT (4 TIERS) ---------- */
+function sentiment(guess) {
+  const range = max - min + 1;
+  const delta = Math.abs(secret - guess);
+  const pct = delta / range;
+
+  if (pct > 0.6) return "🧊 Ice cold";
+  if (pct > 0.35) return "❄️ Cold";
+  if (pct > 0.15) return "🌤 Warm";
+  return "🔥 Hot";
+}
+
+/* ---------- INPUT RANGE ---------- */
+function syncInputRange() {
+  input.min = min;
+  input.max = max;
+}
+
+/* ---------- GUESS ---------- */
+btn.onclick = () => {
+  if (gameOver) return;
+
+  const g = Number(input.value);
+  if (!g || g < min || g > max) return;
+
+  guesses.push(g);
+  input.value = "";
+
+  if (g === secret) {
+    win();
+    return;
+  }
+
+  feedback.textContent = sentiment(g);
+
+  if (g < secret) min = g + 1;
+  else max = g - 1;
+
+  updateBar();
+  syncInputRange();
+  guessCount.textContent = `${guesses.length} / 7 guesses`;
+
+  if (guesses.length === 7) lose();
+};
+
+/* ---------- BAR ---------- */
+function updateBar() {
+  const left = ((min - 1) / 10000) * 100;
+  const width = ((max - min + 1) / 10000) * 100;
+  barFill.style.left = left + "%";
+  barFill.style.width = width + "%";
+  bar.classList.add("active");
+  barFill.classList.add("pulse");
+  setTimeout(() => {
+    barFill.classList.remove("pulse");
+    bar.classList.remove("active");
+  }, 400);
+  minLabel.textContent = min;
+  maxLabel.textContent = max;
+}
+
+/* ---------- END STATES ---------- */
+function win() {
+  gameOver = true;
+  feedback.textContent = "🎯 Correct!";
+  btn.disabled = true;
+  shareBtn.disabled = false;
+  launchConfetti();
+  updateStats(true);
+}
+
+function lose() {
+  gameOver = true;
+  feedback.textContent = `Out of guesses. Number was ${secret}`;
+  btn.disabled = true;
+  shareBtn.disabled = false;
+  updateStats(false);
+}
+
+/* ---------- CONFETTI ---------- */
+function launchConfetti() {
+  const ctx = confetti.getContext("2d");
+  confetti.width = innerWidth;
+  confetti.height = innerHeight;
+
+  const pieces = Array.from({ length: 120 }, () => ({
+    x: Math.random() * confetti.width,
+    y: -20,
+    vx: (Math.random() - 0.5) * 4,
+    vy: Math.random() * 3 + 2,
+    size: 6,
+    life: 100,
+    color: `hsl(${Math.random()*360},100%,70%)`
+  }));
+
+  function frame() {
+    ctx.clearRect(0,0,confetti.width,confetti.height);
+    pieces.forEach(p => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.05;
+      p.life--;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x, p.y, p.size, p.size);
+    });
+    if (pieces.some(p => p.life > 0)) requestAnimationFrame(frame);
+  }
+  frame();
+}
+
+/* ---------- STATS ---------- */
+const stats = JSON.parse(localStorage.getItem("narroStats") || '{"games":0,"wins":0,"totalGuesses":0,"best":99}');
+function updateStats(win) {
+  stats.games++;
+  if (win) {
+    stats.wins++;
+    stats.totalGuesses += guesses.length;
+    stats.best = Math.min(stats.best, guesses.length);
+  }
+  localStorage.setItem("narroStats", JSON.stringify(stats));
+}
+
+statsBtn.onclick = () => {
+  statsModal.style.display = "flex";
+  statsGames.textContent = "Games: " + stats.games;
+  statsWins.textContent = "Wins: " + stats.wins;
+  statsAvg.textContent = stats.wins ? "Avg guesses: " + (stats.totalGuesses / stats.wins).toFixed(1) : "";
+  statsBest.textContent = stats.best < 99 ? "Best: " + stats.best : "";
+};
+
+/* ---------- SHARE ---------- */
+function generateShareText() {
+  let tiles = guesses.map(g => g < secret ? "⬆️" : g > secret ? "⬇️" : "🎯");
+  if (!guesses.includes(secret)) tiles.push("❌");
+  return `Narro ${todayKey}
+${guesses.includes(secret) ? guesses.length + "/7" : "X/7"}
+${tiles.join(" ")}
+Play: ${location.href}`;
+}
+
+shareBtn.onclick = async () => {
+  const text = generateShareText();
+  if (navigator.share) {
+    await navigator.share({ title: "Narro", text });
+  } else {
+    await navigator.clipboard.writeText(text);
+    alert("Copied to clipboard");
+  }
+};
+
+/* ---------- COUNTDOWN ---------- */
+setInterval(() => {
+  const now = new Date();
+  const easternNow = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const nextMidnight = new Date(easternNow);
+  nextMidnight.setHours(24,0,0,0);
+  const diff = nextMidnight - easternNow;
+  const h = Math.floor(diff / 36e5);
+  const m = Math.floor((diff % 36e5) / 6e4);
+  const s = Math.floor((diff % 6e4) / 1000);
+  countdown.textContent = `Next number in ${h}:${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
+}, 1000);
+
+syncInputRange();
+updateBar();
+</script>
+</body>
+</html>
