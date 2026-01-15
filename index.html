@@ -13,6 +13,9 @@
     --muted: #9aa0c3;
     --accent: #6cf2c2;
     --danger: #ff6b6b;
+    --hinted: #7db7ff;
+    --win: hsl(45,100%,50%);
+    --win-glow: hsla(45,100%,60%,0.6);
   }
 
   * { box-sizing: border-box; }
@@ -88,12 +91,21 @@
   .feedback {
     margin-top: 12px;
     font-size: 1.1rem;
+    transition: all 0.25s ease;
+    transform-origin: center;
   }
 
   .guess-count {
     margin-top: 8px;
     color: var(--muted);
     font-size: 0.9rem;
+    transition: all 0.25s ease;
+  }
+
+  .tip {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: var(--muted);
   }
 
   .bar-wrap {
@@ -105,6 +117,12 @@
     justify-content: space-between;
     font-size: 0.8rem;
     color: var(--muted);
+    transition: all 0.3s ease;
+  }
+
+  .bar-label-highlight {
+    color: var(--accent);
+    font-weight: 600;
   }
 
   .bar {
@@ -114,10 +132,8 @@
     border-radius: 999px;
     overflow: hidden;
     margin-top: 6px;
-  }
-
-  .bar.active {
-    box-shadow: 0 0 8px rgba(108,242,194,0.25);
+    transition: box-shadow 0.3s ease;
+    cursor: pointer;
   }
 
   .bar-fill {
@@ -127,14 +143,42 @@
     transition: left 0.3s ease, width 0.3s ease;
   }
 
-  .pulse {
-    animation: pulse 0.4s ease;
+  .bar.hint-ready {
+    box-shadow: 0 0 14px rgba(108,242,194,0.8);
   }
 
-  @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.08); }
-    100% { transform: scale(1); }
+  .bar.hinted .bar-fill {
+    background: var(--hinted);
+    box-shadow: 0 0 10px rgba(125,183,255,0.6);
+    animation: hintPulse 1.5s ease;
+  }
+
+  @keyframes hintPulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(125,183,255,0.6); }
+    50% { box-shadow: 0 0 18px rgba(125,183,255,0.8); }
+  }
+
+  .bar.win {
+    background: hsla(45,100%,30%,0.4);
+    box-shadow: 0 0 16px var(--win-glow);
+  }
+
+  .bar-fill.win {
+    background: var(--win);
+    left: 0 !important;
+    width: 100% !important;
+    animation: winPulse 0.6s ease 1, winShine 0.5s ease 1 0.1s;
+  }
+
+  @keyframes winPulse {
+    0% { transform: scaleX(1); filter: brightness(1); background-color: var(--win); }
+    50% { transform: scaleX(1.08); filter: brightness(1.3); background-color: hsl(50,100%,60%); }
+    100% { transform: scaleX(1); filter: brightness(1); background-color: var(--win); }
+  }
+
+  @keyframes winShine {
+    0% { background: linear-gradient(120deg, hsl(45,100%,50%) 0%, hsl(45,100%,50%) 0%, hsl(50,100%,60%) 50%, hsl(45,100%,50%) 100%); background-size: 200% 100%; }
+    100% { background-position: 200% 0; }
   }
 
   .share button {
@@ -147,6 +191,15 @@
     margin-top: 12px;
     font-size: 0.85rem;
     color: var(--muted);
+  }
+
+  .colon-blink {
+    animation: blink 1s step-start infinite;
+  }
+
+  @keyframes blink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; }
   }
 
   .modal {
@@ -187,6 +240,7 @@
     <button id="guessBtn">Guess</button>
     <div class="feedback" id="feedback"></div>
     <div class="guess-count" id="guessCount">0 / 7 guesses</div>
+    <div class="tip" id="tipText">Tip: Start near the middle.</div>
 
     <div class="bar-wrap">
       <div class="bar-labels">
@@ -238,19 +292,19 @@ function getEasternDateParts() {
 /* ---------- DAILY NUMBER ---------- */
 const { year, month, day } = getEasternDateParts();
 const todayKey = `${year}-${month}-${day}`;
-
 function seededNumber(seed) {
   let h = 0;
   for (let c of seed) h = Math.imul(31, h) + c.charCodeAt(0);
   return Math.abs(h % 10000) + 1;
 }
-
 const secret = seededNumber(todayKey);
 
 /* ---------- STATE ---------- */
 let min = 1, max = 10000;
 let guesses = [];
 let gameOver = false;
+let lifelineUsed = false;
+let tipShown = false;
 
 /* ---------- ELEMENTS ---------- */
 const input = guessInput;
@@ -258,23 +312,33 @@ const btn = guessBtn;
 const feedback = document.getElementById("feedback");
 const barFill = document.getElementById("barFill");
 const bar = document.getElementById("bar");
+const tipText = document.getElementById("tipText");
 
-/* ---------- ADAPTIVE SENTIMENT (4 TIERS) ---------- */
+/* ---------- SENTIMENT ---------- */
 function sentiment(guess) {
   const range = max - min + 1;
   const delta = Math.abs(secret - guess);
   const pct = delta / range;
-
-  if (pct > 0.6) return "🧊 Ice cold";
-  if (pct > 0.35) return "❄️ Cold";
-  if (pct > 0.15) return "🌤 Warm";
-  return "🔥 Hot";
+  if (pct > 0.6) return "Cool";
+  if (pct > 0.35) return "Cool";
+  if (pct > 0.15) return "Warm";
+  return "Hot";
 }
 
 /* ---------- INPUT RANGE ---------- */
 function syncInputRange() {
   input.min = min;
   input.max = max;
+}
+
+/* ---------- BAR ---------- */
+function updateBar() {
+  const left = ((min - 1) / 10000) * 100;
+  const width = ((max - min + 1) / 10000) * 100;
+  barFill.style.left = left + "%";
+  barFill.style.width = width + "%";
+  minLabel.textContent = min;
+  maxLabel.textContent = max;
 }
 
 /* ---------- GUESS ---------- */
@@ -284,55 +348,78 @@ btn.onclick = () => {
   const g = Number(input.value);
   if (!g || g < min || g > max) return;
 
-  guesses.push(g);
-  input.value = "";
-
-  if (g === secret) {
-    win();
-    return;
+  // Tip disappears after first valid guess
+  if (!tipShown) {
+    tipText.style.display = "none";
+    tipShown = true;
   }
 
-  feedback.textContent = sentiment(g);
+  guesses.push(g);
+  input.value = "";
+  input.focus();
 
-  if (g < secret) min = g + 1;
-  else max = g - 1;
+  feedback.style.opacity = 0;
+  feedback.style.transform = "scale(0.95)";
+  setTimeout(() => {
+    feedback.textContent = sentiment(g);
+    feedback.style.opacity = 1;
+    feedback.style.transform = "scale(1)";
+  }, 50);
+
+  if (g === secret) { win(); return; }
+  if (g < secret) min = g + 1; else max = g - 1;
 
   updateBar();
   syncInputRange();
   guessCount.textContent = `${guesses.length} / 7 guesses`;
 
+  if (guesses.length === 6 && !lifelineUsed) bar.classList.add("hint-ready");
   if (guesses.length === 7) lose();
 };
 
-/* ---------- BAR ---------- */
-function updateBar() {
-  const left = ((min - 1) / 10000) * 100;
-  const width = ((max - min + 1) / 10000) * 100;
-  barFill.style.left = left + "%";
-  barFill.style.width = width + "%";
-  bar.classList.add("active");
-  barFill.classList.add("pulse");
-  setTimeout(() => {
-    barFill.classList.remove("pulse");
-    bar.classList.remove("active");
-  }, 400);
-  minLabel.textContent = min;
-  maxLabel.textContent = max;
-}
+/* ---------- LIFELINE ---------- */
+bar.onclick = () => {
+  if (lifelineUsed || gameOver) return;
+  if (guesses.length < 6) return;
+
+  const span = max - min;
+  min += Math.floor(span * 0.15);
+  max -= Math.floor(span * 0.15);
+
+  lifelineUsed = true;
+
+  bar.classList.remove("hint-ready");
+  bar.classList.add("hinted");
+
+  updateBar();
+  syncInputRange();
+};
 
 /* ---------- END STATES ---------- */
 function win() {
   gameOver = true;
-  feedback.textContent = "🎯 Correct!";
+  feedback.textContent = "You got it!";
   btn.disabled = true;
   shareBtn.disabled = false;
+  tipText.style.display = "none"; // hide tip
   launchConfetti();
   updateStats(true);
+  bar.classList.add("win");
+  barFill.classList.add("win");
 }
 
 function lose() {
   gameOver = true;
-  feedback.textContent = `Out of guesses. Number was ${secret}`;
+  feedback.textContent = "Out of guesses.";
+
+  const closure = document.createElement("div");
+  closure.style.color = "#9aa0c3";
+  closure.style.fontSize = "0.9rem";
+  closure.style.marginTop = "4px";
+  closure.textContent = `Today’s Narro was ${secret}.`;
+  feedback.appendChild(closure);
+
+  tipText.style.display = "none"; // hide tip
   btn.disabled = true;
   shareBtn.disabled = false;
   updateStats(false);
@@ -341,30 +428,25 @@ function lose() {
 /* ---------- CONFETTI ---------- */
 function launchConfetti() {
   const ctx = confetti.getContext("2d");
-  confetti.width = innerWidth;
-  confetti.height = innerHeight;
-
+  confetti.width = innerWidth; confetti.height = innerHeight;
   const pieces = Array.from({ length: 120 }, () => ({
     x: Math.random() * confetti.width,
     y: -20,
     vx: (Math.random() - 0.5) * 4,
-    vy: Math.random() * 3 + 2,
+    vy: Math.random() * 0.005 * innerHeight + 0.0025 * innerHeight,
     size: 6,
-    life: 100,
-    color: `hsl(${Math.random()*360},100%,70%)`
+    color: `hsl(${Math.random() * 360},100%,70%)`
   }));
 
   function frame() {
     ctx.clearRect(0,0,confetti.width,confetti.height);
     pieces.forEach(p => {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.vy += 0.05;
-      p.life--;
-      ctx.fillStyle = p.color;
-      ctx.fillRect(p.x, p.y, p.size, p.size);
+      p.x += p.vx; p.y += p.vy;
+      if (p.y < confetti.height) {
+        ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size);
+      }
     });
-    if (pieces.some(p => p.life > 0)) requestAnimationFrame(frame);
+    if (pieces.some(p => p.y < confetti.height)) requestAnimationFrame(frame);
   }
   frame();
 }
@@ -373,54 +455,46 @@ function launchConfetti() {
 const stats = JSON.parse(localStorage.getItem("narroStats") || '{"games":0,"wins":0,"totalGuesses":0,"best":99}');
 function updateStats(win) {
   stats.games++;
-  if (win) {
-    stats.wins++;
-    stats.totalGuesses += guesses.length;
-    stats.best = Math.min(stats.best, guesses.length);
-  }
+  if(win) { stats.wins++; stats.totalGuesses+=guesses.length; stats.best=Math.min(stats.best,guesses.length); }
   localStorage.setItem("narroStats", JSON.stringify(stats));
 }
-
 statsBtn.onclick = () => {
   statsModal.style.display = "flex";
-  statsGames.textContent = "Games: " + stats.games;
-  statsWins.textContent = "Wins: " + stats.wins;
-  statsAvg.textContent = stats.wins ? "Avg guesses: " + (stats.totalGuesses / stats.wins).toFixed(1) : "";
-  statsBest.textContent = stats.best < 99 ? "Best: " + stats.best : "";
+  statsGames.textContent = "Games: "+stats.games;
+  statsWins.textContent = "Wins: "+stats.wins;
+  statsAvg.textContent = stats.wins ? "Avg guesses: "+(stats.totalGuesses/stats.wins).toFixed(1) : "";
+  statsBest.textContent = stats.best<99 ? "Best: "+stats.best : "";
 };
 
 /* ---------- SHARE ---------- */
 function generateShareText() {
-  let tiles = guesses.map(g => g < secret ? "⬆️" : g > secret ? "⬇️" : "🎯");
-  if (!guesses.includes(secret)) tiles.push("❌");
-  return `Narro ${todayKey}
-${guesses.includes(secret) ? guesses.length + "/7" : "X/7"}
-${tiles.join(" ")}
-Play: ${location.href}`;
+  const tiles = guesses.map((g,i)=>{
+    if(lifelineUsed && i===5) return "🛟";
+    if(g<secret) return "⬆️";
+    if(g>secret) return "⬇️";
+    return "🎯";
+  });
+  if(!guesses.includes(secret)) tiles.push("❌");
+  return `Narro ${todayKey}\n${guesses.includes(secret) ? guesses.length+"/7" : "X/7"}\n${tiles.join(" ")}\nPlay: ${location.href}`;
 }
-
 shareBtn.onclick = async () => {
   const text = generateShareText();
-  if (navigator.share) {
-    await navigator.share({ title: "Narro", text });
-  } else {
-    await navigator.clipboard.writeText(text);
-    alert("Copied to clipboard");
-  }
+  if(navigator.share) await navigator.share({title:"Narro", text});
+  else { await navigator.clipboard.writeText(text); alert("Copied to clipboard"); }
 };
 
 /* ---------- COUNTDOWN ---------- */
-setInterval(() => {
+setInterval(()=>{
   const now = new Date();
-  const easternNow = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const easternNow = new Date(now.toLocaleString("en-US",{timeZone:"America/New_York"}));
   const nextMidnight = new Date(easternNow);
   nextMidnight.setHours(24,0,0,0);
   const diff = nextMidnight - easternNow;
-  const h = Math.floor(diff / 36e5);
-  const m = Math.floor((diff % 36e5) / 6e4);
-  const s = Math.floor((diff % 6e4) / 1000);
-  countdown.textContent = `Next number in ${h}:${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
-}, 1000);
+  const h = Math.floor(diff/36e5);
+  const m = Math.floor((diff%36e5)/6e4);
+  const s = Math.floor((diff%6e4)/1000);
+  countdown.innerHTML=`Next Narro in ${h}:<span class="colon-blink">:</span>${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
+},1000);
 
 syncInputRange();
 updateBar();
