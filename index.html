@@ -38,10 +38,7 @@
     text-align: center;
   }
 
-  h1 {
-    margin: 0;
-    font-size: 2rem;
-  }
+  h1 { margin: 0; font-size: 2rem; }
 
   .top-row {
     display: flex;
@@ -83,10 +80,7 @@
     cursor: pointer;
   }
 
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
+  button:disabled { opacity: 0.5; cursor: default; }
 
   .feedback {
     margin-top: 12px;
@@ -108,9 +102,7 @@
     color: var(--muted);
   }
 
-  .bar-wrap {
-    margin-top: 20px;
-  }
+  .bar-wrap { margin-top: 20px; }
 
   .bar-labels {
     display: flex;
@@ -143,9 +135,7 @@
     transition: left 0.3s ease, width 0.3s ease;
   }
 
-  .bar.hint-ready {
-    box-shadow: 0 0 14px rgba(108,242,194,0.8);
-  }
+  .bar.hint-ready { box-shadow: 0 0 14px rgba(108,242,194,0.8); }
 
   .bar.hinted .bar-fill {
     background: var(--hinted);
@@ -154,7 +144,7 @@
   }
 
   @keyframes hintPulse {
-    0%, 100% { box-shadow: 0 0 10px rgba(125,183,255,0.6); }
+    0%,100% { box-shadow: 0 0 10px rgba(125,183,255,0.6); }
     50% { box-shadow: 0 0 18px rgba(125,183,255,0.8); }
   }
 
@@ -181,11 +171,7 @@
     100% { background-position: 200% 0; }
   }
 
-  .share button {
-    padding: 10px;
-    font-size: 0.9rem;
-    border-radius: 10px;
-  }
+  .share button { padding: 10px; font-size: 0.9rem; border-radius: 10px; }
 
   .countdown {
     margin-top: 12px;
@@ -198,18 +184,11 @@
   }
 
   @keyframes blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0; }
+    0%,50% { opacity: 1; }
+    51%,100% { opacity: 0; }
   }
 
-  .modal {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    display: none;
-    justify-content: center;
-    align-items: center;
-  }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; }
 
   .modal-card {
     background: var(--card);
@@ -219,17 +198,12 @@
     max-width: 320px;
   }
 
-  canvas {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-  }
+  canvas { position: fixed; inset: 0; pointer-events: none; }
 </style>
 </head>
 
 <body>
 <div class="app">
-
   <div class="top-row">
     <h1>Narro</h1>
     <div class="stats-btn" id="statsBtn">ⓘ</div>
@@ -258,7 +232,6 @@
   </div>
 
   <div class="countdown" id="countdown"></div>
-
 </div>
 
 <div class="modal" id="statsModal">
@@ -348,23 +321,22 @@ btn.onclick = () => {
   const g = Number(input.value);
   if (!g || g < min || g > max) return;
 
-  // Tip disappears after first valid guess
-  if (!tipShown) {
-    tipText.style.display = "none";
-    tipShown = true;
-  }
+  if (!tipShown) { tipText.style.display = "none"; tipShown = true; }
 
   guesses.push(g);
   input.value = "";
   input.focus();
 
-  feedback.style.opacity = 0;
-  feedback.style.transform = "scale(0.95)";
-  setTimeout(() => {
-    feedback.textContent = sentiment(g);
-    feedback.style.opacity = 1;
-    feedback.style.transform = "scale(1)";
-  }, 50);
+  // Only update sentiment if NOT the last guess when losing
+  if (!(guesses.length === 7 && g !== secret)) {
+    feedback.style.opacity = 0;
+    feedback.style.transform = "scale(0.95)";
+    setTimeout(() => {
+      feedback.textContent = sentiment(g);
+      feedback.style.opacity = 1;
+      feedback.style.transform = "scale(1)";
+    }, 50);
+  }
 
   if (g === secret) { win(); return; }
   if (g < secret) min = g + 1; else max = g - 1;
@@ -401,7 +373,7 @@ function win() {
   feedback.textContent = "You got it!";
   btn.disabled = true;
   shareBtn.disabled = false;
-  tipText.style.display = "none"; // hide tip
+  tipText.style.display = "none";
   launchConfetti();
   updateStats(true);
   bar.classList.add("win");
@@ -419,7 +391,7 @@ function lose() {
   closure.textContent = `Today’s Narro was ${secret}.`;
   feedback.appendChild(closure);
 
-  tipText.style.display = "none"; // hide tip
+  tipText.style.display = "none";
   btn.disabled = true;
   shareBtn.disabled = false;
   updateStats(false);
