@@ -26,36 +26,27 @@
     --hinted: #7db7ff;
     --win: hsl(45,100%,50%);
     --win-glow: hsla(45,100%,60%,0.6);
-    --vh: 100vh; /* new property to track viewport height */
   }
 
   * { box-sizing: border-box; }
 
-body {
-  margin: 0;
-  min-height: calc(var(--vh, 100vh));
-  background: var(--bg);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont;
-  color: var(--text);
-  overflow: hidden; /* prevent window scrolling */
-}
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont;
+    color: var(--text);
+  }
 
-.app {
-  min-height: calc(var(--vh, 100vh) - 20px); /* allow slight padding from top/bottom */
-  max-width: 420px;
-  width: 100%;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start; /* let content start at top */
-  align-items: center;
-  overflow-y: auto; /* scroll only if content exceeds viewport */
-  box-sizing: border-box;
-}
-
+  .app {
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+    text-align: center;
+  }
 
   h1 { margin: 0; font-size: 2rem; }
 
@@ -212,41 +203,10 @@ body {
     background 0.3s ease;
 }
 
-  /* Hint-ready visual cue */
-.bar.hint-ready {
-  animation: hintPulseGlow 1.5s ease-in-out infinite;
-}
-
-/* Keyframes for pulse + glow */
-@keyframes hintPulseGlow {
-  0% {
-    box-shadow:
-      inset 0 2px 4px rgba(255,255,255,0.08),
-      0 0 10px rgba(108,242,194,0.45);
-    transform: scaleX(1);
-  }
-  50% {
-    box-shadow:
-      inset 0 4px 8px rgba(255,255,255,0.15),
-      0 0 20px rgba(108,242,194,0.8);
-    transform: scaleX(1.02);
-  }
-  100% {
-    box-shadow:
-      inset 0 2px 4px rgba(255,255,255,0.08),
-      0 0 10px rgba(108,242,194,0.45);
-    transform: scaleX(1);
-  }
-}
-
-/* Optional: hinted (after tap) animation reset */
-.bar.hinted {
-  animation: hintFadeOut 0.6s ease forwards;
-}
-
-@keyframes hintFadeOut {
-  0% { box-shadow: 0 0 20px rgba(125,183,255,0.8); }
-  100% { box-shadow: 0 0 0 rgba(0,0,0,0); }
+  .bar.hint-ready {
+  box-shadow:
+    inset 0 2px 4px rgba(255,255,255,0.08),
+    0 0 22px rgba(108,242,194,0.65);
 }
 
   .bar-handle {
@@ -527,8 +487,8 @@ function haptic(pattern) {
 }
 
 /* ---------- ELEMENTS ---------- */
-const input = document.getElementById("guessInput");
-const btn = document.getElementById("guessBtn");
+const input = guessInput;
+const btn = guessBtn;
 const shareBtn = document.getElementById("shareBtn");
 
 // Remove spacer when input loses focus
@@ -552,42 +512,52 @@ const bar = document.getElementById("bar");
 const tipText = document.getElementById("tipText");
 const toast = document.getElementById("toast");
 
-// ---------- MOBILE VH AND AUTO SCROLL ----------
+// ---------- MOBILE AUTO SCROLL ----------
 function isMobile() {
   return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
-// Update --vh dynamically
-function updateVh() {
-  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  document.documentElement.style.setProperty('--vh', `${vh}px`);
-}
-
-window.addEventListener('resize', updateVh);
-window.visualViewport?.addEventListener('resize', updateVh);
-updateVh();
-
-// Auto-scroll input into center on focus
 input.addEventListener("focus", () => {
   input.select();
-  if (!isMobile()) return;
 
+  if (!isMobile()) return; // Only apply on mobile
+
+  // Delay slightly to let keyboard appear
   setTimeout(() => {
-    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, 100);
+    const appRect = document.querySelector(".app").getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+
+    // Scroll so the bottom of the app is visible
+    const spaceBelow = viewportHeight - appRect.bottom;
+
+    if (spaceBelow < 20) { // small buffer
+      const scrollAmount = 20 - spaceBelow;
+      window.scrollBy({ top: scrollAmount, behavior: "smooth" });
+    }
+  }, 250); // slightly faster than before
 });
 
-// Restore scroll on blur
+// Smoothly restore scroll on blur (optional)
 input.addEventListener("blur", () => {
   if (!isMobile()) return;
   setTimeout(() => {
-    document.querySelector('.app').scrollTop = 0;
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, 150);
 });
 
 if (demoMode) {
   input.disabled = true;
   btn.disabled = true;
+}
+
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.style.opacity = 1;
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => {
+    toast.style.opacity = 0;
+  }, 1600);
 }
 
 /* ---------- SENTIMENT ---------- */
@@ -623,8 +593,8 @@ function syncInputRange() {
 /* ---------- BAR ---------- */
 function updateBar() {
   // Clamp min/max to prevent negative width
-  min = Math.max(MIN_RANGE, Math.min(min, MAX_RANGE));
-  max = Math.max(min, Math.min(max, MAX_RANGE));
+  min = Math.min(Math.max(MIN_RANGE, min), MAX_RANGE);
+  max = Math.min(Math.max(min, max), MAX_RANGE); // ensure max >= min
 
   const left = ((min - 1) / MAX_RANGE) * 100;
   const width = ((max - min + 1) / MAX_RANGE) * 100;
@@ -730,66 +700,26 @@ function updateGuessUI(g) {
     feedback.style.transform = "scale(1)";
   }, feedbackDelay);
 
-  // Update guesses remaining
   const remaining = MAX_GUESSES - guesses.length;
-  guessCount.style.fontWeight = remaining === 1 ? "600" : "400";
 
   if (remaining > 1) {
-    guessCount.textContent = `${remaining} guesses left`;
-    guessCount.style.color = "var(--muted)";
-  } else if (remaining === 1) {
-    guessCount.textContent = "Final guess";
-    guessCount.style.color = "var(--accent)";
-  } else {
-    guessCount.textContent = "";
-  }
+  guessCount.textContent = `${remaining} guesses left`;
+  guessCount.style.color = "var(--muted)";
+} else if (remaining === 1) {
+  guessCount.textContent = "Final guess";
+  guessCount.style.color = "var(--accent)";
+  guessCount.style.fontWeight = "600";
+} else {
+  guessCount.textContent = "";
+}
 
-// ---------- HINT SYSTEM (ULTIMATE POLISH) ----------
-if (!gameOver) {
-  const isFinal = guesses.length === MAX_GUESSES - 1;
-
-  if (isFinal && !lifelineUsed) {
-    // Activate hint animation on the bar
-    bar.classList.add("hint-ready");
-    bar.classList.remove("hinted"); // clear previous hint-used animation
-
-    // Tip text with fade-in and gentle pulse
-    tipText.textContent = "Tap the bar for a hint";
-    tipText.style.opacity = 0;
-    tipText.style.transform = "scale(0.98)";
-    tipText.style.transition = "opacity 0.4s ease, transform 0.35s ease";
-
-    requestAnimationFrame(() => {
-      tipText.style.opacity = 1;
-      tipText.style.transform = "scale(1.02)";
-      setTimeout(() => { tipText.style.transform = "scale(1)"; }, 350);
-    });
-
-    // Reinforce with toast (slightly delayed for natural rhythm)
-    setTimeout(() => showToast("Tap the bar for a hint"), 150);
-
-    // Auto-scroll tip into view on mobile
-    if (isMobile()) {
-      setTimeout(() => {
-        tipText.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 100);
-    }
-
-    // Subtle pulse on guess-count to emphasize final attempt
-    guessCount.style.transition = "transform 0.3s ease";
-    guessCount.style.transform = "scale(1.1)";
-    setTimeout(() => { guessCount.style.transform = "scale(1)"; }, 300);
-
-  } else {
-    // Reset visuals for normal guesses
-    bar.classList.remove("hint-ready");
-    bar.classList.remove("hinted");
-
-    tipText.textContent = "Narrow the bar to find today's number";
-    tipText.style.opacity = 1;
-    tipText.style.transform = "scale(1)";
-    guessCount.style.transform = "scale(1)";
-  }
+  if (!gameOver && guesses.length === MAX_GUESSES - 1 && !lifelineUsed) {
+  bar.classList.add("hint-ready");
+  showToast("Tap the bar for a hint");
+} else {
+  // Remove hint-ready if not eligible
+  bar.classList.remove("hint-ready");
+}
 }
 
 /* ---------- GUESS ---------- */
@@ -821,53 +751,35 @@ btn.onclick = () => {
 
 };
 
-// ---------- LIFELINE (POLISHED) ----------
+/* ---------- LIFELINE ---------- */
 bar.onclick = () => {
   if (lifelineUsed || gameOver) return;
-  if (guesses.length < MAX_GUESSES - 1) return;
+  if (guesses.length < MAX_GUESSES - 1) return; // lifeline only after second to last guess
 
-  const span = max - min;
-  const shrink = Math.max(1, Math.floor(span * 0.15));
+const span = max - min;
+const shrink = Math.floor(span * 0.15);
 
-  let newMin = min + shrink;
-  let newMax = max - shrink;
+let newMin = min + shrink;
+let newMax = max - shrink;
 
-  // Clamp to ensure secret is always included
-  min = Math.max(newMin, min);
-  max = Math.min(newMax, max);
-  if (secret < min) min = secret;
-  if (secret > max) max = secret;
+// Clamp so secret is always included
+min = Math.max(newMin, min);
+max = Math.min(newMax, max);
+if (secret < min) min = secret;
+if (secret > max) max = secret;
 
-  lifelineUsed = true;
-  lifelineGuessIndex = guesses.length;
-  haptic([8, 40, 8]);
+lifelineUsed = true;
+lifelineGuessIndex = guesses.length;
+haptic([8, 40, 8]);
 
-  // Animate bar
-  bar.classList.remove("hint-ready");
-  bar.classList.add("hinted");
+bar.classList.remove("hint-ready");
+bar.classList.add("hinted");
 
-  updateBar();
-  syncInputRange();
+updateBar();
+syncInputRange();
 
-  // Smoothly update input value on mobile
-  const newValue = Math.min(max, Math.max(min, Number(input.value) || min));
-  input.value = newValue;
+input.value = Math.min(max, Math.max(min, Number(input.value) || min));
 
-  if (isMobile()) {
-    setTimeout(() => {
-      input.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 50);
-  }
-
-  // Tip feedback: fade out and show “Hint applied!”
-  tipText.textContent = "Hint applied!";
-  tipText.style.transition = "opacity 0.4s ease, transform 0.35s ease";
-  tipText.style.opacity = 0;
-  requestAnimationFrame(() => {
-    tipText.style.opacity = 1;
-    tipText.style.transform = "scale(1.05)";
-    setTimeout(() => { tipText.style.transform = "scale(1)"; }, 350);
-  });
 };
 
 /* ---------- END STATES ---------- */
@@ -1004,31 +916,17 @@ statsBtn.onclick = () => {
 
 /* ---------- SHARE ---------- */
 function generateShareText() {
-  const tiles = [];
+  const tiles = guesses.map((g, i) => {
+  if (i === lifelineGuessIndex) return "🛟";
 
-  for (let i = 0; i < guesses.length; i++) {
-    let g = guesses[i];
-    let emoji;
+  if (g < secret) return "⬆️";
+  if (g > secret) return "⬇️";
+  return "🎯";
+});
 
-    // Last guess always determines final tile
-    if (i === guesses.length - 1) {
-      emoji = g === secret ? "🎯" : "❌";
-    } else {
-      if (g < secret) emoji = "⬆️";
-      else if (g > secret) emoji = "⬇️";
-      else emoji = "🎯"; // theoretically only if early win
-    }
-
-    // Insert lifeline immediately **before the final guess**
-    if (lifelineUsed && i === lifelineGuessIndex) {
-      // Only add the life preserver if there is a final guess after it
-      if (i < guesses.length - 1) {
-        tiles.push("🛟");
-      }
-    }
-
-    tiles.push(emoji);
-  }
+  if (gameOver && guesses[guesses.length - 1] !== secret) {
+  tiles.push("❌");
+}
 
   return (
     `Narro · ${todayKey}\n\n` +
@@ -1037,13 +935,27 @@ function generateShareText() {
   );
 }
 
+shareBtn.onclick = async () => {
+  const text = generateShareText();
+
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: "Narro", text });
+    } else {
+      await navigator.clipboard.writeText(text);
+      showToast("Copied to clipboard");
+    }
+  } catch {
+    showToast("Couldn’t share — copied instead");
+  }
+};
+
 /* ---------- COUNTDOWN ---------- */
 setInterval(()=>{
   const now = new Date();
   const easternNow = new Date(now.toLocaleString("en-US",{timeZone:"America/New_York"}));
   const nextMidnight = new Date(easternNow);
-  nextMidnight.setHours(0,0,0,0);
-  nextMidnight.setDate(nextMidnight.getDate()+1);
+  nextMidnight.setHours(24,0,0,0);
   const diff = nextMidnight - easternNow;
   const h = Math.floor(diff/36e5);
   const m = Math.floor((diff%36e5)/6e4);
