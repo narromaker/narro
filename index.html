@@ -491,34 +491,6 @@ const input = guessInput;
 const btn = guessBtn;
 const shareBtn = document.getElementById("shareBtn");
 
-input.addEventListener("focus", () => {
-  input.select();
-
-  // ----- SMART AUTO SCROLL BAR INTO VIEW -----
-  // Delay slightly to let the keyboard appear
-  setTimeout(() => {
-    const barRect = bar.getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-
-    // Calculate how far the bar is from the bottom of the visible viewport
-    const spaceBelow = viewportHeight - barRect.bottom;
-
-    // If space below is less than a threshold, scroll up
-    if (spaceBelow < 150) { // 150px buffer
-      const scrollAmount = 150 - spaceBelow;
-      window.scrollBy({ top: scrollAmount, behavior: "smooth" });
-    }
-  }, 300);
-});
-
-// Optional: Smoothly restore scroll on blur
-input.addEventListener("blur", () => {
-  // Small delay for keyboard hide animation
-  setTimeout(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, 200);
-});
-
 // Remove spacer when input loses focus
 input.addEventListener("blur", () => {
   const spacer = document.getElementById("keyboardSpacer");
@@ -539,6 +511,39 @@ const barFill = document.getElementById("barFill");
 const bar = document.getElementById("bar");
 const tipText = document.getElementById("tipText");
 const toast = document.getElementById("toast");
+
+// ---------- MOBILE AUTO SCROLL ----------
+function isMobile() {
+  return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+input.addEventListener("focus", () => {
+  input.select();
+
+  if (!isMobile()) return; // Only apply on mobile
+
+  // Delay slightly to let keyboard appear
+  setTimeout(() => {
+    const appRect = document.querySelector(".app").getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+
+    // Scroll so the bottom of the app is visible
+    const spaceBelow = viewportHeight - appRect.bottom;
+
+    if (spaceBelow < 20) { // small buffer
+      const scrollAmount = 20 - spaceBelow;
+      window.scrollBy({ top: scrollAmount, behavior: "smooth" });
+    }
+  }, 250); // slightly faster than before
+});
+
+// Smoothly restore scroll on blur (optional)
+input.addEventListener("blur", () => {
+  if (!isMobile()) return;
+  setTimeout(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, 150);
+});
 
 if (demoMode) {
   input.disabled = true;
