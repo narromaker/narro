@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Narro</title>
 
+<!-- Open Graph -->
+<meta property="og:title" content="Narro — Today’s Number Puzzle" />
+<meta property="og:description" content="Guess the number. Each guess narrows the range. One puzzle per day." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://narromaker.github.io/narro" />
+<meta property="og:image" content="https://narromaker.github.io/narro/og.png" />
+
+<!-- Twitter / iMessage fallback -->
+<meta name="twitter:card" content="summary_large_image" />
+
 <style>
   :root {
     --bg: #0f1220;
@@ -379,9 +389,19 @@ function getEasternDateParts() {
   return { year: get("year"), month: get("month"), day: get("day") };
 }
 
+// ⚠️ TEMP DEV FLAG — disable daily lock while testing
+const DEV_DISABLE_DAILY_LOCK = true;
+
 /* ---------- DAILY NUMBER ---------- */
 const { year, month, day } = getEasternDateParts();
 const todayKey = `${year}-${month}-${day}`;
+const dailyStateKey = `narroState-${todayKey}`;
+
+const MAX_GUESSES = 7;
+const MIN_RANGE = 1;
+const MAX_RANGE = 10000;
+
+const CANONICAL_URL = "https://narromaker.github.io/narro";
 
 function seededNumber(seed) {
   // Hash the seed string into a 32-bit integer
@@ -405,20 +425,58 @@ function seededNumber(seed) {
   return Math.floor(rand * MAX_RANGE) + 1;
 }
 
-const MAX_GUESSES = 7;
-const MIN_RANGE = 1;
-const MAX_RANGE = 10000;
+function isFinalGuess() {
+  return guesses.length === MAX_GUESSES - 1;
+}
 
 const secret = seededNumber(todayKey);
 
 /* ---------- DEMO STATE ---------- */
-let demoMode = localStorage.getItem("narroHasPlayed") !== "true";
+let demoMode =
+  localStorage.getItem(`narroHasPlayed-${todayKey}`) !== "true" &&
+  !localStorage.getItem(dailyStateKey);
+
+const savedState = DEV_DISABLE_DAILY_LOCK
+  ? null
+  : localStorage.getItem(dailyStateKey);
+
+if (savedState) {
+  demoMode = false;
+
+  const state = JSON.parse(savedState);
+
+  guesses = state.guesses || [];
+  lifelineUsed = !!state.lifelineUsed;
+  gameOver = true;
+
+  input.disabled = true;
+  btn.disabled = true;
+  shareBtn.disabled = false;
+
+  if (state.result === "win") {
+    feedback.textContent = "🎯 You got it!";
+    bar.classList.add("win");
+    barFill.classList.add("win");
+  } else {
+    feedback.textContent = "Try again tomorrow!";
+    const closure = document.createElement("div");
+    closure.style.color = "#9aa0c3";
+    closure.style.fontSize = "0.95rem";
+    closure.style.marginTop = "6px";
+    closure.textContent = `Today’s Narro was ${secret}.`;
+    feedback.appendChild(closure);
+  }
+
+  tipText.textContent = "Come back tomorrow for a new Narro";
+  tipText.style.display = "block";
+}
 
 /* ---------- STATE ---------- */
 let min = MIN_RANGE, max = MAX_RANGE;
 let guesses = [];
 let gameOver = false;
 let lifelineUsed = false;
+let lifelineGuessIndex = null;
 let tipShown = false;
 
 /* ---------- HAPTICS ---------- */
@@ -431,9 +489,42 @@ function haptic(pattern) {
 /* ---------- ELEMENTS ---------- */
 const input = guessInput;
 const btn = guessBtn;
+const shareBtn = document.getElementById("shareBtn");
+
 input.addEventListener("focus", () => {
   input.select();
+
+  // ----- SMART AUTO SCROLL BAR INTO VIEW -----
+  // Delay slightly to let the keyboard appear
+  setTimeout(() => {
+    const barRect = bar.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+
+    // Calculate how far the bar is from the bottom of the visible viewport
+    const spaceBelow = viewportHeight - barRect.bottom;
+
+    // If space below is less than a threshold, scroll up
+    if (spaceBelow < 150) { // 150px buffer
+      const scrollAmount = 150 - spaceBelow;
+      window.scrollBy({ top: scrollAmount, behavior: "smooth" });
+    }
+  }, 300);
 });
+
+// Optional: Smoothly restore scroll on blur
+input.addEventListener("blur", () => {
+  // Small delay for keyboard hide animation
+  setTimeout(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, 200);
+});
+
+// Remove spacer when input loses focus
+input.addEventListener("blur", () => {
+  const spacer = document.getElementById("keyboardSpacer");
+  if (spacer) spacer.remove();
+});
+
 input.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
@@ -474,13 +565,18 @@ function sentiment(guess) {
   }
 
   // Relative tiers
-  const range = max - min;
+  const range = Math.max(max - min, 1); // avoid division by zero
   const relativeCloseness = 1 - (absoluteDelta / range);
 
   if (relativeCloseness >= 0.72) return "Very warm";
   if (relativeCloseness >= 0.50) return "Warm";
   if (relativeCloseness >= 0.28) return "Cool";
   return "Cold";
+}
+
+/* ---------- GAME PHASE ---------- */
+function isLateGame() {
+  return guesses.length >= MAX_GUESSES - 2;
 }
 
 /* ---------- INPUT RANGE ---------- */
@@ -491,18 +587,26 @@ function syncInputRange() {
 
 /* ---------- BAR ---------- */
 function updateBar() {
-  min = Math.max(MIN_RANGE, Math.min(min, max));
-  max = Math.min(MAX_RANGE, Math.max(max, min));
+  // Clamp min/max to prevent negative width
+  min = Math.min(Math.max(MIN_RANGE, min), MAX_RANGE);
+  max = Math.min(Math.max(min, max), MAX_RANGE); // ensure max >= min
 
   const left = ((min - 1) / MAX_RANGE) * 100;
   const width = ((max - min + 1) / MAX_RANGE) * 100;
 
+  const slow = isLateGame();
+
+  barFill.style.transition = slow
+    ? "left 0.6s ease, width 0.6s ease"
+    : "left 0.35s ease, width 0.35s ease";
+
   barFill.style.left = left + "%";
   barFill.style.width = width + "%";
 
-  /* expose geometry for handles (visual only) */
+  // expose geometry for handles (visual only)
   bar.style.setProperty("--fill-left", left + "%");
-  bar.style.setProperty("--fill-width", width + "%");
+  bar.style.setProperty("--fill-width", Math.max(width, 0) + "%"); // never negative
+
   minLabel.textContent = min;
   maxLabel.textContent = max;
 }
@@ -522,9 +626,10 @@ function resolveDemoGuess(g) {
     setTimeout(() => {
       // Soft acknowledgement beat
       setTimeout(() => {
+        // Only shrink if the guess is NOT exactly the secret
         if (g < secret) {
           min = g + 1;
-        } else {
+        } else if (g > secret) {
           max = g - 1;
         }
 
@@ -555,12 +660,15 @@ function resolveGuess(g) {
     return;
   }
 
-  // Update range
+  // Update range safely
   if (g < secret) {
-    min = g + 1;
-  } else {
-    max = g - 1;
+    min = Math.min(Math.max(min, g + 1), MAX_RANGE);
+  } else if (g > secret) {
+    max = Math.max(Math.min(max, g - 1), MIN_RANGE);
   }
+
+  // Ensure min <= max
+  if (min > max) min = max;
 
   updateBar();
   syncInputRange();
@@ -571,6 +679,8 @@ function updateGuessUI(g) {
   feedback.style.opacity = 0;
   feedback.style.transform = "scale(0.95)";
 
+  const feedbackDelay = isLateGame() ? 160 : 50;
+
   setTimeout(() => {
     const s = sentiment(g);
 
@@ -579,28 +689,32 @@ function updateGuessUI(g) {
 
     if (s === "Right there") {
       feedback.classList.add("right-there");
-}
+    }
 
-      feedback.style.opacity = 1;
-      feedback.style.transform = "scale(1)";
-      }, 50);
+    feedback.style.opacity = 1;
+    feedback.style.transform = "scale(1)";
+  }, feedbackDelay);
 
   const remaining = MAX_GUESSES - guesses.length;
 
   if (remaining > 1) {
-    guessCount.textContent = `${remaining} guesses left`;
-    guessCount.style.color = "var(--muted)";
-  } else if (remaining === 1) {
-    guessCount.textContent = "Final guess — make it count!";
-    guessCount.style.color = "var(--accent)";
-  } else {
-    guessCount.textContent = "";
-  }
+  guessCount.textContent = `${remaining} guesses left`;
+  guessCount.style.color = "var(--muted)";
+} else if (remaining === 1) {
+  guessCount.textContent = "Final guess";
+  guessCount.style.color = "var(--accent)";
+  guessCount.style.fontWeight = "600";
+} else {
+  guessCount.textContent = "";
+}
 
-  if (guesses.length === MAX_GUESSES - 1 && !lifelineUsed) {
-    bar.classList.add("hint-ready");
-    showToast("Tap the bar for a hint");
-  }
+  if (!gameOver && guesses.length === MAX_GUESSES - 1 && !lifelineUsed) {
+  bar.classList.add("hint-ready");
+  showToast("Tap the bar for a hint");
+} else {
+  // Remove hint-ready if not eligible
+  bar.classList.remove("hint-ready");
+}
 }
 
 /* ---------- GUESS ---------- */
@@ -635,25 +749,44 @@ btn.onclick = () => {
 /* ---------- LIFELINE ---------- */
 bar.onclick = () => {
   if (lifelineUsed || gameOver) return;
-  if (guesses.length < MAX_GUESSES - 1) return; // lineline only after second to last guess
+  if (guesses.length < MAX_GUESSES - 1) return; // lifeline only after second to last guess
 
-  const span = max - min;
-  min += Math.floor(span * 0.15);
-  max -= Math.floor(span * 0.15);
+const span = max - min;
+const shrink = Math.floor(span * 0.15);
 
-  lifelineUsed = true;
-  haptic([8, 40, 8]);
+let newMin = min + shrink;
+let newMax = max - shrink;
 
-  bar.classList.remove("hint-ready");
-  bar.classList.add("hinted");
+// Clamp so secret is always included
+min = Math.max(newMin, min);
+max = Math.min(newMax, max);
+if (secret < min) min = secret;
+if (secret > max) max = secret;
 
-  updateBar();
-  syncInputRange();
+lifelineUsed = true;
+lifelineGuessIndex = guesses.length;
+haptic([8, 40, 8]);
+
+bar.classList.remove("hint-ready");
+bar.classList.add("hinted");
+
+updateBar();
+syncInputRange();
+
+input.value = Math.min(max, Math.max(min, Number(input.value) || min));
+
 };
 
 /* ---------- END STATES ---------- */
 function win() {
+  if (gameOver) return;  
   gameOver = true;
+
+  localStorage.setItem(dailyStateKey, JSON.stringify({
+    result: "win",
+    guesses,
+    lifelineUsed
+  }));
 
   guessCount.textContent = ""; // clear final-guess prompt
 
@@ -680,14 +813,21 @@ function win() {
 }
 
 function lose() {
+  if (gameOver) return;  
   gameOver = true;
+
+  localStorage.setItem(dailyStateKey, JSON.stringify({
+    result: "lose",
+    guesses,
+    lifelineUsed
+  }));
 
   guessCount.textContent = ""; // clear final-guess prompt
 
   feedback.textContent = "Try again tomorrow!";
   haptic(15);
-  feedback.style.fontSize = "1.2rem";
-  feedback.style.fontWeight = "600";
+  feedback.style.fontSize = "1.15rem";
+  feedback.style.fontWeight = "500";
 
   const closure = document.createElement("div");
   closure.style.color = "#9aa0c3";
@@ -700,7 +840,7 @@ function lose() {
   btn.disabled = true;
   shareBtn.disabled = false;
 
-  tipText.textContent = "Try again tomorrow";
+  tipText.textContent = "New Narro tomorrow";
   tipText.style.display = "block";
 
   updateStats(false);
@@ -733,44 +873,76 @@ function launchConfetti() {
 }
 
 /* ---------- STATS ---------- */
-const stats = JSON.parse(localStorage.getItem("narroStats") || '{"games":0,"wins":0,"totalGuesses":0,"best":99}');
+const stats = JSON.parse(
+  localStorage.getItem("narroStats") ||
+  '{"games":0,"wins":0,"totalGuesses":0,"best":99}'
+);
+
+const playedKey = `narroPlayed-${todayKey}`;
+
 function updateStats(win) {
+  if (DEV_DISABLE_DAILY_LOCK) return;
+  if (localStorage.getItem(playedKey)) return;
+
+  localStorage.setItem(playedKey, "true");
+
   stats.games++;
-  if(win) { stats.wins++; stats.totalGuesses+=guesses.length; stats.best=Math.min(stats.best,guesses.length); }
+
+  if (win) {
+    stats.wins++;
+    stats.totalGuesses += guesses.length;
+    stats.best = Math.min(stats.best, guesses.length);
+  }
+
   localStorage.setItem("narroStats", JSON.stringify(stats));
 }
+
 statsBtn.onclick = () => {
   statsModal.style.display = "flex";
-  statsGames.textContent = "Games: "+stats.games;
-  statsWins.textContent = "Wins: "+stats.wins;
-  statsAvg.textContent = stats.wins ? "Avg guesses: "+(stats.totalGuesses/stats.wins).toFixed(1) : "";
-  statsBest.textContent = stats.best<99 ? "Best: "+stats.best : "";
+  statsGames.textContent = "Games: " + stats.games;
+  statsWins.textContent = "Wins: " + stats.wins;
+  statsAvg.textContent = stats.wins
+    ? "Avg guesses: " + (stats.totalGuesses / stats.wins).toFixed(1)
+    : "";
+  statsBest.textContent = stats.best < 99
+    ? "Best: " + stats.best
+    : "";
 };
 
 /* ---------- SHARE ---------- */
 function generateShareText() {
-  const tiles = guesses.map((g,i)=>{
-    if(lifelineUsed && i===5) return "🛟";
-    if(g<secret) return "⬆️";
-    if(g>secret) return "⬇️";
-    return "🎯";
-  });
-  if(!guesses.includes(secret)) tiles.push("❌");
-  return `Narro ${todayKey}\n${guesses.includes(secret) ? guesses.length+"/7" : "X/7"}\n${tiles.join(" ")}\nPlay: ${location.href}`;
+  const tiles = guesses.map((g, i) => {
+  if (i === lifelineGuessIndex) return "🛟";
+
+  if (g < secret) return "⬆️";
+  if (g > secret) return "⬇️";
+  return "🎯";
+});
+
+  if (gameOver && guesses[guesses.length - 1] !== secret) {
+  tiles.push("❌");
 }
+
+  return (
+    `Narro · ${todayKey}\n\n` +
+    `${tiles.join(" ")}\n\n` +
+    `${CANONICAL_URL}`
+  );
+}
+
 shareBtn.onclick = async () => {
   const text = generateShareText();
+
   try {
     if (navigator.share) {
       await navigator.share({ title: "Narro", text });
     } else {
       await navigator.clipboard.writeText(text);
-      alert("Copied to clipboard");
+      showToast("Copied to clipboard");
     }
   } catch {
-  showToast("Couldn’t share — copied instead");
-}
-
+    showToast("Couldn’t share — copied instead");
+  }
 };
 
 /* ---------- COUNTDOWN ---------- */
@@ -807,7 +979,7 @@ if (demoMode) {
       // Quiet pause before enabling interaction
       setTimeout(() => {
         demoMode = false;
-        localStorage.setItem("narroHasPlayed", "true");
+        localStorage.setItem(`narroHasPlayed-${todayKey}`, "true");
 
         tipText.style.opacity = 0;
         input.disabled = false;
