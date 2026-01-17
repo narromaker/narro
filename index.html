@@ -1004,17 +1004,31 @@ statsBtn.onclick = () => {
 
 /* ---------- SHARE ---------- */
 function generateShareText() {
-  const tiles = guesses.map((g, i) => {
-  if (i === lifelineGuessIndex) return "🛟";
+  const tiles = [];
 
-  if (g < secret) return "⬆️";
-  if (g > secret) return "⬇️";
-  return "🎯";
-});
+  for (let i = 0; i < guesses.length; i++) {
+    let g = guesses[i];
+    let emoji;
 
-  if (gameOver && guesses[guesses.length - 1] !== secret) {
-  tiles.push("❌");
-}
+    // Last guess always determines final tile
+    if (i === guesses.length - 1) {
+      emoji = g === secret ? "🎯" : "❌";
+    } else {
+      if (g < secret) emoji = "⬆️";
+      else if (g > secret) emoji = "⬇️";
+      else emoji = "🎯"; // theoretically only if early win
+    }
+
+    // Insert lifeline immediately **before the final guess**
+    if (lifelineUsed && i === lifelineGuessIndex) {
+      // Only add the life preserver if there is a final guess after it
+      if (i < guesses.length - 1) {
+        tiles.push("🛟");
+      }
+    }
+
+    tiles.push(emoji);
+  }
 
   return (
     `Narro · ${todayKey}\n\n` +
@@ -1022,21 +1036,6 @@ function generateShareText() {
     `${CANONICAL_URL}`
   );
 }
-
-shareBtn.onclick = async () => {
-  const text = generateShareText();
-
-  try {
-    if (navigator.share) {
-      await navigator.share({ title: "Narro", text });
-    } else {
-      await navigator.clipboard.writeText(text);
-      showToast("Copied to clipboard");
-    }
-  } catch {
-    showToast("Couldn’t share — copied instead");
-  }
-};
 
 /* ---------- COUNTDOWN ---------- */
 setInterval(()=>{
