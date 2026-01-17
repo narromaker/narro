@@ -53,11 +53,18 @@
   }
 
   .card {
-    background: var(--card);
-    border-radius: 16px;
-    padding: 20px;
-    margin-top: 16px;
-  }
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.03),
+    rgba(255,255,255,0)
+  ), var(--card);
+  border-radius: 18px;
+  padding: 22px;
+  margin-top: 16px;
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.04);
+}
 
   input[type="number"] {
     width: 100%;
@@ -83,11 +90,32 @@
   button:disabled { opacity: 0.5; cursor: default; }
 
   .feedback {
-    margin-top: 12px;
-    font-size: 1.1rem;
+    margin-top: 14px;
+    font-size: 1.15rem;
+    font-weight: 500;
+    min-height: 1.4em;
     transition: all 0.25s ease;
     transform-origin: center;
   }
+
+  .feedback.right-there {
+  letter-spacing: 0.08em;
+  animation: breathHold 1.4s ease-in-out infinite;
+}
+
+@keyframes breathHold {
+  0%   { opacity: 1; }
+  50%  { opacity: 0.75; }
+  100% { opacity: 1; }
+}
+
+  .toast {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--danger);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
 
   .guess-count {
     margin-top: 8px;
@@ -100,6 +128,7 @@
     margin-top: 8px;
     font-size: 0.85rem;
     color: var(--muted);
+    transition: opacity 0.3s ease;
   }
 
   .bar-wrap { margin-top: 20px; }
@@ -118,24 +147,61 @@
   }
 
   .bar {
-    position: relative;
-    height: 14px;
-    background: #2a2f55;
-    border-radius: 999px;
-    overflow: hidden;
-    margin-top: 6px;
-    transition: box-shadow 0.3s ease;
-    cursor: pointer;
-  }
+  position: relative;
+  height: 18px;
+  background: linear-gradient(
+    to bottom,
+    #2f3466,
+    #24284d
+  );
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 10px;
+  cursor: pointer;
+
+  /* Depth */
+  box-shadow:
+    inset 0 2px 4px rgba(255,255,255,0.06),
+    inset 0 -2px 6px rgba(0,0,0,0.4),
+    0 6px 18px rgba(0,0,0,0.35);
+
+  transition:
+    box-shadow 0.35s ease,
+    transform 0.25s ease;
+}
+
+/* Subtle “this is interactive” cue */
+.bar:hover {
+  transform: translateY(-1px);
+}
 
   .bar-fill {
-    position: absolute;
-    height: 100%;
-    background: var(--accent);
-    transition: left 0.3s ease, width 0.3s ease;
-  }
+  position: absolute;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    #6cf2c2,
+    #4fe0b0
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.35),
+    0 0 12px rgba(108,242,194,0.35);
 
-  .bar.hint-ready { box-shadow: 0 0 14px rgba(108,242,194,0.8); }
+  transition:
+    left 0.35s ease,
+    width 0.35s ease,
+    background 0.3s ease;
+}
+
+  .bar.hint-ready {
+  box-shadow:
+    inset 0 2px 4px rgba(255,255,255,0.08),
+    0 0 22px rgba(108,242,194,0.65);
+}
+
+  .bar-handle {
+  opacity: 0.55;
+}
 
   .bar.hinted .bar-fill {
     background: var(--hinted);
@@ -149,9 +215,12 @@
   }
 
   .bar.win {
-    background: hsla(45,100%,30%,0.4);
-    box-shadow: 0 0 16px var(--win-glow);
-  }
+  background: linear-gradient(
+    to bottom,
+    hsla(45,100%,35%,0.6),
+    hsla(45,100%,25%,0.6)
+  );
+}
 
   .bar-fill.win {
     background: var(--win);
@@ -159,6 +228,39 @@
     width: 100% !important;
     animation: winPulse 0.6s ease 1, winShine 0.5s ease 1 0.1s;
   }
+
+  .bar.win .bar-handle {
+  opacity: 0;
+}
+
+  .bar-handle {
+  position: absolute;
+  top: 50%;
+  width: 6px;
+  height: 26px;
+
+  background: rgba(255,255,255,0.6);
+  border-radius: 3px;
+
+  transform: translateY(-50%);
+  pointer-events: none;
+
+  box-shadow:
+    0 0 6px rgba(108,242,194,0.45),
+    inset 0 0 4px rgba(255,255,255,0.45);
+
+  transition:
+    left 0.35s ease,
+    opacity 0.25s ease;
+}
+
+.bar-handle.left {
+  left: calc(var(--fill-left) - 3px);
+}
+
+.bar-handle.right {
+  left: calc(var(--fill-left) + var(--fill-width) - 3px);
+}
 
   @keyframes winPulse {
     0% { transform: scaleX(1); filter: brightness(1); background-color: var(--win); }
@@ -188,6 +290,16 @@
     51%,100% { opacity: 0; }
   }
 
+  @keyframes barIdleShimmer {
+  0% { filter: brightness(1); }
+  50% { filter: brightness(1.08); }
+  100% { filter: brightness(1); }
+}
+
+.bar:not(.win):not(.hinted) .bar-fill {
+  animation: barIdleShimmer 5s ease-in-out infinite;
+}
+
   .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; }
 
   .modal-card {
@@ -210,11 +322,14 @@
   </div>
 
   <div class="card">
-    <input id="guessInput" type="number" placeholder="Guess a number" />
+    <input id="guessInput" type="number" inputmode="numeric" placeholder="Guess a number" />
     <button id="guessBtn">Guess</button>
     <div class="feedback" id="feedback"></div>
-    <div class="guess-count" id="guessCount">0 / 7 guesses</div>
-    <div class="tip" id="tipText">Tip: Start near the middle.</div>
+    <div class="toast" id="toast"></div>
+    <div class="guess-count" id="guessCount">0 / 7 guesses used</div>
+    <div class="tip" id="tipText">
+      Narrow the bar to find today's number.
+    </div>
 
     <div class="bar-wrap">
       <div class="bar-labels">
@@ -223,6 +338,8 @@
       </div>
       <div class="bar" id="bar">
         <div class="bar-fill" id="barFill"></div>
+        <span class="bar-handle left"></span>
+        <span class="bar-handle right"></span>
       </div>
     </div>
   </div>
@@ -265,37 +382,105 @@ function getEasternDateParts() {
 /* ---------- DAILY NUMBER ---------- */
 const { year, month, day } = getEasternDateParts();
 const todayKey = `${year}-${month}-${day}`;
+
 function seededNumber(seed) {
-  let h = 0;
-  for (let c of seed) h = Math.imul(31, h) + c.charCodeAt(0);
-  return Math.abs(h % 10000) + 1;
+  // Hash the seed string into a 32-bit integer
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+
+  // Mulberry32 PRNG (deterministic, decorrelated)
+  function mulberry32(a) {
+    return function () {
+      let t = (a += 0x6D2B79F5);
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  const rand = mulberry32(h)();
+  return Math.floor(rand * MAX_RANGE) + 1;
 }
+
+const MAX_GUESSES = 7;
+const MIN_RANGE = 1;
+const MAX_RANGE = 10000;
+
 const secret = seededNumber(todayKey);
 
+/* ---------- DEMO STATE ---------- */
+let demoMode = localStorage.getItem("narroHasPlayed") !== "true";
+
 /* ---------- STATE ---------- */
-let min = 1, max = 10000;
+let min = MIN_RANGE, max = MAX_RANGE;
 let guesses = [];
 let gameOver = false;
 let lifelineUsed = false;
 let tipShown = false;
 
+/* ---------- HAPTICS ---------- */
+function haptic(pattern) {
+  if ("vibrate" in navigator) {
+    navigator.vibrate(pattern);
+  }
+}
+
 /* ---------- ELEMENTS ---------- */
 const input = guessInput;
 const btn = guessBtn;
+input.addEventListener("focus", () => {
+  input.select();
+});
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    if (!btn.disabled) {
+      btn.click();
+    }
+  }
+});
+
 const feedback = document.getElementById("feedback");
 const barFill = document.getElementById("barFill");
 const bar = document.getElementById("bar");
 const tipText = document.getElementById("tipText");
+const toast = document.getElementById("toast");
+
+if (demoMode) {
+  input.disabled = true;
+  btn.disabled = true;
+}
+
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.style.opacity = 1;
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => {
+    toast.style.opacity = 0;
+  }, 1600);
+}
 
 /* ---------- SENTIMENT ---------- */
 function sentiment(guess) {
-  const range = max - min + 1;
-  const delta = Math.abs(secret - guess);
-  const pct = delta / range;
-  if (pct > 0.6) return "Cool";
-  if (pct > 0.35) return "Cool";
-  if (pct > 0.15) return "Warm";
-  return "Hot";
+  const absoluteDelta = Math.abs(secret - guess);
+
+  // Absolute, ultra-rare tier
+  if (absoluteDelta <= 10) {
+    return "Right there";
+  }
+
+  // Relative tiers
+  const range = max - min;
+  const relativeCloseness = 1 - (absoluteDelta / range);
+
+  if (relativeCloseness >= 0.72) return "Very warm";
+  if (relativeCloseness >= 0.50) return "Warm";
+  if (relativeCloseness >= 0.28) return "Cool";
+  return "Cold";
 }
 
 /* ---------- INPUT RANGE ---------- */
@@ -306,59 +491,158 @@ function syncInputRange() {
 
 /* ---------- BAR ---------- */
 function updateBar() {
-  const left = ((min - 1) / 10000) * 100;
-  const width = ((max - min + 1) / 10000) * 100;
+  min = Math.max(MIN_RANGE, Math.min(min, max));
+  max = Math.min(MAX_RANGE, Math.max(max, min));
+
+  const left = ((min - 1) / MAX_RANGE) * 100;
+  const width = ((max - min + 1) / MAX_RANGE) * 100;
+
   barFill.style.left = left + "%";
   barFill.style.width = width + "%";
+
+  /* expose geometry for handles (visual only) */
+  bar.style.setProperty("--fill-left", left + "%");
+  bar.style.setProperty("--fill-width", width + "%");
   minLabel.textContent = min;
   maxLabel.textContent = max;
 }
 
-/* ---------- GUESS ---------- */
-btn.onclick = () => {
-  if (gameOver) return;
+function resolveDemoGuess(g) {
+  feedback.style.opacity = 0;
 
-  const g = Number(input.value);
-  if (!g || g < min || g > max) return;
+  // Slow, gentle bar animation for demo only
+  barFill.style.transition = "width 0.9s ease";
 
-  if (!tipShown) { tipText.style.display = "none"; tipShown = true; }
+  // Initial orienting pause
+  setTimeout(() => {
+    feedback.textContent = "Each guess narrows the range.";
+    feedback.style.opacity = 1;
 
-  guesses.push(g);
-  input.value = "";
-  input.focus();
-
-  // Only update sentiment if NOT the last guess when losing
-  if (!(guesses.length === 7 && g !== secret)) {
-    feedback.style.opacity = 0;
-    feedback.style.transform = "scale(0.95)";
+    // Reading dwell
     setTimeout(() => {
-      feedback.textContent = sentiment(g);
-      feedback.style.opacity = 1;
-      feedback.style.transform = "scale(1)";
-    }, 50);
+      // Soft acknowledgement beat
+      setTimeout(() => {
+        if (g < secret) {
+          min = g + 1;
+        } else {
+          max = g - 1;
+        }
+
+        updateBar();
+        syncInputRange();
+
+        // Restore normal bar behavior after demo motion
+        setTimeout(() => {
+          barFill.style.transition = "";
+        }, 950);
+      }, 350);
+    }, 1200);
+  }, 350);
+}
+
+function resolveGuess(g) {
+  guesses.push(g);
+  haptic(10);
+
+  // Terminal states
+  if (g === secret) {
+    win();
+    return;
   }
 
-  if (g === secret) { win(); return; }
-  if (g < secret) min = g + 1; else max = g - 1;
+  if (guesses.length === MAX_GUESSES) {
+    lose();
+    return;
+  }
+
+  // Update range
+  if (g < secret) {
+    min = g + 1;
+  } else {
+    max = g - 1;
+  }
 
   updateBar();
   syncInputRange();
-  guessCount.textContent = `${guesses.length} / 7 guesses`;
+  updateGuessUI(g);
+}
 
-  if (guesses.length === 6 && !lifelineUsed) bar.classList.add("hint-ready");
-  if (guesses.length === 7) lose();
+function updateGuessUI(g) {
+  feedback.style.opacity = 0;
+  feedback.style.transform = "scale(0.95)";
+
+  setTimeout(() => {
+    const s = sentiment(g);
+
+    feedback.classList.remove("right-there");
+    feedback.textContent = s;
+
+    if (s === "Right there") {
+      feedback.classList.add("right-there");
+}
+
+      feedback.style.opacity = 1;
+      feedback.style.transform = "scale(1)";
+      }, 50);
+
+  const remaining = MAX_GUESSES - guesses.length;
+
+  if (remaining > 1) {
+    guessCount.textContent = `${remaining} guesses left`;
+    guessCount.style.color = "var(--muted)";
+  } else if (remaining === 1) {
+    guessCount.textContent = "Final guess — make it count!";
+    guessCount.style.color = "var(--accent)";
+  } else {
+    guessCount.textContent = "";
+  }
+
+  if (guesses.length === MAX_GUESSES - 1 && !lifelineUsed) {
+    bar.classList.add("hint-ready");
+    showToast("Tap the bar for a hint");
+  }
+}
+
+/* ---------- GUESS ---------- */
+btn.onclick = () => {
+  if (demoMode) return;
+  if (gameOver) return;
+
+  const g = Number(input.value);
+
+  if (Number.isNaN(g) || g < min || g > max) {
+    showToast("Guess a number within the current range");
+    return;
+  }
+
+  if (!tipShown) {
+    tipText.style.opacity = 0;
+    tipShown = true;
+  }
+
+  input.value = "";
+  input.focus();
+
+  if (demoMode) {
+    resolveDemoGuess(g);
+    return;
+  }
+
+  resolveGuess(g);
+
 };
 
 /* ---------- LIFELINE ---------- */
 bar.onclick = () => {
   if (lifelineUsed || gameOver) return;
-  if (guesses.length < 6) return;
+  if (guesses.length < MAX_GUESSES - 1) return; // lineline only after second to last guess
 
   const span = max - min;
   min += Math.floor(span * 0.15);
   max -= Math.floor(span * 0.15);
 
   lifelineUsed = true;
+  haptic([8, 40, 8]);
 
   bar.classList.remove("hint-ready");
   bar.classList.add("hinted");
@@ -370,30 +654,55 @@ bar.onclick = () => {
 /* ---------- END STATES ---------- */
 function win() {
   gameOver = true;
-  feedback.textContent = "You got it!";
+
+  guessCount.textContent = ""; // clear final-guess prompt
+
+  bar.classList.remove("hinted", "hint-ready");
+
+  feedback.textContent = "🎯 You got it!";
+  feedback.style.fontSize = "1.25rem";
+  feedback.style.fontWeight = "600";
+
+  input.disabled = true;
   btn.disabled = true;
   shareBtn.disabled = false;
-  tipText.style.display = "none";
+
+  tipText.textContent = "Come back tomorrow for a new Narro";
+  tipText.style.display = "block";
+
   launchConfetti();
+  haptic([20, 60, 20]);
   updateStats(true);
+
+  bar.offsetWidth; // force reflow so animation always triggers
   bar.classList.add("win");
   barFill.classList.add("win");
 }
 
 function lose() {
   gameOver = true;
-  feedback.textContent = "Out of guesses.";
+
+  guessCount.textContent = ""; // clear final-guess prompt
+
+  feedback.textContent = "Try again tomorrow!";
+  haptic(15);
+  feedback.style.fontSize = "1.2rem";
+  feedback.style.fontWeight = "600";
 
   const closure = document.createElement("div");
   closure.style.color = "#9aa0c3";
-  closure.style.fontSize = "0.9rem";
-  closure.style.marginTop = "4px";
+  closure.style.fontSize = "0.95rem";
+  closure.style.marginTop = "6px";
   closure.textContent = `Today’s Narro was ${secret}.`;
   feedback.appendChild(closure);
 
-  tipText.style.display = "none";
+  input.disabled = true;
   btn.disabled = true;
   shareBtn.disabled = false;
+
+  tipText.textContent = "Try again tomorrow";
+  tipText.style.display = "block";
+
   updateStats(false);
 }
 
@@ -451,8 +760,17 @@ function generateShareText() {
 }
 shareBtn.onclick = async () => {
   const text = generateShareText();
-  if(navigator.share) await navigator.share({title:"Narro", text});
-  else { await navigator.clipboard.writeText(text); alert("Copied to clipboard"); }
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: "Narro", text });
+    } else {
+      await navigator.clipboard.writeText(text);
+      alert("Copied to clipboard");
+    }
+  } catch {
+  showToast("Couldn’t share — copied instead");
+}
+
 };
 
 /* ---------- COUNTDOWN ---------- */
@@ -465,11 +783,45 @@ setInterval(()=>{
   const h = Math.floor(diff/36e5);
   const m = Math.floor((diff%36e5)/6e4);
   const s = Math.floor((diff%6e4)/1000);
-  countdown.innerHTML=`Next Narro in ${h}:<span class="colon-blink">:</span>${m.toString().padStart(2,"0")}:${s.toString().padStart(2,"0")}`;
+  countdown.innerHTML =
+  `Next Narro in ${h}<span class="colon-blink">:</span>` +
+  `${m.toString().padStart(2,"0")}<span class="colon-blink">:</span>` +
+  `${s.toString().padStart(2,"0")}`;
+
 },1000);
 
 syncInputRange();
 updateBar();
+
+if (demoMode) {
+  const midpoint = Math.floor((MIN_RANGE + MAX_RANGE) / 2);
+
+  // Small delay before demo starts
+  setTimeout(() => {
+    resolveDemoGuess(midpoint);
+
+    // Let the bar finish and settle
+    setTimeout(() => {
+      feedback.textContent = "Your turn.";
+
+      // Quiet pause before enabling interaction
+      setTimeout(() => {
+        demoMode = false;
+        localStorage.setItem("narroHasPlayed", "true");
+
+        tipText.style.opacity = 0;
+        input.disabled = false;
+        btn.disabled = false;
+
+        input.value = midpoint;
+        input.focus();
+      }, 600);
+
+    }, 900);
+
+  }, 400);
+}
+
 </script>
 </body>
 </html>
