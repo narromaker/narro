@@ -26,27 +26,30 @@
     --hinted: #7db7ff;
     --win: hsl(45,100%,50%);
     --win-glow: hsla(45,100%,60%,0.6);
+    --vh: 100vh; /* new property to track viewport height */
   }
 
   * { box-sizing: border-box; }
 
-  body {
-    margin: 0;
-    min-height: 100vh;
-    background: var(--bg);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont;
-    color: var(--text);
-  }
+body {
+  margin: 0;
+  min-height: calc(var(--vh, 100vh));
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+  color: var(--text);
+  overflow: hidden; /* prevent window scrolling */
+}
 
-  .app {
-    width: 100%;
-    max-width: 420px;
-    padding: 20px;
-    text-align: center;
-  }
+.app {
+  max-height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 
   h1 { margin: 0; font-size: 2rem; }
 
@@ -512,52 +515,42 @@ const bar = document.getElementById("bar");
 const tipText = document.getElementById("tipText");
 const toast = document.getElementById("toast");
 
-// ---------- MOBILE AUTO SCROLL ----------
+// ---------- MOBILE VH AND AUTO SCROLL ----------
 function isMobile() {
   return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
+// Update --vh dynamically
+function updateVh() {
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
+
+window.addEventListener('resize', updateVh);
+window.visualViewport?.addEventListener('resize', updateVh);
+updateVh();
+
+// Auto-scroll input into center on focus
 input.addEventListener("focus", () => {
   input.select();
+  if (!isMobile()) return;
 
-  if (!isMobile()) return; // Only apply on mobile
-
-  // Delay slightly to let keyboard appear
   setTimeout(() => {
-    const appRect = document.querySelector(".app").getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-
-    // Scroll so the bottom of the app is visible
-    const spaceBelow = viewportHeight - appRect.bottom;
-
-    if (spaceBelow < 20) { // small buffer
-      const scrollAmount = 20 - spaceBelow;
-      window.scrollBy({ top: scrollAmount, behavior: "smooth" });
-    }
-  }, 250); // slightly faster than before
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 100);
 });
 
-// Smoothly restore scroll on blur (optional)
+// Restore scroll on blur
 input.addEventListener("blur", () => {
   if (!isMobile()) return;
   setTimeout(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.querySelector('.app').scrollTop = 0;
   }, 150);
 });
 
 if (demoMode) {
   input.disabled = true;
   btn.disabled = true;
-}
-
-
-function showToast(msg) {
-  toast.textContent = msg;
-  toast.style.opacity = 1;
-  clearTimeout(showToast._t);
-  showToast._t = setTimeout(() => {
-    toast.style.opacity = 0;
-  }, 1600);
 }
 
 /* ---------- SENTIMENT ---------- */
@@ -1002,3 +995,4 @@ if (demoMode) {
 </script>
 </body>
 </html>
+
