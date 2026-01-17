@@ -26,36 +26,27 @@
     --hinted: #7db7ff;
     --win: hsl(45,100%,50%);
     --win-glow: hsla(45,100%,60%,0.6);
-    --vh: 100vh; /* new property to track viewport height */
   }
 
   * { box-sizing: border-box; }
 
-body {
-  margin: 0;
-  min-height: calc(var(--vh, 100vh));
-  background: var(--bg);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont;
-  color: var(--text);
-  overflow: hidden; /* prevent window scrolling */
-}
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont;
+    color: var(--text);
+  }
 
-.app {
-  min-height: calc(var(--vh, 100vh) - 20px); /* allow slight padding from top/bottom */
-  max-width: 420px;
-  width: 100%;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start; /* let content start at top */
-  align-items: center;
-  overflow-y: auto; /* scroll only if content exceeds viewport */
-  box-sizing: border-box;
-}
-
+  .app {
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+    text-align: center;
+  }
 
   h1 { margin: 0; font-size: 2rem; }
 
@@ -521,42 +512,52 @@ const bar = document.getElementById("bar");
 const tipText = document.getElementById("tipText");
 const toast = document.getElementById("toast");
 
-// ---------- MOBILE VH AND AUTO SCROLL ----------
+// ---------- MOBILE AUTO SCROLL ----------
 function isMobile() {
   return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
-// Update --vh dynamically
-function updateVh() {
-  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  document.documentElement.style.setProperty('--vh', `${vh}px`);
-}
-
-window.addEventListener('resize', updateVh);
-window.visualViewport?.addEventListener('resize', updateVh);
-updateVh();
-
-// Auto-scroll input into center on focus
 input.addEventListener("focus", () => {
   input.select();
-  if (!isMobile()) return;
 
+  if (!isMobile()) return; // Only apply on mobile
+
+  // Delay slightly to let keyboard appear
   setTimeout(() => {
-    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, 100);
+    const appRect = document.querySelector(".app").getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+
+    // Scroll so the bottom of the app is visible
+    const spaceBelow = viewportHeight - appRect.bottom;
+
+    if (spaceBelow < 20) { // small buffer
+      const scrollAmount = 20 - spaceBelow;
+      window.scrollBy({ top: scrollAmount, behavior: "smooth" });
+    }
+  }, 250); // slightly faster than before
 });
 
-// Restore scroll on blur
+// Smoothly restore scroll on blur (optional)
 input.addEventListener("blur", () => {
   if (!isMobile()) return;
   setTimeout(() => {
-    document.querySelector('.app').scrollTop = 0;
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, 150);
 });
 
 if (demoMode) {
   input.disabled = true;
   btn.disabled = true;
+}
+
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.style.opacity = 1;
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => {
+    toast.style.opacity = 0;
+  }, 1600);
 }
 
 /* ---------- SENTIMENT ---------- */
