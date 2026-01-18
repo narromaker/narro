@@ -328,6 +328,7 @@
 <div class="app">
   <div class="top-row">
     <h1>Narro</h1>
+    <div id="streak" style="color: var(--accent); font-weight:600;"></div>
     <div class="stats-btn" id="statsBtn">ⓘ</div>
   </div>
 
@@ -823,7 +824,34 @@ function win() {
 
   launchConfetti();
   haptic([20, 60, 20]);
-  updateStats(true);
+
+  updateStats(true);   
+
+  // ---------------- WIN STREAK ----------------
+  // Compute yesterday in Eastern Time
+  const etNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const etYesterday = new Date(etNow);
+  etYesterday.setDate(etYesterday.getDate() - 1);
+  const yesterdayKey = `${etYesterday.getFullYear()}-${String(etYesterday.getMonth()+1).padStart(2,"0")}-${String(etYesterday.getDate()).padStart(2,"0")}`;
+
+  // Previous streak value
+  const prevStreak = Number(localStorage.getItem("narroStreakPrev")) || 0;
+
+  // Increment streak if player won yesterday too
+  let streak;
+  if (localStorage.getItem("narroLastPlayed") === yesterdayKey) {
+    streak = prevStreak + 1;
+  } else {
+    streak = 1; // reset if missed a day
+  }
+
+  // Store streak and last played date
+  localStorage.setItem("narroStreakPrev", streak);
+  localStorage.setItem("narroLastPlayed", todayKey);
+
+  // Display streak in top row
+  const streakEl = document.getElementById("streak");
+  if (streakEl) streakEl.textContent = `🔥 Streak: ${streak}`;
 
   bar.offsetWidth; // force reflow so animation always triggers
   bar.classList.add("win");
@@ -924,6 +952,10 @@ statsBtn.onclick = () => {
     ? "Best: " + stats.best
     : "";
 };
+
+/* ---------- STREAK ---------- */
+const streakKey = `narroStreak-${todayKey}`;
+let streak = Number(localStorage.getItem("narroStreakPrev")) || 0;
 
 /* ---------- SHARE ---------- */
 function generateShareText() {
@@ -1052,4 +1084,3 @@ if (demoMode) {
 </script>
 </body>
 </html>
-
