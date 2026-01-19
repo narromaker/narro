@@ -788,11 +788,13 @@ bar.onclick = () => {
   let newMin = min + shrink;
   let newMax = max - shrink;
 
-  // Clamp so secret is always included
-  min = Math.max(newMin, min);
-  max = Math.min(newMax, max);
-  if (secret < min) min = secret;
-  if (secret > max) max = secret;
+  // Ensure the secret is strictly inside the range
+  newMin = Math.min(newMin, secret - 1);
+  newMax = Math.max(newMax, secret + 1);
+
+  // Apply safely
+  min = newMin;
+  max = newMax;
 
   lifelineUsed = true;
   lifelineGuessIndex = guesses.length;
