@@ -640,35 +640,80 @@ function updateBar() {
 function resolveDemoGuess(g) {
   feedback.style.opacity = 0;
 
-  // Slow, gentle bar animation for demo only
-  barFill.style.transition = "width 0.9s ease";
+  // Demo-only slow animation
+  barFill.style.transition = "left 1.2s ease, width 1.2s ease";
 
-  // Initial orienting pause
+  // Entry pause
   setTimeout(() => {
+    // Line 1
     feedback.textContent = "Each guess narrows the range.";
     feedback.style.opacity = 1;
 
-    // Reading dwell
+    // Dwell
     setTimeout(() => {
-      // Soft acknowledgement beat
+      feedback.style.opacity = 0;
+
+      // Line 2
       setTimeout(() => {
-        // Only shrink if the guess is NOT exactly the secret
-        if (g < secret) {
-          min = g + 1;
-        } else if (g > secret) {
-          max = g - 1;
-        }
+        feedback.textContent = "Use the bar to track your progress.";
+        feedback.style.opacity = 1;
 
-        updateBar();
-        syncInputRange();
-
-        // Restore normal bar behavior after demo motion
+        // Dwell
         setTimeout(() => {
-          barFill.style.transition = "";
-        }, 950);
-      }, 350);
-    }, 1200);
-  }, 350);
+          // Apply demo range change
+          if (g < secret) {
+            min = g + 1;
+          } else if (g > secret) {
+            max = g - 1;
+          }
+
+          updateBar();
+          syncInputRange();
+
+          // Wait for bar motion + settle
+          setTimeout(() => {
+            feedback.style.opacity = 0;
+
+            // Line 3
+            setTimeout(() => {
+              feedback.textContent = "The numbers update to your new range.";
+              feedback.style.opacity = 1;
+
+              // Final dwell
+              setTimeout(() => {
+                feedback.style.opacity = 0;
+
+                // Handoff
+                setTimeout(() => {
+                  feedback.textContent = "Your turn.";
+                  feedback.style.opacity = 1;
+
+                  setTimeout(() => {
+                    demoMode = false;
+                    localStorage.setItem("narroSeenDemo", "true");
+
+                    tipText.style.opacity = 0;
+                    input.disabled = false;
+                    btn.disabled = false;
+
+                    input.value = g;
+                    input.focus();
+
+                    // Restore normal bar behavior
+                    barFill.style.transition = "";
+                  }, 700);
+
+                }, 300);
+
+              }, 1000);
+
+            }, 300);
+          }, 1550);
+
+        }, 900);
+      }, 250);
+    }, 800);
+  }, 400);
 }
 
 function resolveGuess(g) {
@@ -748,7 +793,6 @@ function updateGuessUI(g) {
 
 /* ---------- GUESS ---------- */
 btn.onclick = () => {
-  if (demoMode) return;
   if (gameOver) return;
 
   const g = Number(input.value);
@@ -759,9 +803,9 @@ btn.onclick = () => {
   }
 
   if (!tipShown && !gameOver) {
-  tipText.style.opacity = 0;
-  tipShown = true;
-}
+    tipText.style.opacity = 0;
+    tipShown = true;
+  }
 
   input.value = "";
   input.focus();
@@ -772,7 +816,6 @@ btn.onclick = () => {
   }
 
   resolveGuess(g);
-
 };
 
 /* ---------- LIFELINE ---------- */
@@ -1071,29 +1114,9 @@ if (demoMode) {
   const midpoint = Math.floor((MIN_RANGE + MAX_RANGE) / 2);
 
   // Small delay before demo starts
-  setTimeout(() => {
-    resolveDemoGuess(midpoint);
-
-    // Let the bar finish and settle
-    setTimeout(() => {
-      feedback.textContent = "Your turn.";
-
-      // Quiet pause before enabling interaction
-      setTimeout(() => {
-        demoMode = false;
-        localStorage.setItem("narroSeenDemo", "true");
-
-        tipText.style.opacity = 0;
-        input.disabled = false;
-        btn.disabled = false;
-
-        input.value = midpoint;
-        input.focus();
-      }, 600);
-
-    }, 900);
-
-  }, 400);
+setTimeout(() => {
+  resolveDemoGuess(midpoint);
+}, 400);
 }
 
 </script>
