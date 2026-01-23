@@ -154,15 +154,43 @@
     transition: opacity 0.3s ease;
   }
 
+  .tip.hint {
+  color: #ff5a5a;
+  font-weight: 600;
+}
+
+.tip.confirmation {
+  animation: hintConfirm 0.45s ease;
+}
+
+@keyframes hintConfirm {
+  0% {
+    transform: translateY(2px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+  
   .bar-wrap { margin-top: 20px; }
 
   .bar-labels {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.8rem;
-    color: var(--muted);
-    transition: all 0.3s ease;
-  }
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--muted);
+  transition: all 0.3s ease;
+}
+
+/* New class for outside labels */
+.bar-labels.outside span {
+  position: absolute;
+  top: -1.2em; /* move above the bar */
+  font-size: 0.75rem;
+}
 
   .bar-label-highlight {
     color: var(--accent);
@@ -222,6 +250,18 @@
     0 0 22px rgba(108,242,194,0.65);
 }
 
+/* Hint collapse animation */
+.bar-fill.hint-animating {
+  transition:
+    left 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.18s ease,
+    filter 0.18s ease;
+
+  transform: scaleY(1.25);
+  filter: brightness(1.35);
+}
+
   .bar-handle {
   opacity: 0.55;
 }
@@ -236,7 +276,7 @@
     0%,100% { box-shadow: 0 0 10px rgba(125,183,255,0.6); }
     50% { box-shadow: 0 0 18px rgba(125,183,255,0.8); }
   }
-
+  
   .bar.win {
   background: linear-gradient(
     to bottom,
@@ -326,7 +366,7 @@
   100% { filter: brightness(1); }
 }
 
-.bar:not(.win):not(.hinted) .bar-fill {
+.bar:not(.win):not(.hinted) .bar-fill:not(.hint-animating) {
   animation: barIdleShimmer 5s ease-in-out infinite;
 }
 
@@ -461,6 +501,7 @@ let gameOver = false;
 let lifelineUsed = false;
 let lifelineGuessIndex = null;
 let tipShown = false;
+let hintAnimating = false;
 
 /* ---------- ELEMENTS ---------- */
 const input = document.getElementById("guessInput");
@@ -724,7 +765,7 @@ function evaluateSentiment(prevMin, prevMax) {
 
 /* ---------- BAR ---------- */
 function updateBar() {
-  // Clamp min/max to prevent negative width
+  // Clamp min/max to valid range
   min = Math.min(Math.max(MIN_RANGE, min), MAX_RANGE);
   max = Math.min(Math.max(min, max), MAX_RANGE); // ensure max >= min
 
@@ -733,38 +774,78 @@ function updateBar() {
 
   const slow = isLateGuessCount();
 
+// IMPORTANT: do not override transitions during hint animation
+if (!hintAnimating) {
   barFill.style.transition = slow
     ? "left 0.6s ease, width 0.6s ease"
     : "left 0.35s ease, width 0.35s ease";
+}
 
   barFill.style.left = left + "%";
   barFill.style.width = width + "%";
 
   // Remove brackets early to avoid central bias
-if (remainingRange() <= 250) {
-  bar.classList.add("no-brackets");
-} else {
-  bar.classList.remove("no-brackets");
-}
+  if (remainingRange() <= 250) {
+    bar.classList.add("no-brackets");
+  } else {
+    bar.classList.remove("no-brackets");
+  }
 
-  // expose geometry for handles (visual only)
-  bar.style.setProperty("--fill-left", left + "%");
-  bar.style.setProperty("--fill-width", Math.max(width, 0) + "%"); // never negative
+  // Ensure bar is relative for absolute positioning inside
+  bar.style.position = "relative";
 
-  minLabel.textContent = min;
-  maxLabel.textContent = max;
+  // ---------- Smart label display ----------
+  const rangeThreshold = 25; // switch to centered label if range is very small
+  const remaining = remainingRange();
+
+  let centerLabel = bar.querySelector(".center-range-label");
+  if (remaining > rangeThreshold) {
+    // Standard labels at edges
+    minLabel.style.display = "inline";
+    maxLabel.style.display = "inline";
+    minLabel.textContent = min;
+    maxLabel.textContent = max;
+
+    // Remove center label if it exists
+    if (centerLabel) centerLabel.remove();
+  } else {
+    // Hide edge labels
+    minLabel.style.display = "none";
+    maxLabel.style.display = "none";
+
+    // Create or update centered label above the bar
+    if (!centerLabel) {
+      centerLabel = document.createElement("div");
+      centerLabel.className = "center-range-label";
+      centerLabel.style.position = "absolute";
+      centerLabel.style.bottom = "100%"; // directly above bar
+      centerLabel.style.left = "50%";
+      centerLabel.style.transform = "translateX(-50%)";
+      centerLabel.style.color = "var(--accent)";
+      centerLabel.style.fontSize = "0.9rem";
+      centerLabel.style.fontWeight = "600";
+      centerLabel.style.pointerEvents = "none";
+      centerLabel.style.marginBottom = "4px"; // small gap
+      bar.appendChild(centerLabel);
+    }
+    centerLabel.textContent = `Remaining: ${min}–${max}`;
+  }
 
   // Late-game ambiguity: avoid false precision
-  if (remainingRange() <= 25) {
+  if (remaining <= 25) {
     bar.classList.add("ambiguous");
   } else {
     bar.classList.remove("ambiguous");
   }
 
+  // Auto-resolve if min = max
   if (!gameOver && min === max) {
     resolveGuess(min);
-}
+  }
 
+  // Expose geometry for handles (visual only)
+  bar.style.setProperty("--fill-left", left + "%");
+  bar.style.setProperty("--fill-width", Math.max(width, 0) + "%"); // never negative
 }
 
 function resolveDemoGuess(g) {
@@ -900,15 +981,20 @@ function updateGuessUI() {
   }
 
   if (
-    !gameOver &&
-    guesses.length === MAX_GUESSES - 2 &&
-    !lifelineUsed
-  ) {
-    bar.classList.add("hint-ready");
-    showToast("Tap the bar for a hint");
-  } else {
-    bar.classList.remove("hint-ready");
-  }
+  !gameOver &&
+  guesses.length === MAX_GUESSES - 2 &&
+  !lifelineUsed
+) {
+  bar.classList.add("hint-ready");
+
+tipText.textContent = "Tap the bar for a hint";
+tipText.classList.add("hint");
+tipText.style.display = "block";
+tipText.style.opacity = "1";
+
+} else {
+  bar.classList.remove("hint-ready");
+}
 }
 
 function microReward(type) {
@@ -935,9 +1021,8 @@ btn.onclick = () => {
     return;
   }
 
-  if (!tipShown && !gameOver) {
+  if (!gameOver && guesses.length === MAX_GUESSES - 2) {
   tipText.style.opacity = 0;
-  tipShown = true;
 }
 
   input.value = "";
@@ -995,16 +1080,39 @@ bar.onclick = () => {
   max = max - removeUpper;
 
   lifelineUsed = true;
-  lifelineGuessIndex = guesses.length;
-  haptic([8, 40, 8]);
+lifelineGuessIndex = guesses.length;
 
-  bar.classList.remove("hint-ready");
-  bar.classList.add("hinted");
+/* Replace hint instruction with confirmation */
+tipText.classList.remove("hint", "confirmation");
+tipText.style.opacity = "0";
 
-  updateBar();
-  syncInputRange();
+tipText.textContent = "Range reduced — that one was on us";
 
-  input.value = Math.min(max, Math.max(min, Number(input.value) || min));
+/* Force reflow so animation can restart */
+tipText.offsetHeight;
+
+tipText.classList.add("confirmation");
+tipText.style.opacity = "1";
+
+haptic([8, 40, 8]);
+
+bar.classList.remove("hint-ready");
+bar.classList.add("hinted");
+
+hintAnimating = true;
+barFill.classList.add("hint-animating");
+
+updateBar();
+
+setTimeout(() => {
+  barFill.classList.remove("hint-animating");
+  hintAnimating = false;
+}, 360);
+
+
+syncInputRange();
+
+input.value = Math.min(max, Math.max(min, Number(input.value) || min));
 };
 
 /* ---------- END STATES ---------- */
