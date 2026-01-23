@@ -518,6 +518,8 @@ const statsGames = document.getElementById("statsGames");
 const statsWins = document.getElementById("statsWins");
 const statsAvg = document.getElementById("statsAvg");
 const statsBest = document.getElementById("statsBest");
+const minLabel = document.getElementById("minLabel");
+const maxLabel = document.getElementById("maxLabel");
 
 /* ---------- INPUT EVENTS ---------- */
 input.addEventListener("blur", () => {
@@ -794,49 +796,16 @@ if (!hintAnimating) {
   // Ensure bar is relative for absolute positioning inside
   bar.style.position = "relative";
 
-  // ---------- Smart label display ----------
-  const rangeThreshold = 25; // switch to centered label if range is very small
-  const remaining = remainingRange();
+  // ---------- Always-visible range labels ----------
+  minLabel.style.display = "inline";
+  maxLabel.style.display = "inline";
 
-  let centerLabel = bar.querySelector(".center-range-label");
-  if (remaining > rangeThreshold) {
-    // Standard labels at edges
-    minLabel.style.display = "inline";
-    maxLabel.style.display = "inline";
-    minLabel.textContent = min;
-    maxLabel.textContent = max;
+  minLabel.textContent = min;
+  maxLabel.textContent = max;
 
-    // Remove center label if it exists
-    if (centerLabel) centerLabel.remove();
-  } else {
-    // Hide edge labels
-    minLabel.style.display = "none";
-    maxLabel.style.display = "none";
-
-    // Create or update centered label above the bar
-    if (!centerLabel) {
-      centerLabel = document.createElement("div");
-      centerLabel.className = "center-range-label";
-      centerLabel.style.position = "absolute";
-      centerLabel.style.bottom = "100%"; // directly above bar
-      centerLabel.style.left = "50%";
-      centerLabel.style.transform = "translateX(-50%)";
-      centerLabel.style.color = "var(--accent)";
-      centerLabel.style.fontSize = "0.9rem";
-      centerLabel.style.fontWeight = "600";
-      centerLabel.style.pointerEvents = "none";
-      centerLabel.style.marginBottom = "4px"; // small gap
-      bar.appendChild(centerLabel);
-    }
-    centerLabel.textContent = `Remaining: ${min}–${max}`;
-  }
-
-  // Late-game ambiguity: avoid false precision
-  if (remaining <= 25) {
-    bar.classList.add("ambiguous");
-  } else {
-    bar.classList.remove("ambiguous");
-  }
+  // Remove any legacy center label if it exists
+  const centerLabel = bar.querySelector(".center-range-label");
+  if (centerLabel) centerLabel.remove();
 
   // Auto-resolve if min = max
   if (!gameOver && min === max) {
