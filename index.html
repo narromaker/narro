@@ -121,7 +121,7 @@
     transform-origin: center;
   }
 
-  .feedback.right-there {
+  .feedback.critical {
   letter-spacing: 0.08em;
   animation: breathHold 1.4s ease-in-out infinite;
 }
@@ -254,6 +254,13 @@
 
   .bar.win .bar-handle {
   opacity: 0;
+}
+
+  .bar.no-brackets .bar-handle {
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
 }
 
   .bar-handle {
@@ -456,14 +463,20 @@ let lifelineGuessIndex = null;
 let tipShown = false;
 
 /* ---------- ELEMENTS ---------- */
-const input = guessInput;
-const btn = guessBtn;
+const input = document.getElementById("guessInput");
+const btn = document.getElementById("guessBtn");
 const shareBtn = document.getElementById("shareBtn");
 const feedback = document.getElementById("feedback");
 const barFill = document.getElementById("barFill");
 const bar = document.getElementById("bar");
 const tipText = document.getElementById("tipText");
 const toast = document.getElementById("toast");
+const statsBtn = document.getElementById("statsBtn");
+const statsModal = document.getElementById("statsModal");
+const statsGames = document.getElementById("statsGames");
+const statsWins = document.getElementById("statsWins");
+const statsAvg = document.getElementById("statsAvg");
+const statsBest = document.getElementById("statsBest");
 
 /* ---------- INPUT EVENTS ---------- */
 input.addEventListener("blur", () => {
@@ -582,33 +595,131 @@ function showToast(msg) {
 }
 
 /* ---------- SENTIMENT ---------- */
-function sentiment(guess) {
-  const absoluteDelta = Math.abs(secret - guess);
+const sentimentState = {
+  inefficiencyShown: false,
+  compressionShown: false,
+  efficiencyShown: false,
+  stakesShown: false,
+  superCloseShown: false,
+  lastGuessHadSentiment: false
+};
 
-  // Absolute, ultra-rare tier
-  if (absoluteDelta <= 10) {
-    return "Right there";
-  }
+function remainingRange() {
+  return max - min + 1;
+}
 
-  // Relative tiers
-  const range = Math.max(max - min, 1); // avoid division by zero
-  const relativeCloseness = 1 - (absoluteDelta / range);
+function guessesRemaining() {
+  return MAX_GUESSES - guesses.length;
+}
 
-  if (relativeCloseness >= 0.72) return "Very warm";
-  if (relativeCloseness >= 0.50) return "Warm";
-  if (relativeCloseness >= 0.28) return "Cool";
-  return "Cold";
+function suppressSentiment() {
+  return (
+    demoMode ||
+    gameOver ||
+    sentimentState.lastGuessHadSentiment ||
+    sentimentState.superCloseShown
+  );
+}
+
+function emitSentiment(text, isCritical=false) {
+  feedback.style.opacity = 0;
+  setTimeout(() => {
+    feedback.textContent = text;
+    if (isCritical) feedback.classList.add("critical");
+    feedback.style.opacity = 1;
+  }, 100);
+  sentimentState.lastGuessHadSentiment = true;
+}
+
+function clearSentiment() {
+  feedback.style.opacity = 0;
+  setTimeout(() => {
+    feedback.textContent = "";
+    feedback.classList.remove("critical");
+    sentimentState.lastGuessHadSentiment = false;
+    feedback.style.opacity = 1;
+  }, 50);
 }
 
 /* ---------- GAME PHASE ---------- */
-function isLateGame() {
+function isEarlyGame() {
+  return guesses.length <= 2 && remainingRange() > 2000;
+}
+
+function isMidGame() {
+  return (
+    !isEarlyGame() &&
+    remainingRange() > 25 &&
+    guessesRemaining() > 2
+  );
+}
+
+function isLateGuessCount() {
   return guesses.length >= MAX_GUESSES - 2;
 }
+
+function isCriticalRange() {
+  return remainingRange() <= 25;
+}
+
 
 /* ---------- INPUT RANGE ---------- */
 function syncInputRange() {
   input.min = min;
   input.max = max;
+}
+
+/* ---------- RANDOMIZED CONTEXTUAL FEEDBACK ---------- */
+const feedbackPhrases = {
+  earlyInefficiency: ["That leaves a lot open","Hmm, wide swing there","Try to narrow it more next time"],
+  midCompression: ["Now you're narrowing!","Getting warmer!","Range is tightening"],
+  efficientCut: ["Nice cut!","Great reduction!","Efficient narrowing!"],
+  stakes: ["Pressure's on.","Last few chances!","Only a few guesses left!"],
+  superClose: ["Careful now"]
+};
+
+function pickPhrase(category) {
+  const arr = feedbackPhrases[category] || [];
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function evaluateSentiment(prevMin, prevMax) {
+  if (lifelineUsed && guesses.length === lifelineGuessIndex) return;
+  if (demoMode || gameOver || sentimentState.lastGuessHadSentiment || sentimentState.superCloseShown) return;
+
+  const prevRange = prevMax - prevMin + 1;
+  const newRange = max - min + 1;
+  const reduction = 1 - newRange / prevRange;
+
+  if (isEarlyGame() && !sentimentState.inefficiencyShown && reduction < 0.10) {
+    emitSentiment(pickPhrase("earlyInefficiency"));
+    sentimentState.inefficiencyShown = true;
+    return;
+  }
+
+  if (isMidGame() && !sentimentState.compressionShown && newRange <= 2000) {
+    emitSentiment(pickPhrase("midCompression"));
+    sentimentState.compressionShown = true;
+    return;
+  }
+
+  if (isMidGame() && !sentimentState.efficiencyShown && reduction >= 0.40) {
+    emitSentiment(pickPhrase("efficientCut"));
+    sentimentState.efficiencyShown = true;
+    return;
+  }
+
+  if (isMidGame() && !sentimentState.stakesShown && guessesRemaining() <= 3) {
+    emitSentiment(pickPhrase("stakes"));
+    sentimentState.stakesShown = true;
+    return;
+  }
+
+  if (isCriticalRange() && !sentimentState.superCloseShown && newRange <= 25) {
+    emitSentiment(pickPhrase("superClose"));
+    feedback.classList.add("critical");
+    sentimentState.superCloseShown = true;
+  }
 }
 
 /* ---------- BAR ---------- */
@@ -620,7 +731,7 @@ function updateBar() {
   const left = ((min - 1) / MAX_RANGE) * 100;
   const width = ((max - min + 1) / MAX_RANGE) * 100;
 
-  const slow = isLateGame();
+  const slow = isLateGuessCount();
 
   barFill.style.transition = slow
     ? "left 0.6s ease, width 0.6s ease"
@@ -629,166 +740,188 @@ function updateBar() {
   barFill.style.left = left + "%";
   barFill.style.width = width + "%";
 
+  // Remove brackets early to avoid central bias
+if (remainingRange() <= 250) {
+  bar.classList.add("no-brackets");
+} else {
+  bar.classList.remove("no-brackets");
+}
+
   // expose geometry for handles (visual only)
   bar.style.setProperty("--fill-left", left + "%");
   bar.style.setProperty("--fill-width", Math.max(width, 0) + "%"); // never negative
 
   minLabel.textContent = min;
   maxLabel.textContent = max;
+
+  // Late-game ambiguity: avoid false precision
+  if (remainingRange() <= 25) {
+    bar.classList.add("ambiguous");
+  } else {
+    bar.classList.remove("ambiguous");
+  }
+
+  if (!gameOver && min === max) {
+    resolveGuess(min);
+}
+
 }
 
 function resolveDemoGuess(g) {
   feedback.style.opacity = 0;
 
-  // Demo-only slow animation
-  barFill.style.transition = "left 1.2s ease, width 1.2s ease";
+  // Slow, gentle bar animation for demo only
+  barFill.style.transition = "width 0.9s ease";
 
-  // Entry pause
+  // Initial orienting pause
   setTimeout(() => {
-    // Line 1
     feedback.textContent = "Each guess narrows the range.";
     feedback.style.opacity = 1;
 
-    // Dwell
+    // Reading dwell
     setTimeout(() => {
-      feedback.style.opacity = 0;
-
-      // Line 2
+      // Soft acknowledgement beat
       setTimeout(() => {
-        feedback.textContent = "Use the bar to track your progress.";
-        feedback.style.opacity = 1;
+        // Only shrink if the guess is NOT exactly the secret
+        if (g < secret) {
+          min = g + 1;
+        } else if (g > secret) {
+          max = g - 1;
+        }
 
-        // Dwell
+        updateBar();
+        syncInputRange();
+
+        // Restore normal bar behavior after demo motion
         setTimeout(() => {
-          // Apply demo range change
-          if (g < secret) {
-            min = g + 1;
-          } else if (g > secret) {
-            max = g - 1;
-          }
-
-          updateBar();
-          syncInputRange();
-
-          // Wait for bar motion + settle
-          setTimeout(() => {
-            feedback.style.opacity = 0;
-
-            // Line 3
-            setTimeout(() => {
-              feedback.textContent = "The numbers update to your new range.";
-              feedback.style.opacity = 1;
-
-              // Final dwell
-              setTimeout(() => {
-                feedback.style.opacity = 0;
-
-                // Handoff
-                setTimeout(() => {
-                  feedback.textContent = "Your turn.";
-                  feedback.style.opacity = 1;
-
-                  setTimeout(() => {
-                    demoMode = false;
-                    localStorage.setItem("narroSeenDemo", "true");
-
-                    tipText.style.opacity = 0;
-                    input.disabled = false;
-                    btn.disabled = false;
-
-                    input.value = g;
-                    input.focus();
-
-                    // Restore normal bar behavior
-                    barFill.style.transition = "";
-                  }, 700);
-
-                }, 300);
-
-              }, 1000);
-
-            }, 300);
-          }, 1550);
-
-        }, 900);
-      }, 250);
-    }, 800);
-  }, 400);
+          barFill.style.transition = "";
+        }, 950);
+      }, 350);
+    }, 1200);
+  }, 350);
 }
 
 function resolveGuess(g) {
+  const prevMin = min;
+  const prevMax = max;
+  const prevRange = prevMax - prevMin + 1;
+
   guesses.push(g);
   haptic(10);
-  
-  // Terminal states
+
+  // --- 1. Check win/lose ---
   if (g === secret) {
     win();
+    updateGuessUI();
     return;
   }
 
   if (guesses.length === MAX_GUESSES) {
     lose();
+    updateGuessUI();
     return;
   }
 
-  // Update range safely
+  // --- 2. Clear previous feedback ---
+  clearSentiment();
+
+  // --- 3. Update range ---
   if (g < secret) {
     min = Math.min(Math.max(min, g + 1), MAX_RANGE);
   } else if (g > secret) {
     max = Math.max(Math.min(max, g - 1), MIN_RANGE);
   }
 
-  // Ensure min <= max
   if (min > max) min = max;
 
   updateBar();
   syncInputRange();
-  updateGuessUI(g);
-}
 
-function updateGuessUI(g) {
-  feedback.style.opacity = 0;
-  feedback.style.transform = "scale(0.95)";
+  // --- 4. Micro reward for efficient cut ---
+  const newRange = max - min + 1;
+  if (newRange / prevRange <= 0.6 && isMidGame()) microReward("efficient");
 
-  const feedbackDelay = isLateGame() ? 160 : 50;
+  // --- 5. Evaluate sentiment ---
+  if (!suppressSentiment()) {
+    let sentimentToShow = null;
+    let isCritical = false;
+    const reduction = 1 - newRange / prevRange;
 
-  setTimeout(() => {
-    const s = sentiment(g);
-
-    feedback.classList.remove("right-there");
-    feedback.textContent = s;
-
-    if (s === "Right there") {
-      feedback.classList.add("right-there");
+    // Early game inefficiency (optional silence)
+    if (isEarlyGame() && !sentimentState.inefficiencyShown && reduction < 0.10) {
+      if (Math.random() > 0.25) sentimentToShow = pickPhrase("earlyInefficiency"); // 75% chance to show
+      sentimentState.inefficiencyShown = true;
+    }
+    // Mid-game compression
+    else if (isMidGame() && !sentimentState.compressionShown && newRange <= 2000) {
+      sentimentToShow = pickPhrase("midCompression");
+      sentimentState.compressionShown = true;
+    }
+    // Efficient cut
+    else if (isMidGame() && !sentimentState.efficiencyShown && reduction >= 0.40) {
+      sentimentToShow = pickPhrase("efficientCut");
+      sentimentState.efficiencyShown = true;
+    }
+    // Last few guesses
+    else if (isMidGame() && !sentimentState.stakesShown && guessesRemaining() <= 3) {
+      sentimentToShow = pickPhrase("stakes");
+      sentimentState.stakesShown = true;
+    }
+    // Super close
+    else if (isCriticalRange() && !sentimentState.superCloseShown && newRange <= 25) {
+      sentimentToShow = pickPhrase("superClose");
+      sentimentState.superCloseShown = true;
+      isCritical = true;
     }
 
-    feedback.style.opacity = 1;
-    feedback.style.transform = "scale(1)";
-  }, feedbackDelay);
+    if (sentimentToShow) emitSentiment(sentimentToShow, isCritical);
+  }
+
+  // --- 6. Update guess UI ---
+  if (!gameOver) {
+    updateGuessUI();
+}
+}
+
+function updateGuessUI() {
+  feedback.style.opacity = 1;
 
   const remaining = MAX_GUESSES - guesses.length;
 
   if (remaining > 1) {
-  guessCount.textContent = `${remaining} guesses left`;
-  guessCount.style.color = "var(--muted)";
-} else if (remaining === 1) {
-  guessCount.textContent = "Final guess";
-  guessCount.style.color = "var(--accent)";
-  guessCount.style.fontWeight = "600";
-} else {
-  guessCount.textContent = "";
-}
+    guessCount.textContent = `${remaining} guesses left`;
+    guessCount.style.color = "var(--muted)";
+  } else if (remaining === 1) {
+    guessCount.textContent = "Final guess";
+    guessCount.style.color = "var(--accent)";
+    guessCount.style.fontWeight = "600";
+  } else {
+    guessCount.textContent = "";
+  }
 
   if (
-  !gameOver &&
-  guesses.length === MAX_GUESSES - 2 &&
-  !lifelineUsed
-) {
-  bar.classList.add("hint-ready");
-  showToast("Tap the bar for a hint");
-} else {
-  bar.classList.remove("hint-ready");
+    !gameOver &&
+    guesses.length === MAX_GUESSES - 2 &&
+    !lifelineUsed
+  ) {
+    bar.classList.add("hint-ready");
+    showToast("Tap the bar for a hint");
+  } else {
+    bar.classList.remove("hint-ready");
+  }
 }
+
+function microReward(type) {
+  if (type === "efficient") {
+    barFill.style.transition = "all 0.3s ease";
+    barFill.style.boxShadow = "0 0 16px rgba(108,242,194,0.7)";
+    setTimeout(() => barFill.style.boxShadow = "", 400);
+  } else if (type === "streak") {
+    const el = document.getElementById("streak");
+    el.style.transition = "transform 0.3s ease";
+    el.style.transform = "scale(1.15)";
+    setTimeout(() => el.style.transform = "scale(1)", 400);
+  }
 }
 
 /* ---------- GUESS ---------- */
@@ -803,9 +936,9 @@ btn.onclick = () => {
   }
 
   if (!tipShown && !gameOver) {
-    tipText.style.opacity = 0;
-    tipShown = true;
-  }
+  tipText.style.opacity = 0;
+  tipShown = true;
+}
 
   input.value = "";
   input.focus();
@@ -816,6 +949,7 @@ btn.onclick = () => {
   }
 
   resolveGuess(g);
+
 };
 
 /* ---------- LIFELINE ---------- */
@@ -826,18 +960,39 @@ bar.onclick = () => {
   if (guesses.length !== MAX_GUESSES - 2) return;
 
   const span = max - min;
-  const shrink = Math.max(1, Math.floor(span * 0.15)); // 🔧 FIX 4
+  const shrinkPct = 0.15;
 
-  let newMin = min + shrink;
-  let newMax = max - shrink;
+  // Total shrink amount
+  let shrink = Math.floor(span * shrinkPct);
+  shrink = Math.max(shrink, 10);
+  shrink = Math.min(shrink, span - 5);
 
-  // Ensure the secret is strictly inside the range
-  newMin = Math.min(newMin, secret - 1);
-  newMax = Math.max(newMax, secret + 1);
+  // Distance from secret to bounds
+  const lowerRoom = secret - min;
+  const upperRoom = max - secret;
 
-  // Apply safely
-  min = newMin;
-  max = newMax;
+  // Proportional removal, capped so secret is NEVER excluded
+  let removeLower = Math.round((lowerRoom / span) * shrink);
+  let removeUpper = shrink - removeLower;
+
+  // Hard safety clamps
+  removeLower = Math.min(removeLower, lowerRoom);
+  removeUpper = Math.min(removeUpper, upperRoom);
+
+  // Rebalance if one side was capped
+  const applied = removeLower + removeUpper;
+  if (applied < shrink) {
+    const remainder = shrink - applied;
+    if (lowerRoom - removeLower > upperRoom - removeUpper) {
+      removeLower = Math.min(removeLower + remainder, lowerRoom);
+    } else {
+      removeUpper = Math.min(removeUpper + remainder, upperRoom);
+    }
+  }
+
+  // Apply shrink (INWARD ONLY)
+  min = min + removeLower;
+  max = max - removeUpper;
 
   lifelineUsed = true;
   lifelineGuessIndex = guesses.length;
@@ -860,7 +1015,8 @@ function win() {
   localStorage.setItem(dailyStateKey, JSON.stringify({
     result: "win",
     guesses,
-    lifelineUsed
+    lifelineUsed,
+    lifelineGuessIndex
   }));
 
   guessCount.textContent = ""; // clear final-guess prompt
@@ -923,7 +1079,8 @@ function lose() {
   localStorage.setItem(dailyStateKey, JSON.stringify({
     result: "lose",
     guesses,
-    lifelineUsed
+    lifelineUsed,
+    lifelineGuessIndex
   }));
 
   guessCount.textContent = ""; // clear final-guess prompt
@@ -1018,14 +1175,23 @@ let streak = Number(localStorage.getItem("narroStreakPrev")) || 0;
 /* ---------- SHARE ---------- */
 function generateShareText() {
   const tiles = [];
+  const won = guesses.includes(secret);
+
+// Closest distance (loss only)
+let closestDistance = null;
+if (!won && guesses.length) {
+  closestDistance = guesses.reduce((minDist, g) => {
+    const d = Math.abs(Number(g) - secret);
+    return Number.isFinite(d) ? Math.min(minDist, d) : minDist;
+  }, Infinity);
+}
 
   for (let i = 0; i < guesses.length; i++) {
     const g = guesses[i];
     const slot = i + 1;
-    const isFinalGuess = g === secret;
 
     // WIN always terminates
-    if (isFinalGuess) {
+    if (g === secret) {
       tiles.push("🎯");
       break;
     }
@@ -1062,9 +1228,14 @@ function generateShareText() {
     tiles.push(g < secret ? "⬆️" : "⬇️");
   }
 
+  const infoLine = won
+    ? `Got it in ${guesses.length}`
+    : `Closest guess: ${closestDistance} away`;
+
   return (
     `Narro · ${todayKey}\n\n` +
-    `${tiles.join(" ")}\n\n` +
+    `${tiles.join(" ")}\n` +
+    `${infoLine}\n\n` +
     `${CANONICAL_URL}`
   );
 }
@@ -1114,9 +1285,29 @@ if (demoMode) {
   const midpoint = Math.floor((MIN_RANGE + MAX_RANGE) / 2);
 
   // Small delay before demo starts
-setTimeout(() => {
-  resolveDemoGuess(midpoint);
-}, 400);
+  setTimeout(() => {
+    resolveDemoGuess(midpoint);
+
+    // Let the bar finish and settle
+    setTimeout(() => {
+      feedback.textContent = "Your turn.";
+
+      // Quiet pause before enabling interaction
+      setTimeout(() => {
+        demoMode = false;
+        localStorage.setItem("narroSeenDemo", "true");
+
+        tipText.style.opacity = 0;
+        input.disabled = false;
+        btn.disabled = false;
+
+        input.value = midpoint;
+        input.focus();
+      }, 600);
+
+    }, 900);
+
+  }, 400);
 }
 
 </script>
