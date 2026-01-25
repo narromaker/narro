@@ -11,9 +11,20 @@
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-FW2QE6BL6R');
-</script>  
+
+  // Compute daily key locally (no dependency on later script)
+  const todayKeyGA = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/New_York"
+  });
+  const dailyStateKeyGA = `narroState-${todayKeyGA}`;
+
+  if (!localStorage.getItem(dailyStateKeyGA)) {
+    gtag("event", "game_start", {
+      game_version: "v1.0"
+    });
+  }
+</script> 
 
 <!-- Open Graph -->
 <meta property="og:title" content="Narro — Today’s Number Puzzle" />
@@ -132,6 +143,11 @@
   100% { opacity: 1; }
 }
 
+  @keyframes hintPulseDark {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.55; }
+}
+
   .toast {
   margin-top: 8px;
   font-size: 0.85rem;
@@ -197,6 +213,15 @@
     font-weight: 600;
   }
 
+@keyframes heatBreathe {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+  .bar.hinted .bar-heat {
+  opacity: 1;
+}
+
   .bar {
   position: relative;
   height: 18px;
@@ -248,6 +273,21 @@
   box-shadow:
     inset 0 2px 4px rgba(255,255,255,0.08),
     0 0 22px rgba(108,242,194,0.65);
+}
+
+.bar-heat {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+
+  pointer-events: none;
+  opacity: 0;
+  z-index: 4;
+
+  background: rgba(0, 0, 0, 0.45); /* darken, not brighten */
+  border-radius: 999px;
+
+  transition: opacity 0.25s ease;
 }
 
 /* Hint collapse animation */
@@ -345,6 +385,25 @@
 
   .share button { padding: 10px; font-size: 0.9rem; border-radius: 10px; }
 
+  .feedback-btn {
+  margin-left: 8px;
+  padding: 8px 10px;
+
+  font-size: 0.75rem;
+  color: var(--muted);
+
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 10px;
+
+  opacity: 0.9;
+}
+
+.feedback-btn:hover {
+  opacity: 1;
+  background: rgba(255,255,255,0.08);
+}
+
   .countdown {
     margin-top: 12px;
     font-size: 0.85rem;
@@ -408,6 +467,7 @@
         <span id="maxLabel">10,000</span>
       </div>
       <div class="bar" id="bar">
+        <div class="bar-heat" id="barHeat"></div>
         <div class="bar-fill" id="barFill"></div>
         <span class="bar-handle left"></span>
         <span class="bar-handle right"></span>
@@ -417,6 +477,13 @@
 
   <div class="share">
     <button id="shareBtn" disabled>Share</button>
+    <button
+      id="feedbackBtn"
+      class="feedback-btn"
+      type="button"
+    >
+  Help improve Narro
+</button>
   </div>
 
   <div class="countdown" id="countdown"></div>
@@ -461,6 +528,29 @@ const MAX_RANGE = 10000;
 
 const CANONICAL_URL = "https://playnarro.com";
 
+const FEEDBACK_FORM_URL =
+  "https://docs.google.com/forms/d/e/1FAIpQLSfbJKMno9GslR4YMLJLa4kMvvWVJNNpeptDLoqJirFbODNgCg/viewform";
+
+function buildFeedbackURL() {
+  const params = new URLSearchParams({
+    // Visible fields — intentionally left blank for the user to fill:
+    "entry.988877110": "", // What happened?
+    "entry.1336918974": "", // Anything else?
+
+    // Hidden / auto-filled context:
+    "entry.909946340": "v1.0",                   // Game version (update if sub-versioned)
+    "entry.1673867347": guesses.length.toString(), // Guess count
+    "entry.1628779265": min.toString(),          // Min range
+    "entry.1848599252": max.toString(),          // Max range
+    "entry.248208487": lifelineUsed ? "Yes" : "No", // Hint used
+    "entry.1083390692": navigator.userAgent,     // Device/browser
+    "entry.1109071094": `${window.innerWidth}x${window.innerHeight}`, // Screen size
+    "entry.311602990": new Date().toISOString()  // Timestamp
+  });
+
+  return `${FEEDBACK_FORM_URL}?${params.toString()}`;
+}
+
 function seededNumber(seed) {
   // Hash the seed string into a 32-bit integer
   let h = 2166136261;
@@ -502,6 +592,7 @@ let lifelineUsed = false;
 let lifelineGuessIndex = null;
 let tipShown = false;
 let hintAnimating = false;
+let hintVisible = false;
 
 /* ---------- ELEMENTS ---------- */
 const input = document.getElementById("guessInput");
@@ -520,11 +611,20 @@ const statsAvg = document.getElementById("statsAvg");
 const statsBest = document.getElementById("statsBest");
 const minLabel = document.getElementById("minLabel");
 const maxLabel = document.getElementById("maxLabel");
+const guessCount = document.getElementById("guessCount");
+const HINT_WIDE_THRESHOLD = 200;
+const HINT_TIGHT_THRESHOLD = 30;
+const countdown = document.getElementById("countdown");
 
 /* ---------- INPUT EVENTS ---------- */
 input.addEventListener("blur", () => {
   const spacer = document.getElementById("keyboardSpacer");
   if (spacer) spacer.remove();
+
+  if (!isMobile()) return;
+  setTimeout(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, 150);
 });
 
 input.addEventListener("keydown", (e) => {
@@ -550,14 +650,22 @@ if (savedState) {
       ? state.lifelineGuessIndex
       : null;
 
-  // Rebuild range from guesses
-  guesses.forEach(g => {
-    if (g < secret) min = Math.max(min, g + 1);
-    if (g > secret) max = Math.min(max, g - 1);
-  });
+  // After rebuild
+  if (min > max || secret < min || secret > max) {
+    min = MIN_RANGE;
+    max = MAX_RANGE;
+    guesses = [];
+  }
 
   updateBar();
   syncInputRange();
+
+  if (lifelineUsed) {
+  positionHeatToRange();
+  renderDarkHintRange();
+  hintVisible = true;
+  bar.classList.add("hinted");
+}
 
   // Lock gameplay
   input.disabled = true;
@@ -618,14 +726,6 @@ input.addEventListener("focus", () => {
       window.scrollBy({ top: scrollAmount, behavior: "smooth" });
     }
   }, 250); // slightly faster than before
-});
-
-// Smoothly restore scroll on blur (optional)
-input.addEventListener("blur", () => {
-  if (!isMobile()) return;
-  setTimeout(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, 150);
 });
 
 function showToast(msg) {
@@ -786,12 +886,14 @@ if (!hintAnimating) {
   barFill.style.left = left + "%";
   barFill.style.width = width + "%";
 
-  // Remove brackets early to avoid central bias
-  if (remainingRange() <= 250) {
-    bar.classList.add("no-brackets");
-  } else {
-    bar.classList.remove("no-brackets");
-  }
+ // Remove brackets to avoid center bias in mid–late game
+const remainingRatio = (max - min + 1) / MAX_RANGE;
+
+if (remainingRatio <= 0.45) {
+  bar.classList.add("no-brackets");
+} else {
+  bar.classList.remove("no-brackets");
+}
 
   // Ensure bar is relative for absolute positioning inside
   bar.style.position = "relative";
@@ -807,14 +909,131 @@ if (!hintAnimating) {
   const centerLabel = bar.querySelector(".center-range-label");
   if (centerLabel) centerLabel.remove();
 
-  // Auto-resolve if min = max
-  if (!gameOver && min === max) {
-    resolveGuess(min);
+  // Auto-resolve if min = max (no extra guess side-effects)
+if (!gameOver && min === max) {
+  if (min === secret) {
+    win();
+  } else {
+    lose();
   }
+}
 
   // Expose geometry for handles (visual only)
   bar.style.setProperty("--fill-left", left + "%");
   bar.style.setProperty("--fill-width", Math.max(width, 0) + "%"); // never negative
+}
+
+let cachedHeatURL = null;
+let cachedHeatKey = "";
+
+function renderDarkHintRange() {
+  const span = max - min + 1;
+  if (span <= 1) return;
+
+  const heat = document.getElementById("barHeat");
+
+  // ---------- VERY TIGHT RANGE ----------
+  if (span <= HINT_TIGHT_THRESHOLD) {
+    renderDirectionalHint();
+    return;
+  }
+
+  // ---------- NORMAL / MID RANGE ----------
+  const fraction =
+    span > HINT_WIDE_THRESHOLD
+      ? 0.4        // wide uncertainty
+      : 0.6;       // exaggerate visibility when tighter
+
+  const hintSpan = Math.max(
+    Math.ceil(span * fraction),
+    Math.min(12, span) // minimum visual width
+  );
+
+  const bias =
+    ((seededNumber(todayKey + "|hint") / MAX_RANGE) - 0.5) * 0.25;
+
+  const center = secret + bias * span;
+
+  let hintMin = Math.round(center - hintSpan / 2);
+  let hintMax = Math.round(center + hintSpan / 2);
+
+  hintMin = Math.max(min, hintMin);
+  hintMax = Math.min(max, hintMax);
+
+  const leftPct = ((hintMin - 1) / MAX_RANGE) * 100;
+  const widthPct = ((hintMax - hintMin + 1) / MAX_RANGE) * 100;
+
+  heat.style.left = `${leftPct}%`;
+  heat.style.width = `${widthPct}%`;
+  heat.style.opacity = "1";
+
+  // Subtle emphasis when tight
+if (span <= HINT_WIDE_THRESHOLD) {
+  heat.style.animation = "hintPulseDark 0.9s ease-in-out infinite";
+} else {
+  heat.style.animation = "none";
+}
+
+}
+
+function renderDirectionalHint() {
+  const heat = document.getElementById("barHeat");
+  const mid = Math.floor((min + max) / 2);
+
+  const favorUpper =
+    secret > mid
+      ? true
+      : secret < mid
+      ? false
+      : seededNumber(todayKey + "|dir") % 2 === 0;
+
+  const hintMin = favorUpper ? mid + 1 : min;
+  const hintMax = favorUpper ? max : mid;
+
+  const leftPct = ((hintMin - 1) / MAX_RANGE) * 100;
+  const widthPct = ((hintMax - hintMin + 1) / MAX_RANGE) * 100;
+
+  heat.style.left = `${leftPct}%`;
+  heat.style.width = `${widthPct}%`;
+  heat.style.opacity = "1";
+  heat.style.animation = "hintPulseDark 1s ease-in-out infinite";
+
+  tipText.textContent =
+    "One side of the remaining range may be safer";
+}
+
+
+function positionHeatToRange() {
+  const bar = document.getElementById("bar");
+  const heat = document.getElementById("barHeat");
+
+  const barWidth = bar.offsetWidth;
+
+  const startPct = (min - MIN_RANGE) / (MAX_RANGE - MIN_RANGE);
+  const endPct   = (max - MIN_RANGE) / (MAX_RANGE - MIN_RANGE);
+
+  let leftPx  = startPct * barWidth;
+  let widthPx = (endPct - startPct) * barWidth;
+
+  // --- NEW: minimum visual width enforcement ---
+  const MIN_VISUAL_WIDTH = 24; // px (tunable, cheap, constant)
+
+  if (widthPx < MIN_VISUAL_WIDTH) {
+    const center = leftPx + widthPx / 2;
+    widthPx = MIN_VISUAL_WIDTH;
+    leftPx = center - widthPx / 2;
+
+    // Clamp to bar bounds
+    if (leftPx < 0) leftPx = 0;
+    if (leftPx + widthPx > barWidth) {
+      leftPx = barWidth - widthPx;
+    }
+  }
+  // --- END NEW ---
+
+  heat.style.left = `${leftPx}px`;
+  heat.style.width = `${widthPx}px`;
+  heat.style.opacity = "1";
 }
 
 function resolveDemoGuess(g) {
@@ -852,6 +1071,7 @@ function resolveDemoGuess(g) {
 }
 
 function resolveGuess(g) {
+  g = Math.max(MIN_RANGE, Math.min(MAX_RANGE, g)); // clamp  
   const prevMin = min;
   const prevMax = max;
   const prevRange = prevMax - prevMin + 1;
@@ -885,6 +1105,21 @@ function resolveGuess(g) {
   if (min > max) min = max;
 
   updateBar();
+
+if (lifelineUsed && hintVisible) {
+  positionHeatToRange();
+}
+
+// STEP 4: Clear hint after exactly one guess
+if (
+  lifelineUsed &&
+  hintVisible &&
+  guesses.length > lifelineGuessIndex
+) {
+  clearHeat();
+  hintVisible = false;
+}
+
   syncInputRange();
 
   // --- 4. Micro reward for efficient cut ---
@@ -1006,87 +1241,45 @@ btn.onclick = () => {
 
 };
 
-/* ---------- LIFELINE ---------- */
+/* ---------- HEAT MAP HINT ---------- */
 bar.onclick = () => {
   if (lifelineUsed || gameOver) return;
-
-  // Lifeline only BEFORE guess 6 (i.e. exactly 5 guesses made)
   if (guesses.length !== MAX_GUESSES - 2) return;
 
-  const span = max - min;
-  const shrinkPct = 0.15;
-
-  // Total shrink amount
-  let shrink = Math.floor(span * shrinkPct);
-  shrink = Math.max(shrink, 10);
-  shrink = Math.min(shrink, span - 5);
-
-  // Distance from secret to bounds
-  const lowerRoom = secret - min;
-  const upperRoom = max - secret;
-
-  // Proportional removal, capped so secret is NEVER excluded
-  let removeLower = Math.round((lowerRoom / span) * shrink);
-  let removeUpper = shrink - removeLower;
-
-  // Hard safety clamps
-  removeLower = Math.min(removeLower, lowerRoom);
-  removeUpper = Math.min(removeUpper, upperRoom);
-
-  // Rebalance if one side was capped
-  const applied = removeLower + removeUpper;
-  if (applied < shrink) {
-    const remainder = shrink - applied;
-    if (lowerRoom - removeLower > upperRoom - removeUpper) {
-      removeLower = Math.min(removeLower + remainder, lowerRoom);
-    } else {
-      removeUpper = Math.min(removeUpper + remainder, upperRoom);
-    }
-  }
-
-  // Apply shrink (INWARD ONLY)
-  min = min + removeLower;
-  max = max - removeUpper;
-
   lifelineUsed = true;
-lifelineGuessIndex = guesses.length;
+  lifelineGuessIndex = guesses.length;
+  hintVisible = true;
 
-/* Replace hint instruction with confirmation */
-tipText.classList.remove("hint", "confirmation");
-tipText.style.opacity = "0";
+  tipText.classList.remove("hint");
+  tipText.textContent = "One region may be worth extra attention";
+  tipText.style.opacity = "1";
 
-tipText.textContent = "Range reduced — that one was on us";
+  bar.classList.remove("hint-ready");
+  bar.classList.add("hinted");
 
-/* Force reflow so animation can restart */
-tipText.offsetHeight;
+  renderDarkHintRange();
 
-tipText.classList.add("confirmation");
-tipText.style.opacity = "1";
-
-haptic([8, 40, 8]);
-
-bar.classList.remove("hint-ready");
-bar.classList.add("hinted");
-
-hintAnimating = true;
-barFill.classList.add("hint-animating");
-
-updateBar();
-
-setTimeout(() => {
-  barFill.classList.remove("hint-animating");
-  hintAnimating = false;
-}, 360);
-
-
-syncInputRange();
-
-input.value = Math.min(max, Math.max(min, Number(input.value) || min));
+  haptic([6, 30, 6]);
 };
+
+function clearHeat() {
+  const heat = document.getElementById("barHeat");
+  heat.style.opacity = "0";
+  bar.classList.remove("hinted");
+}
 
 /* ---------- END STATES ---------- */
 function win() {
   if (gameOver) return;  
+
+  if (typeof gtag === "function") {
+  gtag("event", "game_win", {
+    guesses: guesses.length,
+    hint_used: lifelineUsed,
+    game_version: "v1.0"
+  });
+}
+
   gameOver = true;
 
   localStorage.setItem(dailyStateKey, JSON.stringify({
@@ -1151,6 +1344,15 @@ function win() {
 
 function lose() {
   if (gameOver) return;  
+
+  if (typeof gtag === "function") {
+    gtag("event", "game_loss", {
+      guesses: guesses.length,
+      hint_used: lifelineUsed,
+      game_version: "v1.0"
+    });
+  }
+
   gameOver = true;
 
   localStorage.setItem(dailyStateKey, JSON.stringify({
@@ -1186,6 +1388,7 @@ function lose() {
 
 /* ---------- CONFETTI ---------- */
 function launchConfetti() {
+  const confetti = document.getElementById("confetti");  
   const ctx = confetti.getContext("2d");
   confetti.width = innerWidth; confetti.height = innerHeight;
   const pieces = Array.from({ length: 120 }, () => ({
@@ -1252,7 +1455,7 @@ let streak = Number(localStorage.getItem("narroStreakPrev")) || 0;
 /* ---------- SHARE ---------- */
 function generateShareText() {
   const tiles = [];
-  const won = guesses.includes(secret);
+  const won = gameOver && guesses[guesses.length - 1] === secret;
 
 // Closest distance (loss only)
 let closestDistance = null;
@@ -1386,6 +1589,12 @@ if (demoMode) {
 
   }, 400);
 }
+
+document.getElementById("feedbackBtn")?.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  window.open(buildFeedbackURL(), "_blank", "noopener");
+});
 
 </script>
 </body>
