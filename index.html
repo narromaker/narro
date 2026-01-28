@@ -148,6 +148,17 @@
   50% { opacity: 0.55; }
 }
 
+.closest-one {
+  color: var(--accent);
+  font-weight: 600;
+  animation: oneAwayPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes oneAwayPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
   .toast {
   margin-top: 8px;
   font-size: 0.85rem;
@@ -384,6 +395,10 @@
   }
 
   .share button { padding: 10px; font-size: 0.9rem; border-radius: 10px; }
+
+  .share {
+  text-align: center;
+}
 
   .feedback-btn {
   margin-left: 0;
@@ -1192,7 +1207,7 @@ function updateGuessUI() {
 ) {
   bar.classList.add("hint-ready");
 
-tipText.textContent = "Tap the bar for a hint";
+tipText.textContent = "Need a hint? Tap the glowing bar!";
 tipText.classList.add("hint");
 tipText.style.display = "block";
 tipText.style.opacity = "1";
@@ -1377,6 +1392,23 @@ function lose() {
   closure.textContent = `Today’s Narro was ${secret}.`;
   feedback.appendChild(closure);
 
+  const closest = getClosestDistance();
+if (Number.isFinite(closest)) {
+  const closestEl = document.createElement("div");
+  closestEl.style.fontSize = "0.9rem";
+  closestEl.style.marginTop = "4px";
+
+  if (closest === 1) {
+    closestEl.textContent = "So close — 1 away";
+    closestEl.classList.add("closest-one");
+  } else {
+    closestEl.style.color = "#9aa0c3";
+    closestEl.textContent = `Closest guess: ${closest} away`;
+  }
+
+  feedback.appendChild(closestEl);
+}
+
   input.disabled = true;
   btn.disabled = true;
   shareBtn.disabled = false;
@@ -1385,6 +1417,15 @@ function lose() {
   tipText.style.display = "block";
 
   updateStats(false);
+}
+
+function getClosestDistance() {
+  if (!guesses.length) return null;
+
+  return guesses.reduce((minDist, g) => {
+    const d = Math.abs(Number(g) - secret);
+    return Number.isFinite(d) ? Math.min(minDist, d) : minDist;
+  }, Infinity);
 }
 
 /* ---------- CONFETTI ---------- */
