@@ -143,9 +143,24 @@
   100% { opacity: 1; }
 }
 
-  @keyframes hintPulseDark {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 0.55; }
+@keyframes orbHintShine {
+  0%, 100% {
+    background: radial-gradient(circle at 30% 30%, rgba(108,242,194,0.95), rgba(72,210,160,1));
+    box-shadow: 0 0 10px rgba(108,242,194,0.45), inset 0 1px 2px rgba(255,255,255,0.4);
+  }
+  50% {
+    background: radial-gradient(circle at 40% 40%, rgba(150,255,210,0.95), rgba(100,230,180,1));
+    box-shadow: 0 0 14px rgba(150,255,210,0.45), inset 0 1px 2px rgba(255,255,255,0.5);
+  }
+}
+
+  @keyframes orbWinPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); filter: brightness(1); }
+  50% { transform: translate(-50%, -50%) scale(1.08); filter: brightness(1.15); }
+}
+
+.bar-orb.win-pulse {
+  animation: orbWinPulse 1.2s ease-in-out infinite;
 }
 
 .closest-one {
@@ -186,6 +201,10 @@
   font-weight: 600;
 }
 
+.hint-shine {
+  animation: orbHintShine 0.9s ease-in-out 3;
+}
+
 .tip.confirmation {
   animation: hintConfirm 0.45s ease;
 }
@@ -223,15 +242,6 @@
     color: var(--accent);
     font-weight: 600;
   }
-
-@keyframes heatBreathe {
-  0%, 100% { opacity: 0.85; }
-  50% { opacity: 1; }
-}
-
-  .bar.hinted .bar-heat {
-  opacity: 1;
-}
 
   .bar {
   position: relative;
@@ -280,25 +290,15 @@
     background 0.3s ease;
 }
 
+.bar:not(.win) .bar-fill {
+  opacity: 0;
+  box-shadow: none;
+}
+
   .bar.hint-ready {
   box-shadow:
     inset 0 2px 4px rgba(255,255,255,0.08),
     0 0 22px rgba(108,242,194,0.65);
-}
-
-.bar-heat {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-
-  pointer-events: none;
-  opacity: 0;
-  z-index: 4;
-
-  background: rgba(0, 0, 0, 0.45); /* darken, not brighten */
-  border-radius: 999px;
-
-  transition: opacity 0.25s ease;
 }
 
 /* Hint collapse animation */
@@ -311,10 +311,6 @@
 
   transform: scaleY(1.25);
   filter: brightness(1.35);
-}
-
-  .bar-handle {
-  opacity: 0.55;
 }
 
   .bar.hinted .bar-fill {
@@ -394,7 +390,38 @@
     100% { background-position: 200% 0; }
   }
 
-  .share button { padding: 10px; font-size: 0.9rem; border-radius: 10px; }
+  /* ---------- NARRO ORB ---------- */
+.bar-orb {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  z-index: 6;
+  pointer-events: none;
+
+  background:
+    radial-gradient(
+      circle at 30% 30%,
+      rgba(108,242,194,0.95),
+      rgba(72,210,160,1)
+    );
+
+  transform: translate(-50%, -50%);
+  transition: left 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+
+  box-shadow:
+    0 0 10px rgba(108,242,194,0.45),
+    inset 0 1px 2px rgba(255,255,255,0.4);
+}
+
+/* Orb resolution on win */
+.bar.win .bar-orb {
+  background: var(--win);
+  box-shadow: 0 0 14px var(--win-glow);
+}
+
+.share button { padding: 10px; font-size: 0.9rem; border-radius: 10px; }
 
   .share {
   text-align: center;
@@ -474,7 +501,7 @@
     <div class="toast" id="toast"></div>
     <div class="guess-count" id="guessCount">7 guesses left</div>
     <div class="tip" id="tipText">
-      Narrow the bar to find today's number.
+    <div id="hintToast"></div>  
     </div>
 
     <div class="bar-wrap">
@@ -483,10 +510,8 @@
         <span id="maxLabel">10,000</span>
       </div>
       <div class="bar" id="bar">
-        <div class="bar-heat" id="barHeat"></div>
         <div class="bar-fill" id="barFill"></div>
-        <span class="bar-handle left"></span>
-        <span class="bar-handle right"></span>
+        <div class="bar-orb" id="barOrb"></div>
       </div>
     </div>
   </div>
@@ -617,6 +642,7 @@ const shareBtn = document.getElementById("shareBtn");
 const feedback = document.getElementById("feedback");
 const barFill = document.getElementById("barFill");
 const bar = document.getElementById("bar");
+const barOrb = document.getElementById("barOrb");
 const tipText = document.getElementById("tipText");
 const toast = document.getElementById("toast");
 const statsBtn = document.getElementById("statsBtn");
@@ -631,6 +657,7 @@ const guessCount = document.getElementById("guessCount");
 const HINT_WIDE_THRESHOLD = 200;
 const HINT_TIGHT_THRESHOLD = 30;
 const countdown = document.getElementById("countdown");
+const ORB_TIP_KEY = "narro_orb_tip_seen";
 
 /* ---------- INPUT EVENTS ---------- */
 input.addEventListener("blur", () => {
@@ -674,14 +701,8 @@ if (savedState) {
   }
 
   updateBar();
+  updateOrb();
   syncInputRange();
-
-  if (lifelineUsed) {
-  positionHeatToRange();
-  renderDarkHintRange();
-  hintVisible = true;
-  bar.classList.add("hinted");
-}
 
   // Lock gameplay
   input.disabled = true;
@@ -744,13 +765,38 @@ input.addEventListener("focus", () => {
   }, 250); // slightly faster than before
 });
 
-function showToast(msg) {
-  toast.textContent = msg;
-  toast.style.opacity = 1;
-  clearTimeout(showToast._t);
-  showToast._t = setTimeout(() => {
-    toast.style.opacity = 0;
+function showHintMessage(text) {
+  const el = document.getElementById("hintToast");
+  if (!el) return;
+
+  el.textContent = text;
+  el.classList.add("show");
+
+  clearTimeout(el._t);
+  el._t = setTimeout(() => {
+    el.classList.remove("show");
   }, 1600);
+}
+
+function activateHintOrb() {
+  if (!barOrb) return;
+
+  barOrb.classList.add("hint-shine");
+
+  // Remove the class after animation completes
+  setTimeout(() => {
+    barOrb.classList.remove("hint-shine");
+  }, 2700); // 0.9s * 3 cycles
+}
+
+function maybeShowOrbTip() {
+  if (localStorage.getItem(ORB_TIP_KEY)) return;
+
+  showHintMessage("Follow the orb — it tracks the hidden number!");
+  localStorage.setItem(ORB_TIP_KEY, "1");
+
+  // Highlight orb with subtle shine
+  activateHintOrb();
 }
 
 /* ---------- SENTIMENT ---------- */
@@ -765,6 +811,46 @@ const sentimentState = {
 
 function remainingRange() {
   return max - min + 1;
+}
+
+function applyWindowSnapHint() {
+  const span = max - min + 1;
+  if (span <= 2) return;
+
+  // Target width = 80% of current span
+  const targetSpan = Math.max(2, Math.floor(span * 0.8));
+
+  // Quantization step (10% of original span, minimum 5)
+  const step = Math.max(5, Math.floor(span * 0.1));
+
+  // Generate all valid snapped windows
+  const windows = [];
+  for (let start = min; start + targetSpan - 1 <= max; start += step) {
+    const end = start + targetSpan - 1;
+    if (secret > start && secret < end) {
+      windows.push({ start, end });
+    }
+  }
+
+  // Fallback safety (should never trigger)
+  if (!windows.length) return;
+
+  // Deterministic pick (daily-stable)
+  const idx =
+    seededNumber(todayKey + "|windowHint") % windows.length;
+
+  let { start, end } = windows[idx];
+
+  // Absolute safety guard: never allow boundary = secret
+  if (start >= secret) start = secret - 1;
+  if (end <= secret) end = secret + 1;
+
+  min = Math.max(MIN_RANGE, start);
+  max = Math.min(MAX_RANGE, end);
+
+  updateBar();
+  updateOrb();
+  syncInputRange();
 }
 
 function guessesRemaining() {
@@ -937,119 +1023,9 @@ if (!gameOver && min === max) {
   // Expose geometry for handles (visual only)
   bar.style.setProperty("--fill-left", left + "%");
   bar.style.setProperty("--fill-width", Math.max(width, 0) + "%"); // never negative
-}
 
-let cachedHeatURL = null;
-let cachedHeatKey = "";
+  updateOrb();
 
-function renderDarkHintRange() {
-  const span = max - min + 1;
-  if (span <= 1) return;
-
-  const heat = document.getElementById("barHeat");
-
-  // ---------- VERY TIGHT RANGE ----------
-  if (span <= HINT_TIGHT_THRESHOLD) {
-    renderDirectionalHint();
-    return;
-  }
-
-  // ---------- NORMAL / MID RANGE ----------
-  const fraction =
-    span > HINT_WIDE_THRESHOLD
-      ? 0.4        // wide uncertainty
-      : 0.6;       // exaggerate visibility when tighter
-
-  const hintSpan = Math.max(
-    Math.ceil(span * fraction),
-    Math.min(12, span) // minimum visual width
-  );
-
-  const bias =
-    ((seededNumber(todayKey + "|hint") / MAX_RANGE) - 0.5) * 0.25;
-
-  const center = secret + bias * span;
-
-  let hintMin = Math.round(center - hintSpan / 2);
-  let hintMax = Math.round(center + hintSpan / 2);
-
-  hintMin = Math.max(min, hintMin);
-  hintMax = Math.min(max, hintMax);
-
-  const leftPct = ((hintMin - 1) / MAX_RANGE) * 100;
-  const widthPct = ((hintMax - hintMin + 1) / MAX_RANGE) * 100;
-
-  heat.style.left = `${leftPct}%`;
-  heat.style.width = `${widthPct}%`;
-  heat.style.opacity = "1";
-
-  // Subtle emphasis when tight
-if (span <= HINT_WIDE_THRESHOLD) {
-  heat.style.animation = "hintPulseDark 0.9s ease-in-out infinite";
-} else {
-  heat.style.animation = "none";
-}
-
-}
-
-function renderDirectionalHint() {
-  const heat = document.getElementById("barHeat");
-  const mid = Math.floor((min + max) / 2);
-
-  const favorUpper =
-    secret > mid
-      ? true
-      : secret < mid
-      ? false
-      : seededNumber(todayKey + "|dir") % 2 === 0;
-
-  const hintMin = favorUpper ? mid + 1 : min;
-  const hintMax = favorUpper ? max : mid;
-
-  const leftPct = ((hintMin - 1) / MAX_RANGE) * 100;
-  const widthPct = ((hintMax - hintMin + 1) / MAX_RANGE) * 100;
-
-  heat.style.left = `${leftPct}%`;
-  heat.style.width = `${widthPct}%`;
-  heat.style.opacity = "1";
-  heat.style.animation = "hintPulseDark 1s ease-in-out infinite";
-
-  tipText.textContent =
-    "One side of the remaining range may be safer";
-}
-
-
-function positionHeatToRange() {
-  const bar = document.getElementById("bar");
-  const heat = document.getElementById("barHeat");
-
-  const barWidth = bar.offsetWidth;
-
-  const startPct = (min - MIN_RANGE) / (MAX_RANGE - MIN_RANGE);
-  const endPct   = (max - MIN_RANGE) / (MAX_RANGE - MIN_RANGE);
-
-  let leftPx  = startPct * barWidth;
-  let widthPx = (endPct - startPct) * barWidth;
-
-  // --- NEW: minimum visual width enforcement ---
-  const MIN_VISUAL_WIDTH = 24; // px (tunable, cheap, constant)
-
-  if (widthPx < MIN_VISUAL_WIDTH) {
-    const center = leftPx + widthPx / 2;
-    widthPx = MIN_VISUAL_WIDTH;
-    leftPx = center - widthPx / 2;
-
-    // Clamp to bar bounds
-    if (leftPx < 0) leftPx = 0;
-    if (leftPx + widthPx > barWidth) {
-      leftPx = barWidth - widthPx;
-    }
-  }
-  // --- END NEW ---
-
-  heat.style.left = `${leftPx}px`;
-  heat.style.width = `${widthPx}px`;
-  heat.style.opacity = "1";
 }
 
 function resolveDemoGuess(g) {
@@ -1058,16 +1034,17 @@ function resolveDemoGuess(g) {
   // Slow, gentle bar animation for demo only
   barFill.style.transition = "width 0.9s ease";
 
-  // Initial orienting pause
+  // Step 1: Introduce objective
   setTimeout(() => {
-    feedback.textContent = "Each guess narrows the range.";
+    feedback.textContent = "Find today’s hidden number — between 1 and 10,000.";
     feedback.style.opacity = 1;
 
-    // Reading dwell
+    // Step 2: Introduce the orb
     setTimeout(() => {
-      // Soft acknowledgement beat
+      feedback.textContent = "Watch the orb — it points to the hidden number!";
+
+      // Step 3: Shrink bar & move orb
       setTimeout(() => {
-        // Only shrink if the guess is NOT exactly the secret
         if (g < secret) {
           min = g + 1;
         } else if (g > secret) {
@@ -1075,15 +1052,23 @@ function resolveDemoGuess(g) {
         }
 
         updateBar();
+        updateOrb();
         syncInputRange();
 
-        // Restore normal bar behavior after demo motion
+        // Restore normal bar behavior
         setTimeout(() => {
           barFill.style.transition = "";
-        }, 950);
-      }, 350);
-    }, 1200);
-  }, 350);
+
+          // Step 4: Your turn handoff
+          feedback.textContent = "Your turn — make a guess!";
+          feedback.style.opacity = 1;
+        }, 2000); // Give 2 seconds to watch bar/orb move
+
+      }, 2000); // Give 2 seconds to see the orb pointing
+
+    }, 2500); // Give 2.5 seconds to read the orb message
+
+  }, 2500); // Give 2.5 seconds to read the objective
 }
 
 function resolveGuess(g) {
@@ -1121,22 +1106,12 @@ function resolveGuess(g) {
   if (min > max) min = max;
 
   updateBar();
-
-if (lifelineUsed && hintVisible) {
-  positionHeatToRange();
-}
-
-// STEP 4: Clear hint after exactly one guess
-if (
-  lifelineUsed &&
-  hintVisible &&
-  guesses.length > lifelineGuessIndex
-) {
-  clearHeat();
-  hintVisible = false;
-}
-
+  updateOrb();
   syncInputRange();
+
+  if (guesses.length === 1) {
+  maybeShowOrbTip();
+}
 
   // --- 4. Micro reward for efficient cut ---
   const newRange = max - min + 1;
@@ -1257,7 +1232,7 @@ btn.onclick = () => {
 
 };
 
-/* ---------- HEAT MAP HINT ---------- */
+/* ---------- SHRINK HINT ---------- */
 bar.onclick = () => {
   if (lifelineUsed || gameOver) return;
   if (guesses.length !== MAX_GUESSES - 2) return;
@@ -1266,22 +1241,80 @@ bar.onclick = () => {
   lifelineGuessIndex = guesses.length;
   hintVisible = true;
 
+  applyWindowSnapHint();
+
   tipText.classList.remove("hint");
-  tipText.textContent = "One region may be worth extra attention";
+  tipText.textContent = "Range narrowed";
   tipText.style.opacity = "1";
 
   bar.classList.remove("hint-ready");
   bar.classList.add("hinted");
 
-  renderDarkHintRange();
-
   haptic([6, 30, 6]);
 };
 
-function clearHeat() {
-  const heat = document.getElementById("barHeat");
-  heat.style.opacity = "0";
-  bar.classList.remove("hinted");
+function updateOrb() {
+  if (!barOrb) return;
+
+  // On game over, normalize range for clarity
+  if (gameOver) {
+    min = MIN_RANGE;
+    max = MAX_RANGE;
+
+    minLabel.textContent = min;
+    maxLabel.textContent = max;
+  }
+
+  let percent;
+
+  if (gameOver || min === max) {
+    // Always point directly to the secret number
+    percent = ((secret - MIN_RANGE) / (MAX_RANGE - MIN_RANGE)) * 100;
+  } else {
+    percent = ((secret - min) / (max - min)) * 100;
+  }
+
+  percent = Math.min(100, Math.max(0, percent));
+  barOrb.style.transition = "left 0.45s cubic-bezier(0.22, 1, 0.36, 1)";
+  barOrb.style.left = `${percent}%`;
+
+  // Glow & pulse effect
+  if (gameOver) {
+    barOrb.style.background =
+      "radial-gradient(circle at 30% 30%, rgba(255, 223, 100, 0.95), rgba(255, 200, 50, 1))";
+    barOrb.style.boxShadow =
+      "0 0 14px rgba(255, 223, 100, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.4)";
+    barOrb.classList.add("win-pulse"); // start pulse
+  } else {
+    barOrb.style.background =
+      "radial-gradient(circle at 30% 30%, rgba(108,242,194,0.95), rgba(72,210,160,1))";
+    barOrb.style.boxShadow =
+      "0 0 10px rgba(108,242,194,0.45), inset 0 1px 2px rgba(255,255,255,0.4)";
+    barOrb.classList.remove("win-pulse"); // remove pulse
+  }
+}
+
+function showHintToast(message) {
+  const el = document.getElementById("hintToast");
+  if (!el) return;
+
+  el.textContent = message;
+  el.classList.add("show");
+
+  clearTimeout(el._t);
+  el._t = setTimeout(() => {
+    el.classList.remove("show");
+  }, 1600);
+}
+
+function showToast(msg, duration = 1200) {
+  toast.textContent = msg;
+  toast.style.opacity = 1;
+
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => {
+    toast.style.opacity = 0;
+  }, duration);
 }
 
 /* ---------- END STATES ---------- */
@@ -1356,6 +1389,8 @@ function win() {
   bar.offsetWidth; // force reflow so animation always triggers
   bar.classList.add("win");
   barFill.classList.add("win");
+
+  updateOrb();
 }
 
 function lose() {
