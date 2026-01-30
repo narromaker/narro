@@ -790,10 +790,10 @@ function activateHintOrb() {
 }
 
 function maybeShowOrbTip() {
-  if (localStorage.getItem(ORB_TIP_KEY)) return;
-
-  showHintMessage("Follow the orb — it tracks the hidden number!");
-  localStorage.setItem(ORB_TIP_KEY, "1");
+  // Always show for returning players as well
+  tipText.textContent = "Follow the orb — it tracks the hidden number!";
+  tipText.style.opacity = "1";
+  tipText.style.display = "block";
 
   // Highlight orb with subtle shine
   activateHintOrb();
@@ -1109,7 +1109,7 @@ function resolveGuess(g) {
   updateOrb();
   syncInputRange();
 
-  if (guesses.length === 1) {
+  if (!gameOver && !lifelineUsed && guesses.length === 0) {
   maybeShowOrbTip();
 }
 
