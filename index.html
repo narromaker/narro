@@ -733,6 +733,11 @@ if (savedState) {
   tipShown = true;
 }
 
+// Show orb tip for returning players if the game is not over and hint not used
+if (!gameOver && !lifelineUsed) {
+  maybeShowOrbTip();
+}
+
 /* ---------- HAPTICS ---------- */
 function haptic(pattern) {
   if ("vibrate" in navigator) {
@@ -1108,10 +1113,6 @@ function resolveGuess(g) {
   updateBar();
   updateOrb();
   syncInputRange();
-
-  if (!gameOver && !lifelineUsed && guesses.length === 0) {
-  maybeShowOrbTip();
-}
 
   // --- 4. Micro reward for efficient cut ---
   const newRange = max - min + 1;
