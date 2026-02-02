@@ -506,75 +506,171 @@
   letter-spacing: 0.03em;
 }
 
+/* Overlay version for mobile */
+.free-play-overlay {
+  position: fixed;
+  inset: 0;
+  display: none; /* initially hidden */
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(0,0,0,0.7);
+  z-index: 100;
+  padding: 20px;
+  text-align: center;
+}
+
+.free-play-overlay button {
+  min-width: 120px;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 1rem;
+  background: var(--accent);
+  color: #000;
+  cursor: pointer;
+}
+
+.free-play-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+/* Tablets & above: place below app */
+@media (min-width: 600px) {
+  .free-play-overlay {
+    position: static;
+    background: none;
+    flex-direction: row;
+    gap: 12px;
+    justify-content: flex-start;
+    padding: 0;
+  }
+}
+
 </style>
 </head>
 
 <body>
-<div class="app">
-  <div class="top-row">
-    <h1>Narro</h1>
-    <div id="streak" style="color: var(--accent); font-weight:600;"></div>
-    <div class="stats-btn" id="statsBtn">ⓘ</div>
-  </div>
-
-  <div class="card">
-    <input id="guessInput" type="number" inputmode="numeric" placeholder="Guess a number" />
-    <button id="guessBtn">Guess</button>
-    <div class="feedback" id="feedback"></div>
-    <div class="toast" id="toast"></div>
-    <div class="guess-count" id="guessCount">7 guesses left</div>
-    <div id="millionPrompt" class="million-prompt"></div>
-    <div id="millionGuessCounter" class="million-counter"></div>
-    <div class="tip" id="tipText">
-      <div id="hintToast"></div>  
+  <div class="app">
+    <div class="top-row">
+      <h1>Narro</h1>
+      <div id="streak" style="color: var(--accent); font-weight:600;"></div>
+      <div class="stats-btn" id="statsBtn">ⓘ</div>
     </div>
 
-    <div class="bar-wrap">
-      <div class="bar-labels">
-        <span id="minLabel">1</span>
-        <span id="maxLabel">10,000</span>
+    <!-- Main game card -->
+    <div class="card">
+      <input id="guessInput" type="number" inputmode="numeric" placeholder="Guess a number" />
+      <button id="guessBtn">Guess</button>
+      <div class="feedback" id="feedback"></div>
+      <div class="toast" id="toast"></div>
+      <div class="guess-count" id="guessCount">7 guesses left</div>
+      <div id="millionPrompt" class="million-prompt"></div>
+      <div id="millionGuessCounter" class="million-counter"></div>
+      <div class="tip" id="tipText"><div id="hintToast"></div></div>
+
+      <div class="bar-wrap">
+        <div class="bar-labels">
+          <span id="minLabel">1</span>
+          <span id="maxLabel">10,000</span>
+        </div>
+        <div class="bar" id="bar">
+          <div class="bar-fill" id="barFill"></div>
+          <div class="bar-orb" id="barOrb"></div>
+        </div>
       </div>
-      <div class="bar" id="bar">
-        <div class="bar-fill" id="barFill"></div>
-        <div class="bar-orb" id="barOrb"></div>
-      </div>
+    </div> <!-- end main card -->
+
+    <div class="share">
+      <button id="shareBtn" disabled>Share</button>
+      <button id="feedbackBtn" class="feedback-btn" type="button">Help improve Narro</button>
+    </div>
+
+    <div class="countdown" id="countdown"></div>
+  </div> <!-- end .app -->
+
+  <!-- Persistent Free Play Panel -->
+  <div id="freePlayPanel" style="
+      display:none;
+      position:fixed;
+      bottom:16px;
+      right:16px;
+      z-index:1000;
+      text-align:right;
+      font-family:inherit;
+  ">
+    <button id="freePlayMainBtn" style="
+        padding:12px 18px;
+        border-radius:12px;
+        background:var(--accent);
+        color:#000;
+        font-weight:600;
+        cursor:pointer;
+        box-shadow:0 4px 12px rgba(0,0,0,0.4);
+        transition:0.2s;
+    ">Free Play</button>
+
+    <div id="freePlayModes" style="
+        display:none;
+        margin-top:8px;
+        flex-direction:column;
+        gap:6px;
+    ">
+      <button class="freePlayModeBtn" data-mode="classic">Classic</button>
+      <button class="freePlayModeBtn" data-mode="million">Million</button>
+      <button class="freePlayModeBtn" data-mode="micro">Micro</button>
     </div>
   </div>
 
-  <div class="share">
-    <button id="shareBtn" disabled>Share</button>
-    <button
-      id="feedbackBtn"
-      class="feedback-btn"
-      type="button"
-    >
-  Help improve Narro
-</button>
+  <!-- Overlays, modals, canvas, etc. -->
+  <div id="modeSelect" class="free-play-overlay">
+    <div class="free-play-title">Free Play Unlocked!</div>
+    <button data-mode="classic">Classic</button>
+    <button data-mode="million">Million</button>
+    <button data-mode="micro">Micro</button>
   </div>
 
-  <div class="countdown" id="countdown"></div>
-</div>
-
-<div id="modeSelect" style="margin-top:12px; display:none;">
-  <button data-mode="classic">Classic</button>
-  <button data-mode="million">Million</button>
-  <button data-mode="micro">Micro</button>
-</div>
-
-<div class="modal" id="statsModal">
-  <div class="modal-card">
-    <p><strong>Stats</strong></p>
-    <p id="statsGames"></p>
-    <p id="statsWins"></p>
-    <p id="statsAvg"></p>
-    <p id="statsBest"></p>
-    <button onclick="statsModal.style.display='none'">Close</button>
+  <div class="modal" id="statsModal">
+    <div class="modal-card">
+      <p><strong>Stats</strong></p>
+      <p id="statsGames"></p>
+      <p id="statsWins"></p>
+      <p id="statsAvg"></p>
+      <p id="statsBest"></p>
+      <button onclick="statsModal.style.display='none'">Close</button>
+    </div>
   </div>
-</div>
 
-<canvas id="confetti"></canvas>
+  <canvas id="confetti"></canvas>
+  <script>
+    const freePlayPanel = document.getElementById("freePlayPanel");
+    const freePlayMainBtn = document.getElementById("freePlayMainBtn");
+    const freePlayModes = document.getElementById("freePlayModes");
+    const freePlayModeBtns = document.querySelectorAll(".freePlayModeBtn");
 
-<script>
+    window.addEventListener("load", () => {
+      const freeUnlocked = localStorage.getItem("narroFreePlayUnlocked") === "true";
+      if (freeUnlocked) freePlayPanel.style.display = "block";
+    });
+
+    freePlayMainBtn.addEventListener("click", () => {
+      freePlayModes.style.display = freePlayModes.style.display === "flex" ? "none" : "flex";
+    });
+
+    freePlayModeBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const mode = btn.dataset.mode;
+        startFreePlay(mode);
+        freePlayModes.style.display = "none";
+      });
+    });
+  </script>
+
+
+  <script>
 /* ---------- EASTERN TIME HELPERS ---------- */
 function getEasternDateParts() {
   const now = new Date();
@@ -708,7 +804,20 @@ const modeSelect = document.getElementById("modeSelect");
 modeSelect.addEventListener("click", e => {
   const mode = e.target.dataset.mode;
   if (!mode) return;
+
   startFreePlay(mode);
+
+  const overlay = document.getElementById("modeSelect");
+  
+  // Animate overlay out
+  overlay.style.transition = "opacity 0.25s ease, transform 0.25s ease";
+  overlay.style.opacity = "0";
+  overlay.style.transform = "scale(0.95)";
+
+  // Hide after animation completes
+  setTimeout(() => {
+    overlay.style.display = "none";
+  }, 250);
 });
 
 window.addEventListener("load", () => {
@@ -716,7 +825,28 @@ window.addEventListener("load", () => {
 
   if (freeUnlocked) {
     freePlayUnlocked = true;
-    modeSelect.style.display = "block"; // show free play buttons
+    const overlay = document.getElementById("modeSelect");
+
+    // Mobile overlay styling
+    overlay.style.position = "fixed";
+    overlay.style.inset = "0";
+    overlay.style.display = "flex";
+    overlay.style.justifyContent = "center";
+    overlay.style.alignItems = "center";
+    overlay.style.background = "rgba(0,0,0,0)"; // start transparent
+    overlay.style.flexDirection = "column";
+    overlay.style.zIndex = "1000";
+    overlay.style.gap = "12px";
+    overlay.style.opacity = "0";
+    overlay.style.transform = "scale(0.95)";
+    overlay.style.transition = "opacity 0.35s ease, transform 0.35s ease";
+
+    // Trigger smooth fade-in
+    requestAnimationFrame(() => {
+      overlay.style.opacity = "1";
+      overlay.style.background = "rgba(0,0,0,0.6)";
+      overlay.style.transform = "scale(1)";
+    });
   }
 });
 
