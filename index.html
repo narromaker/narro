@@ -13,18 +13,34 @@
   gtag('js', new Date());
   gtag('config', 'G-FW2QE6BL6R');
 
-  // Compute daily key locally (no dependency on later script)
+  // ---------- DAILY TRACKING ----------
   const todayKeyGA = new Date().toLocaleDateString("en-CA", {
     timeZone: "America/New_York"
   });
-  const dailyStateKeyGA = `narroState-${todayKeyGA}`;
+  const dailyStateKeyGA = `narro_daily_start-${todayKeyGA}`;
 
-  if (!localStorage.getItem(dailyStateKeyGA)) {
+  function trackDailyStart() {
+    if (!localStorage.getItem(dailyStateKeyGA)) {
+      gtag("event", "game_start", {
+        mode: "daily",
+        game_version: "v1.0"
+      });
+      localStorage.setItem(dailyStateKeyGA, "true");
+    }
+  }
+
+  // Fire on load (daily mode)
+  window.addEventListener('load', trackDailyStart);
+
+  // ---------- OTHER MODE TRACKING ----------
+  function trackModeStart(mode) {
+    // Fires every time the mode is started
     gtag("event", "game_start", {
+      mode: mode,
       game_version: "v1.0"
     });
   }
-</script> 
+</script>
 
 <!-- Open Graph -->
 <meta property="og:title" content="Narro — Today’s Number Puzzle" />
@@ -484,10 +500,6 @@
 
   canvas { position: fixed; inset: 0; pointer-events: none; }
 
-  #modeSelect {
-  display: none;
-}
-
 .million-counter {
   display: none;
   font-size: 0.75rem;
@@ -625,14 +637,7 @@
     </div>
   </div>
 
-  <!-- Overlays, modals, canvas, etc. -->
-  <div id="modeSelect" class="free-play-overlay">
-    <div class="free-play-title">Free Play Unlocked!</div>
-    <button data-mode="classic">Classic</button>
-    <button data-mode="million">Million</button>
-    <button data-mode="micro">Micro</button>
-  </div>
-
+  <!-- Modals, canvas, etc. -->
   <div class="modal" id="statsModal">
     <div class="modal-card">
       <p><strong>Stats</strong></p>
@@ -647,28 +652,48 @@
   <canvas id="confetti"></canvas>
   <script>
     const freePlayPanel = document.getElementById("freePlayPanel");
-    const freePlayMainBtn = document.getElementById("freePlayMainBtn");
-    const freePlayModes = document.getElementById("freePlayModes");
-    const freePlayModeBtns = document.querySelectorAll(".freePlayModeBtn");
+const freePlayMainBtn = document.getElementById("freePlayMainBtn");
+const freePlayModes = document.getElementById("freePlayModes");
+const freePlayModeBtns = document.querySelectorAll(".freePlayModeBtn");
 
-    window.addEventListener("load", () => {
-      const freeUnlocked = localStorage.getItem("narroFreePlayUnlocked") === "true";
-      if (freeUnlocked) freePlayPanel.style.display = "block";
-    });
+// Initially locked
+let freePlayUnlocked = false;
+freePlayPanel.style.display = "block"; // always visible
+freePlayMainBtn.disabled = true;
 
-    freePlayMainBtn.addEventListener("click", () => {
-      freePlayModes.style.display = freePlayModes.style.display === "flex" ? "none" : "flex";
-    });
+// --- RESTORE UNLOCKED STATE ON LOAD ---
+if (localStorage.getItem("narroFreePlayUnlocked") === "true") {
+  unlockFreePlay();
+}
 
-    freePlayModeBtns.forEach(btn => {
-      btn.addEventListener("click", () => {
-        const mode = btn.dataset.mode;
-        startFreePlay(mode);
-        freePlayModes.style.display = "none";
-      });
-    });
+// Unlock after daily game ends
+function unlockFreePlay() {
+  if (freePlayUnlocked) return;
+
+  freePlayUnlocked = true;
+  localStorage.setItem("narroFreePlayUnlocked", "true");
+
+  freePlayMainBtn.disabled = false;
+  freePlayMainBtn.style.opacity = "1";
+  freePlayMainBtn.style.pointerEvents = "auto";
+}
+
+// Toggle mode buttons
+freePlayMainBtn.addEventListener("click", () => {
+  if (!freePlayUnlocked) return; // safety
+  freePlayModes.style.display =
+    freePlayModes.style.display === "flex" ? "none" : "flex";
+});
+
+// Start free play when a mode button is clicked
+freePlayModeBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const mode = btn.dataset.mode;
+    startFreePlay(mode);
+    freePlayModes.style.display = "none";
+  });
+});
   </script>
-
 
   <script>
 /* ---------- EASTERN TIME HELPERS ---------- */
@@ -756,7 +781,6 @@ const MODES = {
 };
 
 let currentMode = MODES.DAILY;
-let freePlayUnlocked = false;
 
 /* ---------- DEMO STATE ---------- */
 let demoMode =
@@ -799,54 +823,19 @@ const HINT_WIDE_THRESHOLD = 200;
 const HINT_TIGHT_THRESHOLD = 30;
 const countdown = document.getElementById("countdown");
 const ORB_TIP_KEY = "narro_orb_tip_seen";
-const modeSelect = document.getElementById("modeSelect");
-
-modeSelect.addEventListener("click", e => {
-  const mode = e.target.dataset.mode;
-  if (!mode) return;
-
-  startFreePlay(mode);
-
-  const overlay = document.getElementById("modeSelect");
-  
-  // Animate overlay out
-  overlay.style.transition = "opacity 0.25s ease, transform 0.25s ease";
-  overlay.style.opacity = "0";
-  overlay.style.transform = "scale(0.95)";
-
-  // Hide after animation completes
-  setTimeout(() => {
-    overlay.style.display = "none";
-  }, 250);
-});
 
 window.addEventListener("load", () => {
-  const freeUnlocked = localStorage.getItem("narroFreePlayUnlocked") === "true";
+  // Always show the panel (corner button stays visible)
+  freePlayPanel.style.display = "block";
 
-  if (freeUnlocked) {
-    freePlayUnlocked = true;
-    const overlay = document.getElementById("modeSelect");
-
-    // Mobile overlay styling
-    overlay.style.position = "fixed";
-    overlay.style.inset = "0";
-    overlay.style.display = "flex";
-    overlay.style.justifyContent = "center";
-    overlay.style.alignItems = "center";
-    overlay.style.background = "rgba(0,0,0,0)"; // start transparent
-    overlay.style.flexDirection = "column";
-    overlay.style.zIndex = "1000";
-    overlay.style.gap = "12px";
-    overlay.style.opacity = "0";
-    overlay.style.transform = "scale(0.95)";
-    overlay.style.transition = "opacity 0.35s ease, transform 0.35s ease";
-
-    // Trigger smooth fade-in
-    requestAnimationFrame(() => {
-      overlay.style.opacity = "1";
-      overlay.style.background = "rgba(0,0,0,0.6)";
-      overlay.style.transform = "scale(1)";
-    });
+  // Restore unlocked state
+  if (localStorage.getItem("narroFreePlayUnlocked") === "true") {
+    unlockFreePlay();
+  } else {
+    // Explicit locked state
+    freePlayMainBtn.disabled = true;
+    freePlayMainBtn.style.opacity = "0.5";
+    freePlayMainBtn.style.pointerEvents = "none";
   }
 });
 
@@ -877,12 +866,9 @@ input.addEventListener("keydown", (e) => {
 
 /* ---------- SAVED STATE RESTORE ---------- */
 const savedState = localStorage.getItem(dailyStateKey);
-freePlayUnlocked =
-  localStorage.getItem("narroFreePlayUnlocked") === "true";
 
 if (savedState) {
   demoMode = false;
-  freePlayUnlocked = true;
 
 if (currentMode === MODES.DAILY) {
   MAX_GUESSES_OVERRIDE = null;
@@ -1013,15 +999,13 @@ function activateHintOrb() {
 }
 
 function maybeShowOrbTip() {
-  // Always show for returning players as well
   if (!gameOver && !lifelineUsed && !tipShown) {
     tipText.textContent = "Follow the orb — it tracks the hidden number!";
     tipText.style.opacity = "1";
     tipText.style.display = "block";
     activateHintOrb();
     tipShown = true;
-}
-
+  }
 }
 
 /* ---------- FREE PLAY ---------- */
@@ -1030,6 +1014,15 @@ function startFreePlay(mode) {
   sentimentState.lastGuessHadSentiment = false;
 
   currentMode = mode;
+
+  // --- GA4 tracking for free play / custom mode ---
+  if (typeof gtag === "function") {
+    gtag("event", "game_start", {
+      game_version: "v1.0",
+      game_mode: currentMode
+    });
+  }
+
   gameOver = false;
   guesses = [];
   lifelineUsed = false;
@@ -1088,13 +1081,21 @@ function startFreePlay(mode) {
   syncInputRange();
   updateBar();
   updateOrb();
-  updateMillionGuessDisplay(); // show/hide counter depending on mode
+  updateMillionGuessDisplay();
+if (currentMode !== MODES.MILLION) {
+  document.getElementById("millionPrompt").style.display = "none";
+  document.getElementById("millionGuessCounter").style.display = "none";
+}
 
 }
 
 function startDailyMode() {
   // Reset game state, but do NOT touch free play sentimentState
   currentMode = MODES.DAILY;
+
+  // --- GA4 tracking for daily mode ---
+  trackDailyStart();
+
   gameOver = false;
   guesses = [];
   lifelineUsed = false;
@@ -1207,7 +1208,7 @@ function maybeAutoResolveDaily() {
   if (gameOver) return;
   if (min !== max) return;
 
-  min === secret ? win() : lose();
+  secret === min ? win() : lose();
 }
 
 function getModeRange() {
@@ -1358,8 +1359,9 @@ function isCriticalRange() {
 
 /* ---------- INPUT RANGE ---------- */
 function syncInputRange() {
-  input.min = min;
-  input.max = max;
+  if (!input) return;
+  input.min = min ?? 1;
+  input.max = max ?? MAX_RANGE;
 }
 
 /* ---------- RANDOMIZED CONTEXTUAL FEEDBACK ---------- */
@@ -1423,7 +1425,7 @@ function updateBar() {
 
   // Clamp min/max to valid range
   min = Math.min(Math.max(1, min), rangeMax);
-  max = Math.max(min, max)
+  max = Math.min(Math.max(min, max), rangeMax);
 
   // Use (rangeMax - 1) for full scale mapping
   const left = ((min - 1) / (rangeMax - 1)) * 100;
@@ -1791,8 +1793,9 @@ function showToast(msg, duration = 1200) {
 /* ---------- END STATES ---------- */
 function win() {
   if (currentMode !== MODES.DAILY && currentMode !== MODES.CLASSIC) return;
-  if (gameOver) return;  
+  if (gameOver) return;
 
+  // --- GA4 tracking ---
   if (typeof gtag === "function") {
     gtag("event", "game_win", {
       guesses: guesses.length,
@@ -1803,6 +1806,12 @@ function win() {
 
   gameOver = true;
 
+  // Disable main input & buttons
+  input.disabled = true;
+  btn.disabled = true;
+  shareBtn.disabled = false;
+
+  // --- Store daily result ---
   localStorage.setItem(dailyStateKey, JSON.stringify({
     result: "win",
     guesses,
@@ -1810,55 +1819,51 @@ function win() {
     lifelineGuessIndex
   }));
 
-  // Unlock free play
-  freePlayUnlocked = true;
-  localStorage.setItem("narroFreePlayUnlocked", "true");
-  modeSelect.style.display = "block"; // show the free play buttons
+  // --- Unlock Free Play (Daily only) ---
+  if (currentMode === MODES.DAILY) {
+    unlockFreePlay();
+  }
 
-  guessCount.textContent = ""; // clear final-guess prompt
+  // --- Update UI ---
+  guessCount.textContent = "";
   bar.classList.remove("hinted", "hint-ready");
 
   feedback.textContent = "🎯 You got it!";
   feedback.style.fontSize = "1.25rem";
   feedback.style.fontWeight = "600";
 
-  input.disabled = true;
-  btn.disabled = true;
-  shareBtn.disabled = false;
-
   tipText.textContent = "Want more Narro? Try the free play!";
   tipText.style.display = "block";
   tipText.style.opacity = "1";
   tipText.style.transition = "none";
 
+  // --- Celebration ---
   launchConfetti();
   haptic([20, 60, 20]);
 
-  updateStats(true);   
+  updateStats(true);
 
-  // ---------------- WIN STREAK ----------------
-  // Compute yesterday in Eastern Time
-  const etNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
+  // --- WIN STREAK ---
+  const etNow = new Date(new Date().toLocaleString("en-US", {
+    timeZone: "America/New_York"
+  }));
   const etYesterday = new Date(etNow);
   etYesterday.setDate(etYesterday.getDate() - 1);
-  const yesterdayKey = `${etYesterday.getFullYear()}-${String(etYesterday.getMonth()+1).padStart(2,"0")}-${String(etYesterday.getDate()).padStart(2,"0")}`;
 
-  // Previous streak value
-  const prevStreak = Number(localStorage.getItem("narroStreakPrev")) || 0;
+  const yesterdayKey =
+    `${etYesterday.getFullYear()}-${String(etYesterday.getMonth()+1).padStart(2,"0")}-${String(etYesterday.getDate()).padStart(2,"0")}`;
 
-  // Increment streak if player won yesterday too
-  let streak;
-  if (localStorage.getItem("narroLastPlayed") === yesterdayKey) {
-    streak = prevStreak + 1;
-  } else {
-    streak = 1; // reset if missed a day
-  }
+  const prevStreak =
+    Number(localStorage.getItem("narroStreakPrev")) || 0;
 
-  // Store streak and last played date
+  const streak =
+    localStorage.getItem("narroLastPlayed") === yesterdayKey
+      ? prevStreak + 1
+      : 1;
+
   localStorage.setItem("narroStreakPrev", streak);
   localStorage.setItem("narroLastPlayed", todayKey);
 
-  // Display streak in top row
   const streakEl = document.getElementById("streak");
   if (streakEl) streakEl.textContent = `🔥 Streak: ${streak}`;
 
@@ -1867,7 +1872,7 @@ function win() {
 
 function lose() {
   if (currentMode !== MODES.DAILY && currentMode !== MODES.CLASSIC) return;
-  if (gameOver) return;  
+  if (gameOver) return;
 
   if (typeof gtag === "function") {
     gtag("event", "game_loss", {
@@ -1886,17 +1891,16 @@ function lose() {
     lifelineGuessIndex
   }));
 
-  // Unlock free play
-  freePlayUnlocked = true;
-  localStorage.setItem("narroFreePlayUnlocked", "true");
-  modeSelect.style.display = "block"; // show the free play buttons
+  if (currentMode === MODES.DAILY) {
+    unlockFreePlay();
+  }
 
-  guessCount.textContent = ""; // clear final-guess prompt
+  guessCount.textContent = "";
 
   feedback.textContent = "Try again tomorrow!";
-  haptic(15);
   feedback.style.fontSize = "1.15rem";
   feedback.style.fontWeight = "500";
+  haptic(15);
 
   const closure = document.createElement("div");
   closure.style.color = "#9aa0c3";
@@ -1907,19 +1911,19 @@ function lose() {
 
   const closest = getClosestDistance();
   if (Number.isFinite(closest)) {
-    const closestEl = document.createElement("div");
-    closestEl.style.fontSize = "0.9rem";
-    closestEl.style.marginTop = "4px";
+    const el = document.createElement("div");
+    el.style.fontSize = "0.9rem";
+    el.style.marginTop = "4px";
 
     if (closest === 1) {
-      closestEl.textContent = "So close — 1 away";
-      closestEl.classList.add("closest-one");
+      el.textContent = "So close — 1 away";
+      el.classList.add("closest-one");
     } else {
-      closestEl.style.color = "#9aa0c3";
-      closestEl.textContent = `Closest guess: ${closest} away`;
+      el.textContent = `Closest guess: ${closest} away`;
+      el.style.color = "#9aa0c3";
     }
 
-    feedback.appendChild(closestEl);
+    feedback.appendChild(el);
   }
 
   input.disabled = true;
