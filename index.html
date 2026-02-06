@@ -5,52 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Narro</title>
 
-<!-- Supabase -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  const { createClient } = supabase;
-
-  const supabaseClient = createClient(
-    "https://jxpkrhoizzhmugynocrs.supabase.co",
-    "sb_publishable_z8fQIq8pF-fMao3KGUrMuA_DpwbEej_"
-  );
-
-  let narroUserId = localStorage.getItem("narroUserId");
-  if (!narroUserId) {
-    narroUserId = crypto.randomUUID();
-    localStorage.setItem("narroUserId", narroUserId);
-  }
-</script>
-
-  <script>
-async function trackGameComplete({
-  mode,
-  won,
-  guesses,
-  timeMs,
-  rangeHistory = [],
-  perfectGame = false
-}) {
-  try {
-    await supabaseClient
-      .from("game_sessions")
-      .insert({
-        user_id: narroUserId,
-        mode,
-        won,
-        guesses,
-        time_ms: timeMs,
-        range_history: rangeHistory,
-        perfect_game: perfectGame
-      });
-  } catch (err) {
-    // Fail silently — analytics should never break the game
-    console.warn("Telemetry failed", err);
-  }
-}
-</script>
-  
-  <!-- Google tag (gtag.js) -->
+<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-FW2QE6BL6R"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -58,34 +13,18 @@ async function trackGameComplete({
   gtag('js', new Date());
   gtag('config', 'G-FW2QE6BL6R');
 
-  // ---------- DAILY TRACKING ----------
+  // Compute daily key locally (no dependency on later script)
   const todayKeyGA = new Date().toLocaleDateString("en-CA", {
     timeZone: "America/New_York"
   });
-  const dailyStateKeyGA = `narro_daily_start-${todayKeyGA}`;
+  const dailyStateKeyGA = `narroState-${todayKeyGA}`;
 
-  function trackDailyStart() {
-    if (!localStorage.getItem(dailyStateKeyGA)) {
-      gtag("event", "game_start", {
-        mode: "daily",
-        game_version: "v1.0"
-      });
-      localStorage.setItem(dailyStateKeyGA, "true");
-    }
-  }
-
-  // Fire on load (daily mode)
-  window.addEventListener('load', trackDailyStart);
-
-  // ---------- OTHER MODE TRACKING ----------
-  function trackModeStart(mode) {
-    // Fires every time the mode is started
+  if (!localStorage.getItem(dailyStateKeyGA)) {
     gtag("event", "game_start", {
-      mode: mode,
       game_version: "v1.0"
     });
   }
-</script>
+</script> 
 
 <!-- Open Graph -->
 <meta property="og:title" content="Narro — Today’s Number Puzzle" />
@@ -1059,15 +998,6 @@ function startFreePlay(mode) {
   sentimentState.lastGuessHadSentiment = false;
 
   currentMode = mode;
-
-  // --- GA4 tracking for free play / custom mode ---
-  if (typeof gtag === "function") {
-    gtag("event", "game_start", {
-      game_version: "v1.0",
-      game_mode: currentMode
-    });
-  }
-
   gameOver = false;
   guesses = [];
   lifelineUsed = false;
@@ -1137,10 +1067,6 @@ if (currentMode !== MODES.MILLION) {
 function startDailyMode() {
   // Reset game state, but do NOT touch free play sentimentState
   currentMode = MODES.DAILY;
-
-  // --- GA4 tracking for daily mode ---
-  trackDailyStart();
-
   gameOver = false;
   guesses = [];
   lifelineUsed = false;
@@ -1851,17 +1777,6 @@ function win() {
 
   gameOver = true;
 
-    // >>> SUPABASE TELEMETRY (NEW)
-  trackGameComplete({
-    mode: currentMode,
-    won: true,
-    guesses: guesses.length,
-    timeMs: Date.now() - gameStartTime,
-    rangeHistory: [...rangeSnapshots],
-    perfectGame: guesses.length === optimalGuesses
-  });
-  // <<< END SUPABASE TELEMETRY
-
   // Disable main input & buttons
   input.disabled = true;
   btn.disabled = true;
@@ -1939,17 +1854,6 @@ function lose() {
   }
 
   gameOver = true;
-
-    // >>> SUPABASE TELEMETRY (NEW)
-  trackGameComplete({
-    mode: currentMode,
-    won: false,
-    guesses: guesses.length,
-    timeMs: Date.now() - gameStartTime,
-    rangeHistory: [...rangeSnapshots],
-    perfectGame: false
-  });
-  // <<< END SUPABASE TELEMETRY
 
   localStorage.setItem(dailyStateKey, JSON.stringify({
     result: "lose",
