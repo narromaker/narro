@@ -784,6 +784,7 @@ let hintAllowed = true;
 let MAX_GUESSES_OVERRIDE = null;
 let millionGuessCounter = 0;
 let gameResult = null; // "win" | "lose"
+let dailyResult = null; // "win", "loss", or null if not played yet
 
 /* ---------- ELEMENTS ---------- */
 const input = document.getElementById("guessInput");
@@ -810,6 +811,10 @@ const countdown = document.getElementById("countdown");
 const ORB_TIP_KEY = "narro_orb_tip_seen";
 
 window.addEventListener("load", () => {
+  // --- DAILY SHARE BUTTON ---
+  dailyResult = localStorage.getItem(dailyStateKey + "-result"); // "win" or "lose" or null
+  updateShareButton(); // immediately reflect state
+
   // Always show the panel (corner button stays visible)
   freePlayPanel.style.display = "block";
 
@@ -1101,6 +1106,12 @@ function startDailyMode() {
 function resolveFreePlayGuess(g) {
   // MICRO: instant
   if (currentMode === MODES.MICRO) {
+    if (g < 1 || g > 25) {
+      toast.textContent = "Enter a number between 1 and 25";
+      setTimeout(() => (toast.textContent = ""), 2000);
+      return; // stop here, don’t end the game
+    }
+
     guesses.push(g);
     if (g === secret) endFreePlayWin();
     else endFreePlayLoss();
@@ -1345,8 +1356,13 @@ function isCriticalRange() {
 /* ---------- INPUT RANGE ---------- */
 function syncInputRange() {
   if (!input) return;
-  input.min = min ?? 1;
-  input.max = max ?? MAX_RANGE;
+  if (currentMode === MODES.MICRO) {
+    input.min = 1;
+    input.max = 25;
+  } else {
+    input.min = min ?? 1;
+    input.max = max ?? MAX_RANGE;
+  }
 }
 
 /* ---------- RANDOMIZED CONTEXTUAL FEEDBACK ---------- */
