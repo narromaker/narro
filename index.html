@@ -467,11 +467,22 @@
     );
 
   transform: translate(-50%, -50%);
-  transition: left 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    left 0.5s cubic-bezier(0.18, 0.88, 0.26, 1),
+    filter 0.24s ease-out,
+    box-shadow 0.24s ease-out;
+  will-change: left, filter, box-shadow;
 
   box-shadow:
     0 0 10px rgba(108,242,194,0.45),
     inset 0 1px 2px rgba(255,255,255,0.4);
+}
+
+.bar-orb.orb-moving {
+  filter: brightness(1.1) saturate(1.04);
+  box-shadow:
+    0 0 13px rgba(108,242,194,0.55),
+    inset 0 1px 2px rgba(255,255,255,0.46);
 }
 
 .bar.inverted-mode {
@@ -1006,6 +1017,7 @@ const maxLabel = document.getElementById("maxLabel");
 const guessCount = document.getElementById("guessCount");
 const countdown = document.getElementById("countdown");
 let cleanupInvertedDrag = null;
+let orbMovePulseTimer = null;
 
 function teardownInvertedInteraction() {
   if (typeof cleanupInvertedDrag === "function") {
@@ -1015,9 +1027,11 @@ function teardownInvertedInteraction() {
 
   barOrb.onpointerdown = null;
   barOrb.classList.remove("inverted-active");
+  barOrb.classList.remove("orb-moving");
   bar.classList.remove("inverted-mode");
   barOrb.style.cursor = "default";
-  barOrb.style.transition = "left 0.45s cubic-bezier(0.22, 1, 0.36, 1)";
+  barOrb.style.transition =
+    "left 0.5s cubic-bezier(0.18, 0.88, 0.26, 1), filter 0.24s ease-out, box-shadow 0.24s ease-out";
 }
 
 function readDailyResult() {
@@ -2492,8 +2506,31 @@ max = Math.max(min, Math.min(max, rangeMax));
   }
 
   percent = Math.min(100, Math.max(0, percent));
-  barOrb.style.transition = "left 0.45s cubic-bezier(0.22, 1, 0.36, 1)";
+  const previousPercent = Number.parseFloat(barOrb.style.left);
+  const deltaPercent = Number.isFinite(previousPercent)
+    ? Math.abs(percent - previousPercent)
+    : 0;
+  const travelDuration = Number.isFinite(deltaPercent)
+    ? Math.min(0.64, Math.max(0.3, 0.3 + deltaPercent * 0.0044))
+    : 0.42;
+
+  barOrb.style.transition =
+    `left ${travelDuration.toFixed(3)}s cubic-bezier(0.18, 0.88, 0.26, 1), filter 0.24s ease-out, box-shadow 0.24s ease-out`;
   barOrb.style.left = `${percent}%`;
+
+  if (
+    !gameOver &&
+    deltaPercent >= 0.4 &&
+    !window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
+  ) {
+    barOrb.classList.remove("orb-moving");
+    barOrb.offsetWidth; // restart pulse
+    barOrb.classList.add("orb-moving");
+    clearTimeout(orbMovePulseTimer);
+    orbMovePulseTimer = setTimeout(() => {
+      barOrb.classList.remove("orb-moving");
+    }, 220);
+  }
 
   // Glow & pulse effect
   if (gameOver) {
@@ -2966,4 +3003,5 @@ document.getElementById("feedbackBtn")?.addEventListener("click", (e) => {
 </script>
 </body>
 </html>
+
 
