@@ -1107,9 +1107,6 @@ function shouldRetainKeyboardOnBlur() {
   if (!isMobile()) return false;
   if (allowSubmitBlur) return false;
 
-  const value = String(input.value ?? "").trim();
-  if (!value) return false;
-
   let tapTarget = lastPointerDownTarget;
   if (
     !(tapTarget instanceof Element) &&
@@ -1119,6 +1116,10 @@ function shouldRetainKeyboardOnBlur() {
     tapTarget = document.elementFromPoint(lastPointerDownX, lastPointerDownY);
   }
   if (!(tapTarget instanceof Element)) return false;
+  if (tapTarget.closest("#guessBtn") && !gameOver) return true;
+
+  const value = String(input.value ?? "").trim();
+  if (!value) return false;
 
   const appRoot = document.querySelector(".app");
   if (!appRoot) return false;
@@ -2336,20 +2337,9 @@ function submitCurrentGuess() {
 
   if (!gameOver && guesses.length === maxGuessesForMode() - 2) {
   tipText.style.opacity = 0;
-}
+  }
 
   input.value = "";
-
-  if (isMobile()) {
-    // Keep the bar/orb visible after each mobile guess.
-    allowSubmitBlur = true;
-    input.blur();
-    setTimeout(() => {
-      allowSubmitBlur = false;
-    }, 120);
-  } else {
-    input.focus();
-  }
 
   if (demoMode) {
     resolveDemoGuess(g);
@@ -2362,6 +2352,22 @@ function submitCurrentGuess() {
   resolveFreePlayGuess(g);
 }
 
+  if (!gameOver) {
+    if (isMobile()) {
+      setTimeout(() => {
+        if (gameOver) return;
+        try {
+          input.focus({ preventScroll: true });
+        } catch {
+          input.focus();
+        }
+        ensurePlayableSectionVisible("auto");
+      }, 0);
+    } else {
+      input.focus();
+    }
+  }
+
 }
 
 let suppressNextGuessClick = false;
@@ -2370,6 +2376,7 @@ const GUESS_BUTTON_SLOP_PX = 18;
 
 btn.addEventListener("pointerdown", (e) => {
   if (!isMobile() || e.pointerType === "mouse" || btn.disabled) return;
+  e.preventDefault();
   activeMobileGuessPointerId = e.pointerId;
   try {
     btn.setPointerCapture(e.pointerId);
@@ -2959,3 +2966,4 @@ document.getElementById("feedbackBtn")?.addEventListener("click", (e) => {
 </script>
 </body>
 </html>
+
