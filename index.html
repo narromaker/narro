@@ -52,6 +52,7 @@
     --hinted: #7db7ff;
     --win: hsl(45,100%,50%);
     --win-glow: hsla(45,100%,60%,0.6);
+    --keyboard-inset: 0px;
   }
 
   * { box-sizing: border-box; }
@@ -67,11 +68,20 @@
     color: var(--text);
   }
 
+  body.keyboard-open {
+    align-items: flex-start;
+  }
+
   .app {
     width: 100%;
     max-width: 420px;
     padding: 20px;
     text-align: center;
+  }
+
+  body.keyboard-open .app {
+    padding-top: 10px;
+    padding-bottom: calc(24px + var(--keyboard-inset));
   }
 
   h1 { margin: 0; font-size: 2rem; }
@@ -1068,20 +1078,7 @@ window.addEventListener("load", () => {
 
 /* ---------- INPUT EVENTS ---------- */
 input.addEventListener("blur", () => {
-  const spacer = document.getElementById("keyboardSpacer");
-  if (spacer) spacer.remove();
-
-  if (!isMobile()) return;
-  setTimeout(() => {
-    const appRect = document.querySelector(".app").getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-    const spaceBelow = viewportHeight - appRect.bottom;
-
-    if (spaceBelow < 20) {
-        window.scrollBy({ top: 20 - spaceBelow, behavior: "smooth" });
-    }
-}, 150);
-
+  handleKeyboardBlur();
 });
 
 input.addEventListener("keydown", (e) => {
@@ -1332,24 +1329,99 @@ function isMobile() {
   return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
+function getViewportHeight() {
+  return window.visualViewport?.height || window.innerHeight;
+}
+
+let keyboardViewportBaseline = getViewportHeight();
+
+function applyKeyboardInset() {
+  const inset = Math.max(0, keyboardViewportBaseline - getViewportHeight());
+  document.documentElement.style.setProperty("--keyboard-inset", `${inset}px`);
+  return inset;
+}
+
+function ensurePlayableSectionVisible(behavior = "smooth") {
+  const playable = document.querySelector(".bar-wrap");
+  if (!playable) return;
+
+  const viewportHeight = getViewportHeight();
+  const rect = playable.getBoundingClientRect();
+  const topPadding = 12;
+  const bottomPadding = 16;
+  const bottomLimit = viewportHeight - bottomPadding;
+
+  if (rect.top >= topPadding && rect.bottom <= bottomLimit) {
+    return;
+  }
+
+  const targetY =
+    window.scrollY +
+    rect.top -
+    Math.max(topPadding, (viewportHeight - rect.height) * 0.36);
+
+  window.scrollTo({
+    top: Math.max(0, targetY),
+    behavior
+  });
+}
+
+function handleKeyboardFocus() {
+  if (!isMobile()) return;
+
+  keyboardViewportBaseline = Math.max(keyboardViewportBaseline, getViewportHeight());
+  document.body.classList.add("keyboard-open");
+  applyKeyboardInset();
+
+  setTimeout(() => {
+    applyKeyboardInset();
+    ensurePlayableSectionVisible("smooth");
+  }, 140);
+
+  setTimeout(() => {
+    applyKeyboardInset();
+    ensurePlayableSectionVisible("smooth");
+  }, 360);
+}
+
+function handleKeyboardBlur() {
+  document.body.classList.remove("keyboard-open");
+  document.documentElement.style.setProperty("--keyboard-inset", "0px");
+
+  if (!isMobile()) return;
+  setTimeout(() => {
+    keyboardViewportBaseline = getViewportHeight();
+  }, 120);
+}
+
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", () => {
+    if (!isMobile()) return;
+
+    if (document.activeElement === input) {
+      applyKeyboardInset();
+      ensurePlayableSectionVisible("auto");
+    } else {
+      keyboardViewportBaseline = getViewportHeight();
+    }
+  });
+}
+
+window.addEventListener("orientationchange", () => {
+  setTimeout(() => {
+    keyboardViewportBaseline = getViewportHeight();
+
+    if (document.activeElement === input && isMobile()) {
+      applyKeyboardInset();
+      ensurePlayableSectionVisible("auto");
+    }
+  }, 120);
+});
+
 input.addEventListener("focus", () => {
   input.select();
 
-  if (!isMobile()) return; // Only apply on mobile
-
-  // Delay slightly to let keyboard appear
-  setTimeout(() => {
-    const appRect = document.querySelector(".app").getBoundingClientRect();
-    const viewportHeight = window.innerHeight;
-
-    // Scroll so the bottom of the app is visible
-    const spaceBelow = viewportHeight - appRect.bottom;
-
-    if (spaceBelow < 20) { // small buffer
-      const scrollAmount = 20 - spaceBelow;
-      window.scrollBy({ top: scrollAmount, behavior: "smooth" });
-    }
-  }, 250); // slightly faster than before
+  handleKeyboardFocus();
 });
 
 function activateHintOrb() {
