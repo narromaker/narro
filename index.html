@@ -1077,8 +1077,92 @@ window.addEventListener("load", () => {
 });
 
 /* ---------- INPUT EVENTS ---------- */
+let allowSubmitBlur = false;
+let lastPointerDownTarget = null;
+let lastPointerDownX = null;
+let lastPointerDownY = null;
+
+function rememberLastTapTarget(e) {
+  let target = e.target;
+
+  if (!(target instanceof Element) && target?.parentElement) {
+    target = target.parentElement;
+  }
+
+  lastPointerDownTarget = target instanceof Element ? target : null;
+
+  if (typeof e.clientX === "number" && typeof e.clientY === "number") {
+    lastPointerDownX = e.clientX;
+    lastPointerDownY = e.clientY;
+  } else if (e.touches?.[0]) {
+    lastPointerDownX = e.touches[0].clientX;
+    lastPointerDownY = e.touches[0].clientY;
+  }
+}
+
+document.addEventListener("pointerdown", rememberLastTapTarget, true);
+document.addEventListener("touchstart", rememberLastTapTarget, true);
+
+function shouldRetainKeyboardOnBlur() {
+  if (!isMobile()) return false;
+  if (allowSubmitBlur) return false;
+
+  const value = String(input.value ?? "").trim();
+  if (!value) return false;
+
+  let tapTarget = lastPointerDownTarget;
+  if (
+    !(tapTarget instanceof Element) &&
+    Number.isFinite(lastPointerDownX) &&
+    Number.isFinite(lastPointerDownY)
+  ) {
+    tapTarget = document.elementFromPoint(lastPointerDownX, lastPointerDownY);
+  }
+  if (!(tapTarget instanceof Element)) return false;
+
+  const appRoot = document.querySelector(".app");
+  if (!appRoot) return false;
+
+  const appRect = appRoot.getBoundingClientRect();
+  const tapInsideAppRect =
+    Number.isFinite(lastPointerDownX) &&
+    Number.isFinite(lastPointerDownY) &&
+    lastPointerDownX >= appRect.left &&
+    lastPointerDownX <= appRect.right &&
+    lastPointerDownY >= appRect.top &&
+    lastPointerDownY <= appRect.bottom;
+
+  if (!appRoot.contains(tapTarget) && !tapInsideAppRect) return false;
+
+  // Allow blur on intentional controls/taps; retain only for accidental
+  // non-interactive taps on the app surface.
+  if (
+    tapTarget.closest(
+      "#guessBtn, #guessInput, .bar, .stats-btn, #shareBtn, #feedbackBtn, #statsModal, #freePlayPanel button"
+    )
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 input.addEventListener("blur", () => {
+  if (shouldRetainKeyboardOnBlur()) {
+    setTimeout(() => {
+      if (document.activeElement !== input && !gameOver) {
+        try {
+          input.focus({ preventScroll: true });
+        } catch {
+          input.focus();
+        }
+      }
+    }, 0);
+    return;
+  }
+
   handleKeyboardBlur();
+  allowSubmitBlur = false;
 });
 
 input.addEventListener("keydown", (e) => {
@@ -2258,7 +2342,11 @@ function submitCurrentGuess() {
 
   if (isMobile()) {
     // Keep the bar/orb visible after each mobile guess.
+    allowSubmitBlur = true;
     input.blur();
+    setTimeout(() => {
+      allowSubmitBlur = false;
+    }, 120);
   } else {
     input.focus();
   }
@@ -2277,17 +2365,45 @@ function submitCurrentGuess() {
 }
 
 let suppressNextGuessClick = false;
+let activeMobileGuessPointerId = null;
+const GUESS_BUTTON_SLOP_PX = 18;
 
-btn.addEventListener("touchend", (e) => {
-  if (!isMobile()) return;
+btn.addEventListener("pointerdown", (e) => {
+  if (!isMobile() || e.pointerType === "mouse" || btn.disabled) return;
+  activeMobileGuessPointerId = e.pointerId;
+  try {
+    btn.setPointerCapture(e.pointerId);
+  } catch {}
+});
+
+btn.addEventListener("pointercancel", (e) => {
+  if (e.pointerId === activeMobileGuessPointerId) {
+    activeMobileGuessPointerId = null;
+  }
+});
+
+btn.addEventListener("pointerup", (e) => {
+  if (!isMobile() || e.pointerType === "mouse" || btn.disabled) return;
+  if (e.pointerId !== activeMobileGuessPointerId) return;
+  activeMobileGuessPointerId = null;
+
+  const rect = btn.getBoundingClientRect();
+  const withinExpandedBounds =
+    e.clientX >= rect.left - GUESS_BUTTON_SLOP_PX &&
+    e.clientX <= rect.right + GUESS_BUTTON_SLOP_PX &&
+    e.clientY >= rect.top - GUESS_BUTTON_SLOP_PX &&
+    e.clientY <= rect.bottom + GUESS_BUTTON_SLOP_PX;
+
+  if (!withinExpandedBounds) return;
   e.preventDefault();
   suppressNextGuessClick = true;
   submitCurrentGuess();
 });
 
-btn.addEventListener("click", () => {
+btn.addEventListener("click", (e) => {
   if (suppressNextGuessClick) {
     suppressNextGuessClick = false;
+    e.preventDefault();
     return;
   }
   submitCurrentGuess();
