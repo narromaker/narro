@@ -2309,6 +2309,18 @@ function updateGuessUI() {
 
   const remaining = maxGuessesForMode() - guesses.length;
 
+  if (currentMode === MODES.INVERTED) {
+    guessCount.textContent = "";
+    bar.classList.remove("hint-ready");
+    tipText.classList.remove("hint");
+    if (!tipText.textContent.trim()) {
+      tipText.textContent = "One shot. Drag the orb to the exact number.";
+    }
+    tipText.style.display = "block";
+    tipText.style.opacity = "1";
+    return;
+  }
+
   if (currentMode !== MODES.DAILY && currentMode !== MODES.CLASSIC) {
   bar.classList.remove("hint-ready");
   tipText.style.display = "none";
@@ -3040,4 +3052,3 @@ document.getElementById("feedbackBtn")?.addEventListener("click", (e) => {
 </script>
 </body>
 </html>
-
