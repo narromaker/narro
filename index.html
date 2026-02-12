@@ -1031,8 +1031,7 @@ function teardownInvertedInteraction() {
   barOrb.classList.remove("orb-moving");
   bar.classList.remove("inverted-mode");
   barOrb.style.cursor = "default";
-  barOrb.style.transition =
-    "left 0.5s cubic-bezier(0.18, 0.88, 0.26, 1), filter 0.24s ease-out, box-shadow 0.24s ease-out";
+  setOrbTrackingTransition(0.5);
 }
 
 function readDailyResult() {
@@ -1429,6 +1428,31 @@ function isMobile() {
   return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
 
+function isIOSDevice() {
+  return /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function setOrbTrackingTransition(leftSeconds) {
+  const duration = Number.isFinite(leftSeconds)
+    ? Math.max(0.08, leftSeconds)
+    : 0.5;
+  const durationText = `${duration.toFixed(3)}s`;
+
+  barOrb.style.transition =
+    `left ${durationText} cubic-bezier(0.18, 0.88, 0.26, 1), filter 0.24s ease-out, box-shadow 0.24s ease-out`;
+
+  // iOS + Reduce Motion can collapse transition-duration globally to ~0ms.
+  // Force core orb tracking duration so gameplay motion remains readable.
+  if (isIOSDevice()) {
+    barOrb.style.setProperty(
+      "transition-duration",
+      `${durationText}, 0.24s, 0.24s`,
+      "important"
+    );
+  }
+}
+
 function getViewportHeight() {
   return window.visualViewport?.height || window.innerHeight;
 }
@@ -1621,6 +1645,7 @@ function startFreePlay(mode) {
       bar.className = "bar inverted-mode";
       barFill.className = "bar-fill";
       barOrb.classList.add("inverted-active");
+      barOrb.style.removeProperty("transition-duration");
       input.disabled = true;
       btn.disabled = true;
 
@@ -2514,8 +2539,7 @@ max = Math.max(min, Math.min(max, rangeMax));
     ? Math.min(0.64, Math.max(0.3, 0.3 + deltaPercent * 0.0044))
     : 0.42;
 
-  barOrb.style.transition =
-    `left ${travelDuration.toFixed(3)}s cubic-bezier(0.18, 0.88, 0.26, 1), filter 0.24s ease-out, box-shadow 0.24s ease-out`;
+  setOrbTrackingTransition(travelDuration);
   const nextLeft = `${percent}%`;
   if (orbMoveRaf != null) {
     cancelAnimationFrame(orbMoveRaf);
@@ -3016,3 +3040,4 @@ document.getElementById("feedbackBtn")?.addEventListener("click", (e) => {
 </script>
 </body>
 </html>
+
