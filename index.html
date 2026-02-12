@@ -26,6 +26,8 @@
   }
 </script> 
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <!-- Open Graph -->
 <meta property="og:title" content="Narro — Today’s Number Puzzle" />
 <meta property="og:description" content="Guess the number. Each guess narrows the range. One puzzle per day." />
@@ -100,12 +102,26 @@
     inset 0 1px 0 rgba(255,255,255,0.04);
 }
 
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   input[type="number"] {
     width: 100%;
     font-size: 1.4rem;
     padding: 12px;
     border-radius: 12px;
-    border: none;
+    border: 1px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.05);
+    color: var(--text);
     text-align: center;
   }
 
@@ -123,12 +139,19 @@
 
   button:disabled { opacity: 0.5; cursor: default; }
 
+  input[type="number"]:focus-visible,
+  button:focus-visible,
+  .stats-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
   .feedback {
     margin-top: 14px;
     font-size: 1.15rem;
     font-weight: 500;
     min-height: 1.4em;
-    transition: all 0.25s ease;
+    transition: opacity 0.2s ease, transform 0.22s ease;
     transform-origin: center;
   }
 
@@ -179,21 +202,30 @@
   font-size: 0.85rem;
   color: var(--danger);
   opacity: 0;
-  transition: opacity 0.4s ease;
+  transition: opacity 0.24s ease;
+}
+
+.draggable-cue {
+  transition: box-shadow 0.3s ease;
+  box-shadow: 0 0 0px rgba(255, 255, 0, 0);
+}
+
+.draggable-cue:hover {
+  box-shadow: 0 0 10px 2px rgba(255, 255, 0, 0.8);
 }
 
   .guess-count {
     margin-top: 8px;
     color: var(--muted);
     font-size: 0.9rem;
-    transition: all 0.25s ease;
+    transition: all 0.2s ease;
   }
 
   .tip {
     margin-top: 8px;
     font-size: 0.85rem;
     color: var(--muted);
-    transition: opacity 0.3s ease;
+    transition: opacity 0.22s ease;
   }
 
   .tip.hint {
@@ -339,6 +371,21 @@
     animation: winPulse 0.6s ease 1, winShine 0.5s ease 1 0.1s;
   }
 
+  .bar.near .bar-fill {
+    background: linear-gradient(120deg, #8ed0ff, #67b6f2);
+    left: 0 !important;
+    width: 100% !important;
+    opacity: 1;
+    box-shadow: 0 0 12px rgba(103,182,242,0.55);
+    animation: nearPulse 0.42s ease 1;
+  }
+
+  @keyframes nearPulse {
+    0% { filter: brightness(1); transform: scaleX(1); }
+    50% { filter: brightness(1.15); transform: scaleX(1.03); }
+    100% { filter: brightness(1); transform: scaleX(1); }
+  }
+
   .bar.win .bar-handle {
   opacity: 0;
 }
@@ -399,6 +446,8 @@
   border-radius: 50%;
   z-index: 6;
   pointer-events: none;
+  touch-action: auto;
+  cursor: default;
 
   background:
     radial-gradient(
@@ -413,6 +462,49 @@
   box-shadow:
     0 0 10px rgba(108,242,194,0.45),
     inset 0 1px 2px rgba(255,255,255,0.4);
+}
+
+.bar.inverted-mode {
+  cursor: default;
+}
+
+.bar.inverted-mode::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      to right,
+      transparent 49.85%,
+      rgba(255,255,255,0.34) 49.85%,
+      rgba(255,255,255,0.34) 50.15%,
+      transparent 50.15%
+    ),
+    linear-gradient(
+      to right,
+      transparent 24.9%,
+      rgba(255,255,255,0.16) 24.9%,
+      rgba(255,255,255,0.16) 25.1%,
+      transparent 25.1%
+    ),
+    linear-gradient(
+      to right,
+      transparent 74.9%,
+      rgba(255,255,255,0.16) 74.9%,
+      rgba(255,255,255,0.16) 75.1%,
+      transparent 75.1%
+    );
+}
+
+.bar-orb.inverted-active {
+  pointer-events: auto;
+  touch-action: none;
+  cursor: grab;
+}
+
+.bar-orb.inverted-active:active {
+  cursor: grabbing;
 }
 
 /* Orb resolution on win */
@@ -472,7 +564,46 @@
   animation: barIdleShimmer 5s ease-in-out infinite;
 }
 
-  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; }
+@keyframes orbAnticipation {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.08); }
+}
+
+.bar.tight-range:not(.win) .bar-orb {
+  animation: orbAnticipation 1.8s ease-in-out infinite;
+}
+
+@keyframes rewardFlashOrb {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    filter: brightness(1);
+    box-shadow: 0 0 10px rgba(108,242,194,0.45), inset 0 1px 2px rgba(255,255,255,0.4);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.16);
+    filter: brightness(1.15);
+    box-shadow: 0 0 16px rgba(108,242,194,0.75), inset 0 1px 2px rgba(255,255,255,0.5);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    filter: brightness(1);
+    box-shadow: 0 0 10px rgba(108,242,194,0.45), inset 0 1px 2px rgba(255,255,255,0.4);
+  }
+}
+
+.bar-orb.reward-flash {
+  animation: rewardFlashOrb 0.45s ease;
+}
+
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+  }
 
   .modal-card {
     background: var(--card);
@@ -480,6 +611,8 @@
     border-radius: 16px;
     width: 90%;
     max-width: 320px;
+    position: relative;
+    z-index: 3001;
   }
 
   canvas { position: fixed; inset: 0; pointer-events: none; }
@@ -546,6 +679,17 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 </style>
 </head>
 
@@ -554,26 +698,27 @@
     <div class="top-row">
       <h1>Narro</h1>
       <div id="streak" style="color: var(--accent); font-weight:600;"></div>
-      <div class="stats-btn" id="statsBtn">ⓘ</div>
+      <div class="stats-btn" id="statsBtn" role="button" tabindex="0" aria-label="View stats">ⓘ</div>
     </div>
 
     <!-- Main game card -->
     <div class="card">
-      <input id="guessInput" type="number" inputmode="numeric" placeholder="Guess a number" />
+      <label for="guessInput" class="sr-only">Enter your guess</label>
+      <input id="guessInput" type="number" inputmode="numeric" placeholder="Enter a number" autocomplete="off" />
       <button id="guessBtn">Guess</button>
-      <div class="feedback" id="feedback"></div>
-      <div class="toast" id="toast"></div>
-      <div class="guess-count" id="guessCount">7 guesses left</div>
+      <div class="feedback" id="feedback" aria-live="polite"></div>
+      <div class="toast" id="toast" role="status" aria-live="assertive"></div>
+      <div class="guess-count" id="guessCount">6 guesses left</div>
       <div id="millionPrompt" class="million-prompt"></div>
       <div id="millionGuessCounter" class="million-counter"></div>
-      <div class="tip" id="tipText"><div id="hintToast"></div></div>
+      <div class="tip" id="tipText" aria-live="polite"><div id="hintToast"></div></div>
 
       <div class="bar-wrap">
         <div class="bar-labels">
           <span id="minLabel">1</span>
           <span id="maxLabel">10,000</span>
         </div>
-        <div class="bar" id="bar">
+        <div class="bar" id="bar" role="img" aria-label="Remaining possible range">
           <div class="bar-fill" id="barFill"></div>
           <div class="bar-orb" id="barOrb"></div>
         </div>
@@ -581,8 +726,8 @@
     </div> <!-- end main card -->
 
     <div class="share">
-      <button id="shareBtn" disabled>Share</button>
-      <button id="feedbackBtn" class="feedback-btn" type="button">Help improve Narro</button>
+      <button id="shareBtn" disabled>Share Result</button>
+      <button id="feedbackBtn" class="feedback-btn" type="button">Send Feedback</button>
     </div>
 
     <div class="countdown" id="countdown"></div>
@@ -618,18 +763,19 @@
       <button class="freePlayModeBtn" data-mode="classic">Classic</button>
       <button class="freePlayModeBtn" data-mode="million">Million</button>
       <button class="freePlayModeBtn" data-mode="micro">Micro</button>
+      <button class="freePlayModeBtn" data-mode="inverted">Inverted</button>
     </div>
   </div>
 
   <!-- Modals, canvas, etc. -->
-  <div class="modal" id="statsModal">
+  <div class="modal" id="statsModal" role="dialog" aria-modal="true" aria-labelledby="statsHeading">
     <div class="modal-card">
-      <p><strong>Stats</strong></p>
+      <p id="statsHeading"><strong>Stats</strong></p>
       <p id="statsGames"></p>
       <p id="statsWins"></p>
       <p id="statsAvg"></p>
       <p id="statsBest"></p>
-      <button onclick="statsModal.style.display='none'">Close</button>
+      <button id="statsCloseBtn" type="button">Close</button>
     </div>
   </div>
 
@@ -644,6 +790,13 @@ const freePlayModeBtns = document.querySelectorAll(".freePlayModeBtn");
 let freePlayUnlocked = false;
 freePlayPanel.style.display = "block"; // always visible
 freePlayMainBtn.disabled = true;
+freePlayMainBtn.setAttribute("aria-controls", "freePlayModes");
+freePlayMainBtn.setAttribute("aria-expanded", "false");
+
+function setFreePlayModesOpen(isOpen) {
+  freePlayModes.style.display = isOpen ? "flex" : "none";
+  freePlayMainBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+}
 
 // --- RESTORE UNLOCKED STATE ON LOAD ---
 if (localStorage.getItem("narroFreePlayUnlocked") === "true") {
@@ -665,8 +818,7 @@ function unlockFreePlay() {
 // Toggle mode buttons
 freePlayMainBtn.addEventListener("click", () => {
   if (!freePlayUnlocked) return; // safety
-  freePlayModes.style.display =
-    freePlayModes.style.display === "flex" ? "none" : "flex";
+  setFreePlayModesOpen(freePlayModes.style.display !== "flex");
 });
 
 // Start free play when a mode button is clicked
@@ -674,12 +826,45 @@ freePlayModeBtns.forEach(btn => {
   btn.addEventListener("click", () => {
     const mode = btn.dataset.mode;
     startFreePlay(mode);
-    freePlayModes.style.display = "none";
+    setFreePlayModesOpen(false);
   });
 });
-  </script>
 
+document.addEventListener("click", (e) => {
+  if (!freePlayPanel.contains(e.target)) {
+    setFreePlayModesOpen(false);
+  }
+});
+  </script>
   <script>
+
+/* ---------- SUPABASE ---------- */
+const SUPABASE_URL = "https://jxpkrhoizzhmugynocrs.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_z8fQIq8pF-fMao3KGUrMuA_DpwbEej_";
+
+let supabaseClient = null;
+
+if (window.supabase?.createClient) {
+  try {
+    supabaseClient = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+    );
+  } catch (err) {
+    console.error("Supabase client init failed", err);
+  }
+} else {
+  console.warn("Supabase SDK unavailable; analytics disabled");
+}
+
+/* ---------- ANON USER ---------- */
+let anonUserId = localStorage.getItem("narro_anon_user_id");
+
+if (!anonUserId) {
+  anonUserId = crypto.randomUUID();
+  localStorage.setItem("narro_anon_user_id", anonUserId);
+}
+
 /* ---------- EASTERN TIME HELPERS ---------- */
 function getEasternDateParts() {
   const now = new Date();
@@ -699,9 +884,10 @@ const { year, month, day } = getEasternDateParts();
 const todayKey = `${year}-${month}-${day}`;
 const dailyStateKey = `narroState-${todayKey}`;
 
-const MAX_GUESSES = 7;
+const MAX_GUESSES = 6;
 const MIN_RANGE = 1;
 const MAX_RANGE = 10000;
+const INVERTED_MAX_RANGE = 100;
 
 const CANONICAL_URL = "https://playnarro.com";
 
@@ -761,7 +947,8 @@ const MODES = {
   DAILY: "daily",
   CLASSIC: "classic",
   MILLION: "million",
-  MICRO: "micro"
+  MICRO: "micro",
+  INVERTED: "inverted"
 };
 
 let currentMode = MODES.DAILY;
@@ -785,6 +972,7 @@ let MAX_GUESSES_OVERRIDE = null;
 let millionGuessCounter = 0;
 let gameResult = null; // "win" | "lose"
 let dailyResult = null; // "win", "loss", or null if not played yet
+let gameStartTime = Date.now();
 
 /* ---------- ELEMENTS ---------- */
 const input = document.getElementById("guessInput");
@@ -798,6 +986,7 @@ const tipText = document.getElementById("tipText");
 const toast = document.getElementById("toast");
 const statsBtn = document.getElementById("statsBtn");
 const statsModal = document.getElementById("statsModal");
+const statsCloseBtn = document.getElementById("statsCloseBtn");
 const statsGames = document.getElementById("statsGames");
 const statsWins = document.getElementById("statsWins");
 const statsAvg = document.getElementById("statsAvg");
@@ -805,21 +994,69 @@ const statsBest = document.getElementById("statsBest");
 const minLabel = document.getElementById("minLabel");
 const maxLabel = document.getElementById("maxLabel");
 const guessCount = document.getElementById("guessCount");
-const HINT_WIDE_THRESHOLD = 200;
-const HINT_TIGHT_THRESHOLD = 30;
 const countdown = document.getElementById("countdown");
-const ORB_TIP_KEY = "narro_orb_tip_seen";
+let cleanupInvertedDrag = null;
+
+function teardownInvertedInteraction() {
+  if (typeof cleanupInvertedDrag === "function") {
+    cleanupInvertedDrag();
+  }
+  cleanupInvertedDrag = null;
+
+  barOrb.onpointerdown = null;
+  barOrb.classList.remove("inverted-active");
+  bar.classList.remove("inverted-mode");
+  barOrb.style.cursor = "default";
+  barOrb.style.transition = "left 0.45s cubic-bezier(0.22, 1, 0.36, 1)";
+}
+
+function readDailyResult() {
+  const directResult = localStorage.getItem(dailyStateKey + "-result");
+  if (directResult === "win" || directResult === "lose") {
+    return directResult;
+  }
+
+  const rawDailyState = localStorage.getItem(dailyStateKey);
+  if (!rawDailyState) return null;
+
+  try {
+    const parsed = JSON.parse(rawDailyState);
+    if (!parsed || typeof parsed !== "object") return null;
+
+    const mode = parsed.mode || MODES.DAILY;
+    if (mode !== MODES.DAILY) return null;
+
+    return parsed.result === "win" || parsed.result === "lose"
+      ? parsed.result
+      : null;
+  } catch (err) {
+    console.warn("Failed to parse daily state for share button", err);
+    return null;
+  }
+}
+
+function updateShareButton() {
+  const canShareDaily =
+    currentMode === MODES.DAILY &&
+    (gameResult === "win" || gameResult === "lose" || dailyResult != null);
+
+  shareBtn.disabled = !canShareDaily;
+}
 
 window.addEventListener("load", () => {
   // --- DAILY SHARE BUTTON ---
-  dailyResult = localStorage.getItem(dailyStateKey + "-result"); // "win" or "lose" or null
+  dailyResult = readDailyResult(); // "win" or "lose" or null
   updateShareButton(); // immediately reflect state
 
   // Always show the panel (corner button stays visible)
   freePlayPanel.style.display = "block";
 
-  // Restore unlocked state
-  if (localStorage.getItem("narroFreePlayUnlocked") === "true") {
+  // Restore unlocked state (also unlock if today's daily is already completed)
+  if (
+    localStorage.getItem("narroFreePlayUnlocked") === "true" ||
+    dailyResult === "win" ||
+    dailyResult === "lose"
+  ) {
     unlockFreePlay();
   } else {
     // Explicit locked state
@@ -855,77 +1092,176 @@ input.addEventListener("keydown", (e) => {
 });
 
 /* ---------- SAVED STATE RESTORE ---------- */
-const savedState = localStorage.getItem(dailyStateKey);
-
-if (savedState) {
-  demoMode = false;
-
-if (currentMode === MODES.DAILY) {
-  MAX_GUESSES_OVERRIDE = null;
+function clearTodayDailyState() {
+  localStorage.removeItem(dailyStateKey);
+  localStorage.removeItem(dailyStateKey + "-result");
 }
 
-  const state = JSON.parse(savedState);
+function normalizeDailySavedState(rawState) {
+  if (!rawState || typeof rawState !== "object") return null;
 
-  gameOver = state.result === "win" || state.result === "lose";
-  gameResult = state.result || null;
-  guesses = state.guesses || [];
-  lifelineUsed = !!state.lifelineUsed;
-  lifelineGuessIndex =
-    typeof state.lifelineGuessIndex === "number"
-      ? state.lifelineGuessIndex
+  const mode = rawState.mode || MODES.DAILY;
+  if (mode !== MODES.DAILY) return null;
+
+  const result =
+    rawState.result === "win" || rawState.result === "lose"
+      ? rawState.result
       : null;
 
-  // After rebuild
-  if (min > max || secret < min || secret > max) {
-    min = MIN_RANGE;
-    max = MAX_RANGE;
-    guesses = [];
+  if (!Array.isArray(rawState.guesses)) return null;
+  const savedGuesses = rawState.guesses.map(Number);
+  if (
+    savedGuesses.some(
+      g => !Number.isInteger(g) || g < MIN_RANGE || g > MAX_RANGE
+    )
+  ) {
+    return null;
+  }
+  if (savedGuesses.length > MAX_GUESSES) return null;
+
+  const lifelineUsed = !!rawState.lifelineUsed;
+  let lifelineGuessIndex = null;
+  if (
+    Number.isInteger(rawState.lifelineGuessIndex) &&
+    rawState.lifelineGuessIndex >= 0 &&
+    rawState.lifelineGuessIndex <= savedGuesses.length
+  ) {
+    lifelineGuessIndex = rawState.lifelineGuessIndex;
   }
 
-  updateBar();
-  updateOrb();
-  syncInputRange();
+  const hasRange =
+    Number.isInteger(rawState.min) &&
+    Number.isInteger(rawState.max) &&
+    rawState.min >= MIN_RANGE &&
+    rawState.max <= MAX_RANGE &&
+    rawState.min <= rawState.max;
 
-  // Lock gameplay
-  input.disabled = true;
-  btn.disabled = true;
-  shareBtn.disabled = false;
+  // In-progress state must carry a valid range and cannot be exhausted.
+  if (result == null) {
+    if (!hasRange) return null;
+    if (savedGuesses.length >= MAX_GUESSES) return null;
+  }
 
-  // Result messaging
-
-  const modeFromState = state.mode || MODES.DAILY;
-
-if (state.result === "win") {
-  feedback.textContent = "🎯 You got it!";
-  bar.classList.add("win");
-  barFill.classList.add("win");
-} else if (modeFromState === MODES.DAILY) {
-  // Only daily mode gets "Try again tomorrow!"
-  feedback.textContent = "Try again tomorrow!";
-  const closure = document.createElement("div");
-  closure.style.color = "#9aa0c3";
-  closure.style.fontSize = "0.95rem";
-  closure.style.marginTop = "6px";
-  closure.textContent = `Today’s Narro was ${secret}.`;
-  feedback.appendChild(closure);
-} else {
-  // Free play (Classic or Micro) — just show the secret number
-  const closure = document.createElement("div");
-  closure.style.color = "#9aa0c3";
-  closure.style.fontSize = "0.95rem";
-  closure.style.marginTop = "6px";
-  closure.textContent = `The number was ${secret}.`;
-  feedback.textContent = ""; // clear any existing text
-  feedback.appendChild(closure);
+  return {
+    mode: MODES.DAILY,
+    result,
+    guesses: savedGuesses,
+    lifelineUsed,
+    lifelineGuessIndex,
+    min: hasRange ? rawState.min : MIN_RANGE,
+    max: hasRange ? rawState.max : MAX_RANGE
+  };
 }
 
-  // Returning-player clarity
-  tipText.textContent = "Want more Narro? Try the free play!";
-  tipText.style.display = "block";
-  tipText.style.opacity = "1";
-  tipText.style.transition = "none";
+const savedState = localStorage.getItem(dailyStateKey);
+let parsedSavedState = null;
 
-  tipShown = true;
+if (savedState) {
+  try {
+    parsedSavedState = normalizeDailySavedState(JSON.parse(savedState));
+    if (!parsedSavedState) {
+      console.warn("Saved daily state failed validation; resetting daily state");
+      clearTodayDailyState();
+      dailyResult = null;
+    }
+  } catch (err) {
+    console.warn("Saved state was invalid JSON; resetting daily state", err);
+    clearTodayDailyState();
+    dailyResult = null;
+  }
+}
+
+if (parsedSavedState && typeof parsedSavedState === "object") {
+  const state = parsedSavedState;
+  const hasFinishedResult = state.result === "win" || state.result === "lose";
+
+  if (hasFinishedResult) {
+    demoMode = false;
+    unlockFreePlay();
+
+    if (currentMode === MODES.DAILY) {
+      MAX_GUESSES_OVERRIDE = null;
+    }
+
+    gameOver = true;
+    gameResult = state.result;
+    guesses = state.guesses;
+    lifelineUsed = state.lifelineUsed;
+    lifelineGuessIndex = state.lifelineGuessIndex;
+
+    // After rebuild
+    if (min > max || secret < min || secret > max) {
+      min = MIN_RANGE;
+      max = MAX_RANGE;
+      guesses = [];
+    }
+
+    updateBar();
+    updateOrb();
+    syncInputRange();
+
+    // Lock gameplay for finished daily state.
+    input.disabled = true;
+    btn.disabled = true;
+    shareBtn.disabled = false;
+
+    if (state.result === "win") {
+      feedback.textContent = "🎯 Bullseye.";
+      bar.classList.add("win");
+      barFill.classList.add("win");
+    } else {
+      feedback.textContent = "Try again tomorrow!";
+      const closure = document.createElement("div");
+      closure.style.color = "#9aa0c3";
+      closure.style.fontSize = "0.95rem";
+      closure.style.marginTop = "6px";
+      closure.textContent = `Today's Narro was ${secret}.`;
+      feedback.appendChild(closure);
+    }
+
+    tipText.textContent = "Want more Narro? Try the free play!";
+    tipText.classList.remove("hint");
+    tipText.style.display = "block";
+    tipText.style.opacity = "1";
+    tipText.style.transition = "none";
+    tipShown = true;
+  } else {
+    // Resume in-progress Daily exactly where the player left off.
+    demoMode = false;
+    currentMode = MODES.DAILY;
+    MAX_GUESSES_OVERRIDE = null;
+    gameOver = false;
+    gameResult = null;
+    dailyResult = null;
+    guesses = state.guesses;
+    lifelineUsed = state.lifelineUsed;
+    lifelineGuessIndex = state.lifelineGuessIndex;
+    min = state.min;
+    max = state.max;
+    hintAnimating = false;
+    hintVisible = false;
+    hintAllowed = true;
+
+    bar.className = "bar";
+    bar.classList.toggle("hinted", lifelineUsed);
+    barFill.className = "bar-fill";
+    feedback.textContent = "";
+    tipText.classList.remove("hint");
+    tipText.style.display = "none";
+    tipText.textContent = "";
+    guessCount.textContent = "";
+    input.disabled = false;
+    btn.disabled = false;
+    shareBtn.disabled = true;
+
+    // Ensure stale share result key never blocks progress restore.
+    localStorage.removeItem(dailyStateKey + "-result");
+
+    updateBar();
+    updateOrb();
+    syncInputRange();
+    updateGuessUI();
+  }
 }
 
 // Show orb tip for returning players if the game is not over and hint not used
@@ -933,10 +1269,61 @@ if (!demoMode && !gameOver && !lifelineUsed) {
   maybeShowOrbTip();
 }
 
+function persistDailyProgress() {
+  if (currentMode !== MODES.DAILY || gameOver) return;
+
+  try {
+    localStorage.setItem(
+      dailyStateKey,
+      JSON.stringify({
+        mode: MODES.DAILY,
+        result: null,
+        guesses: [...guesses],
+        lifelineUsed,
+        lifelineGuessIndex,
+        min,
+        max
+      })
+    );
+    localStorage.removeItem(dailyStateKey + "-result");
+  } catch (err) {
+    console.warn("Failed to persist in-progress daily state", err);
+  }
+}
+
 /* ---------- HAPTICS ---------- */
 function haptic(pattern) {
   if ("vibrate" in navigator) {
     navigator.vibrate(pattern);
+  }
+}
+
+async function recordGameSession() {
+  if (!supabaseClient) return;
+  if (!gameStartTime) return;
+
+  const totalGuesses =
+    currentMode === MODES.MILLION
+      ? millionGuessCounter
+      : currentMode === MODES.INVERTED && (gameResult === "win" || gameResult === "lose")
+        ? 1
+        : guesses.length;
+
+  try {
+    await supabaseClient.from("game_sessions").insert({
+      user_id: anonUserId,
+      mode:
+        currentMode === MODES.MICRO
+          ? "classic"
+          : currentMode,
+      won: gameResult === "win",
+      guesses: totalGuesses,
+      time_ms: Math.max(0, Date.now() - gameStartTime),
+      range_history: null,
+      perfect_game: gameResult === "win" && totalGuesses === 1
+    });
+  } catch (err) {
+    console.error("Supabase insert failed", err);
   }
 }
 
@@ -965,19 +1352,6 @@ input.addEventListener("focus", () => {
   }, 250); // slightly faster than before
 });
 
-function showHintMessage(text) {
-  const el = document.getElementById("hintToast");
-  if (!el) return;
-
-  el.textContent = text;
-  el.classList.add("show");
-
-  clearTimeout(el._t);
-  el._t = setTimeout(() => {
-    el.classList.remove("show");
-  }, 1600);
-}
-
 function activateHintOrb() {
   if (!barOrb) return;
 
@@ -991,7 +1365,8 @@ function activateHintOrb() {
 
 function maybeShowOrbTip() {
   if (!gameOver && !lifelineUsed && !tipShown) {
-    tipText.textContent = "Follow the orb — it tracks the hidden number!";
+    tipText.classList.remove("hint");
+    tipText.textContent = "Follow the orb. It points to the hidden number.";
     tipText.style.opacity = "1";
     tipText.style.display = "block";
     activateHintOrb();
@@ -1003,6 +1378,7 @@ function maybeShowOrbTip() {
 function startFreePlay(mode) {
   Object.keys(sentimentState).forEach(k => sentimentState[k] = false);
   sentimentState.lastGuessHadSentiment = false;
+  teardownInvertedInteraction();
 
   currentMode = mode;
   gameOver = false;
@@ -1012,10 +1388,13 @@ function startFreePlay(mode) {
   hintAnimating = false;
   hintVisible = false;
   bar.classList.remove("hinted", "hint-ready");
+  gameStartTime = Date.now();
 
   // Hard reset visuals
   bar.className = "bar";
+  bar.classList.remove("near");
   barFill.className = "bar-fill";
+  barFill.classList.remove("near");
   feedback.textContent = "";
   guessCount.textContent = "";
   input.disabled = false;
@@ -1027,6 +1406,7 @@ function startFreePlay(mode) {
   if (tipText) {
     tipText.style.display = "none";
     tipText.textContent = "";
+    tipText.classList.remove("hint");
   }
 
   // Mode-specific setup
@@ -1034,7 +1414,7 @@ function startFreePlay(mode) {
     case MODES.CLASSIC:
       min = 1;
       max = 10000;
-      MAX_GUESSES_OVERRIDE = 7;
+      MAX_GUESSES_OVERRIDE = 6;
       secret = Math.floor(Math.random() * 10000) + 1;
       hintAllowed = true;
       break;
@@ -1045,10 +1425,7 @@ function startFreePlay(mode) {
       MAX_GUESSES_OVERRIDE = Infinity;
       secret = Math.floor(Math.random() * 1_000_000) + 1;
       hintAllowed = false;
-
-      // --- Step 4: reset Million guess counter ---
       millionGuessCounter = 0;
-      updateMillionGuessDisplay();
       break;
 
     case MODES.MICRO:
@@ -1058,21 +1435,173 @@ function startFreePlay(mode) {
       secret = Math.floor(Math.random() * 25) + 1;
       hintAllowed = false;
       break;
-  }
 
+    case MODES.INVERTED:
+      min = 1;
+      max = INVERTED_MAX_RANGE; // one-shot but still skill-based
+      MAX_GUESSES_OVERRIDE = 1;
+      secret = Math.floor(Math.random() * (max - min + 1)) + min;
+      hintAllowed = false;
+      gameOver = false;
+      gameResult = null;
+
+      // Reset visuals
+      bar.className = "bar inverted-mode";
+      barFill.className = "bar-fill";
+      barOrb.classList.add("inverted-active");
+      input.disabled = true;
+      btn.disabled = true;
+
+      // Show secret number (static for the round)
+      feedback.textContent = `The secret number is ${secret}`;
+      tipText.classList.remove("hint");
+      tipText.textContent = "One shot. Drag the orb to the exact number.";
+      tipText.style.display = "block";
+      tipText.style.opacity = "1";
+
+      minLabel.textContent = min;
+      maxLabel.textContent = max;
+
+      // Start at the edge farthest from the secret.
+      const secretFraction = (secret - min) / (max - min);
+      barOrb.style.transition = "left 0.2s ease";
+      barOrb.style.left = secretFraction < 0.5 ? "100%" : "0%";
+      barOrb.style.cursor = "grab";
+
+      let placed = false; // enforce one guess
+
+      // One-shot drag interaction (mobile-first pointer flow).
+      barOrb.onpointerdown = (e) => {
+        if (placed) return;
+        e.preventDefault();
+
+        const rect = bar.getBoundingClientRect();
+        if (!rect.width) return;
+
+        let activePointerId = e.pointerId;
+        barOrb.style.transition = "none";
+
+        const clampX = (clientX) => {
+          const raw = clientX - rect.left;
+          return Math.max(0, Math.min(rect.width, raw));
+        };
+
+        const moveOrbToClientX = (clientX) => {
+          const clampedX = clampX(clientX);
+          const percent = (clampedX / rect.width) * 100;
+          barOrb.style.left = `${percent}%`;
+          return clampedX;
+        };
+
+        const cleanupListeners = () => {
+          window.removeEventListener("pointermove", onDrag);
+          window.removeEventListener("pointerup", onDrop);
+          window.removeEventListener("pointercancel", onCancel);
+
+          if (activePointerId != null && barOrb.hasPointerCapture?.(activePointerId)) {
+            try {
+              barOrb.releasePointerCapture(activePointerId);
+            } catch {}
+          }
+          activePointerId = null;
+          cleanupInvertedDrag = null;
+        };
+
+        const onDrag = (ev) => {
+          if (placed || ev.pointerId !== activePointerId) return;
+          moveOrbToClientX(ev.clientX);
+        };
+
+        const onDrop = (ev) => {
+          if (ev.pointerId !== activePointerId) return;
+          cleanupListeners();
+          if (placed) return;
+          placed = true;
+
+          const clampedX = moveOrbToClientX(ev.clientX);
+          const rawNumber = min + (clampedX / rect.width) * (max - min);
+          const placedNumber = Math.max(min, Math.min(max, Math.round(rawNumber)));
+          const snappedPercent = ((placedNumber - min) / (max - min)) * 100;
+          barOrb.style.transition = "left 0.16s cubic-bezier(0.22, 1, 0.36, 1)";
+          barOrb.style.left = `${snappedPercent}%`;
+
+          gameOver = true;
+          const miss = Math.abs(placedNumber - secret);
+
+          if (miss === 0) {
+            gameResult = "win";
+            feedback.textContent = "🎯 Perfect placement!";
+            tipText.classList.remove("hint");
+            tipText.textContent = "Perfect. Tap Inverted to play again.";
+            bar.classList.add("win");
+            barFill.classList.add("win");
+            barOrb.classList.add("win-pulse");
+            haptic([12, 40, 12]);
+          } else if (miss === 1) {
+            gameResult = "lose";
+            feedback.textContent = `Off by 1. You placed ${placedNumber}. Target was ${secret}.`;
+            tipText.classList.remove("hint");
+            tipText.textContent = "One away. Tap Inverted to play again.";
+            bar.classList.add("near");
+            barFill.classList.add("near");
+            haptic(10);
+          } else {
+            gameResult = "lose";
+            const quality =
+              miss <= 3
+                ? `Sharp miss. ${miss} away.`
+                : miss <= 10
+                  ? `Solid read. ${miss} away.`
+                  : `Off by ${miss}.`;
+
+            feedback.textContent = `${quality} You placed ${placedNumber}. Target was ${secret}.`;
+            tipText.classList.remove("hint");
+            tipText.textContent = "One shot only. Tap Inverted to play again.";
+            haptic(miss <= 3 ? [8, 24, 8] : 10);
+          }
+
+          // End-round lock
+          barOrb.classList.remove("inverted-active");
+          barOrb.style.cursor = "default";
+          recordGameSession();
+        };
+
+        const onCancel = (ev) => {
+          if (ev.pointerId !== activePointerId) return;
+          cleanupListeners();
+          if (!placed) {
+            barOrb.style.transition = "left 0.2s ease";
+          }
+        };
+
+        try {
+          barOrb.setPointerCapture(activePointerId);
+        } catch {}
+
+        window.addEventListener("pointermove", onDrag);
+        window.addEventListener("pointerup", onDrop);
+        window.addEventListener("pointercancel", onCancel);
+        cleanupInvertedDrag = cleanupListeners;
+      };
+    break;
+    }
+
+  // Common post-switch updates
   syncInputRange();
   updateBar();
   updateOrb();
+  updateGuessUI();
   updateMillionGuessDisplay();
-if (currentMode !== MODES.MILLION) {
-  document.getElementById("millionPrompt").style.display = "none";
-  document.getElementById("millionGuessCounter").style.display = "none";
-}
 
+  if (currentMode !== MODES.MILLION) {
+    document.getElementById("millionPrompt").style.display = "none";
+    document.getElementById("millionGuessCounter").style.display = "none";
+  }
 }
 
 function startDailyMode() {
   // Reset game state, but do NOT touch free play sentimentState
+  teardownInvertedInteraction();
   currentMode = MODES.DAILY;
   gameOver = false;
   guesses = [];
@@ -1081,6 +1610,7 @@ function startDailyMode() {
   hintAnimating = false;
   hintVisible = false;
   bar.classList.remove("hinted", "hint-ready");
+  gameStartTime = Date.now();
 
   MAX_GUESSES_OVERRIDE = null;
   secret = seededNumber(todayKey);
@@ -1092,6 +1622,7 @@ function startDailyMode() {
   bar.className = "bar";
   barFill.className = "bar-fill";
   feedback.textContent = "";
+  tipText.classList.remove("hint");
   guessCount.textContent = "";
   input.disabled = false;
   btn.disabled = false;
@@ -1107,8 +1638,7 @@ function resolveFreePlayGuess(g) {
   // MICRO: instant
   if (currentMode === MODES.MICRO) {
     if (g < 1 || g > 25) {
-      toast.textContent = "Enter a number between 1 and 25";
-      setTimeout(() => (toast.textContent = ""), 2000);
+      showToast("Stay in range: 1 to 25.", 2000);
       return; // stop here, don’t end the game
     }
 
@@ -1125,8 +1655,7 @@ function resolveFreePlayGuess(g) {
 
     // --- INVALID GUESS CHECK ---
     if (g < min || g > max) {
-      toast.textContent = `Enter a number between ${min} and ${max}`;
-      setTimeout(() => (toast.textContent = ""), 2000);
+      showToast(`Stay in range: ${min} to ${max}.`, 2000);
       return; // do NOT increment counter or modify range
     }
 
@@ -1166,25 +1695,28 @@ function triggerWinVisuals() {
 function endFreePlayWin() {
   gameOver = true;
   gameResult = "win"; 
-  feedback.textContent = "🎯 You got it!";
+  feedback.textContent = "🎯 Bullseye.";
   input.disabled = true;
   btn.disabled = true;
 
   triggerWinVisuals();
+  recordGameSession();
 }
 
 function endFreePlayLoss() {
   gameOver = true;
   gameResult = "lose";
-  feedback.textContent = "Round over";
+  feedback.textContent = "Round over.";
   input.disabled = true;
   btn.disabled = true;
 
   if (currentMode === MODES.MICRO) {
-    feedback.textContent = `Round over — the number was ${secret}`;
+    feedback.textContent = `Round over. Number was ${secret}.`;
   } else {
-    feedback.textContent = "Round over";
+    feedback.textContent = "Round over.";
   }
+  gameResult = "lose";
+  recordGameSession();
 }
 
 function maxGuessesForMode() {
@@ -1197,22 +1729,14 @@ function maxGuessesForMode() {
   }
 }
 
-function maybeAutoResolveDaily() {
-  if (currentMode !== MODES.DAILY) return;
-  if (gameOver) return;
-
-  // Only auto-resolve when a single number remains
-  if (remainingRange() === 1) {
-    win();
-  }
-}
-
 function getModeRange() {
   switch (currentMode) {
     case MODES.MILLION:
       return { min: 1, max: 1_000_000 };
     case MODES.MICRO:
       return { min: 1, max: 25 };
+    case MODES.INVERTED:
+      return { min: 1, max: INVERTED_MAX_RANGE };
     default:
       return { min: 1, max: MAX_RANGE }; // daily + classic
   }
@@ -1227,7 +1751,7 @@ function updateMillionGuessDisplay() {
     prompt.style.display = "block";
     counter.style.display = "block";
 
-    prompt.textContent = "How fast can you solve the big one?";
+    prompt.textContent = "How fast can you solve one million?";
     counter.textContent = `Guesses: ${millionGuessCounter}`;
   } else {
     prompt.style.display = "none";
@@ -1251,7 +1775,7 @@ function remainingRange() {
 
 function applyWindowSnapHint() {
   const span = max - min + 1;
-  if (span <= 2) return;
+  if (span <= 2) return false;
 
   // Target width = 80% of current span
   const targetSpan = Math.max(2, Math.floor(span * 0.8));
@@ -1269,7 +1793,7 @@ function applyWindowSnapHint() {
   }
 
   // Fallback safety (should never trigger)
-  if (!windows.length) return;
+  if (!windows.length) return false;
 
   // Deterministic pick (daily-stable)
   const idx =
@@ -1289,6 +1813,7 @@ function applyWindowSnapHint() {
   updateBar();
   updateOrb();
   syncInputRange();
+  return true;
 }
 
 function guessesRemaining() {
@@ -1367,11 +1892,11 @@ function syncInputRange() {
 
 /* ---------- RANDOMIZED CONTEXTUAL FEEDBACK ---------- */
 const feedbackPhrases = {
-  earlyInefficiency: ["That leaves a lot open","Hmm, wide swing there","Try to narrow it more next time"],
-  midCompression: ["Now you're narrowing!","Getting warmer!","Range is tightening"],
-  efficientCut: ["Nice cut!","Great reduction!","Efficient narrowing!"],
-  stakes: ["Pressure's on.","Last few chances!","Only a few guesses left!"],
-  superClose: ["Careful now"]
+  earlyInefficiency: ["Small gain. Cut deeper.","Wide move. Tighten the range.","Good probe. Narrow harder."],
+  midCompression: ["Nice. The window is shrinking.","Good pace. Keep narrowing.","You're getting warm."],
+  efficientCut: ["Big cut. Great read.","Clean slice. Keep going.","Excellent narrowing."],
+  stakes: ["Final stretch. Stay sharp.","Pressure on. Make this one count.","Clutch guess coming up."],
+  superClose: ["You're right on it."]
 };
 
 function pickPhrase(category) {
@@ -1379,50 +1904,12 @@ function pickPhrase(category) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function evaluateSentiment(prevMin, prevMax) {
-  if (lifelineUsed && guesses.length === lifelineGuessIndex) return;
-  if (demoMode || gameOver || sentimentState.lastGuessHadSentiment || sentimentState.superCloseShown) return;
-  if (currentMode !== MODES.DAILY && currentMode !== MODES.CLASSIC) return;
-
-  const prevRange = prevMax - prevMin + 1;
-  const newRange = max - min + 1;
-  const reduction = 1 - newRange / prevRange;
-
-  if (isEarlyGame() && !sentimentState.inefficiencyShown && reduction < 0.10) {
-    emitSentiment(pickPhrase("earlyInefficiency"));
-    sentimentState.inefficiencyShown = true;
-    return;
-  }
-
-  if (isMidGame() && !sentimentState.compressionShown && newRange <= 2000) {
-    emitSentiment(pickPhrase("midCompression"));
-    sentimentState.compressionShown = true;
-    return;
-  }
-
-  if (isMidGame() && !sentimentState.efficiencyShown && reduction >= 0.40) {
-    emitSentiment(pickPhrase("efficientCut"));
-    sentimentState.efficiencyShown = true;
-    return;
-  }
-
-  if (isMidGame() && !sentimentState.stakesShown && guessesRemaining() <= 3) {
-    emitSentiment(pickPhrase("stakes"));
-    sentimentState.stakesShown = true;
-    return;
-  }
-
-  if (isCriticalRange() && !sentimentState.superCloseShown && newRange <= 25) {
-    emitSentiment(pickPhrase("superClose"));
-    feedback.classList.add("critical");
-    sentimentState.superCloseShown = true;
-  }
-}
-
 /* ---------- BAR ---------- */
 function updateBar() {
   const rangeMax = currentMode === MODES.MILLION ? 1_000_000 :
-                   currentMode === MODES.MICRO ? 25 : MAX_RANGE;
+                   currentMode === MODES.MICRO ? 25 :
+                   currentMode === MODES.INVERTED ? INVERTED_MAX_RANGE :
+                   MAX_RANGE;
 
   // Clamp min/max to valid range
   min = Math.min(Math.max(1, min), rangeMax);
@@ -1443,6 +1930,8 @@ function updateBar() {
   barFill.style.width = width + "%";
 
   const remainingRatio = (max - min + 1) / rangeMax;
+  bar.classList.toggle("tight-range", !gameOver && remainingRatio <= 0.12);
+
   if (remainingRatio <= 0.45) {
     bar.classList.add("no-brackets");
   } else {
@@ -1457,6 +1946,10 @@ function updateBar() {
 
   minLabel.textContent = min.toLocaleString();
   maxLabel.textContent = max.toLocaleString();
+  bar.setAttribute(
+    "aria-label",
+    `Remaining possible range: ${min.toLocaleString()} to ${max.toLocaleString()}`
+  );
 
   const centerLabel = bar.querySelector(".center-range-label");
   if (centerLabel) centerLabel.remove();
@@ -1484,12 +1977,12 @@ function resolveDemoGuess(g) {
 
   // Step 1: Introduce objective
   setTimeout(() => {
-    feedback.textContent = "Find today’s hidden number — between 1 and 10,000.";
+    feedback.textContent = "Find today's hidden number between 1 and 10,000.";
     feedback.style.opacity = 1;
 
     // Step 2: Introduce the orb
     setTimeout(() => {
-      feedback.textContent = "Watch the orb — it points to the hidden number!";
+      feedback.textContent = "The orb points toward the hidden number.";
 
       // Step 3: Shrink bar & move orb
       setTimeout(() => {
@@ -1508,7 +2001,7 @@ function resolveDemoGuess(g) {
           barFill.style.transition = "";
 
           // Step 4: Your turn handoff
-          feedback.textContent = "Your turn — make a guess!";
+          feedback.textContent = "Your turn. Make a guess.";
           feedback.style.opacity = 1;
         }, 1500); // Give 1.5 seconds to watch bar/orb move
 
@@ -1522,7 +2015,7 @@ function resolveDemoGuess(g) {
 function resolveGuess(g, skipPush = false) {
   // --- 0. Reject guesses outside the current visible range ---
   if (g < min || g > max) {
-    showToast(`Guess must be between ${min} and ${max}`);
+    showToast(`Stay in range: ${min} to ${max}.`);
     haptic(5);
     return; // exit early — no state changes
   }
@@ -1598,6 +2091,10 @@ function resolveGuess(g, skipPush = false) {
   }
 
   // --- 5. Update guess UI ---
+  if (currentMode === MODES.DAILY && !gameOver) {
+    persistDailyProgress();
+  }
+
   if (!gameOver) {
     updateGuessUI();
   }
@@ -1605,6 +2102,13 @@ function resolveGuess(g, skipPush = false) {
 
 function updateGuessUI() {
   feedback.style.opacity = 1;
+
+  if (gameOver) {
+    guessCount.textContent = "";
+    bar.classList.remove("hint-ready");
+    tipText.classList.remove("hint");
+    return;
+  }
 
   const remaining = maxGuessesForMode() - guesses.length;
 
@@ -1638,21 +2142,23 @@ if (!hintAllowed) {
 ) {
   bar.classList.add("hint-ready");
 
-tipText.textContent = "Need a hint? Tap the glowing bar!";
+tipText.textContent = "Need help? Tap the glowing bar for a one-time hint.";
 tipText.classList.add("hint");
 tipText.style.display = "block";
 tipText.style.opacity = "1";
 
 } else {
   bar.classList.remove("hint-ready");
+  tipText.classList.remove("hint");
 }
 }
 
 function microReward(type) {
   if (type === "efficient") {
-    barFill.style.transition = "all 0.3s ease";
-    barFill.style.boxShadow = "0 0 16px rgba(108,242,194,0.7)";
-    setTimeout(() => barFill.style.boxShadow = "", 400);
+    barOrb.classList.remove("reward-flash");
+    barOrb.offsetWidth; // restart animation
+    barOrb.classList.add("reward-flash");
+    setTimeout(() => barOrb.classList.remove("reward-flash"), 500);
   } else if (type === "streak") {
     const el = document.getElementById("streak");
     el.style.transition = "transform 0.3s ease";
@@ -1668,7 +2174,7 @@ btn.onclick = () => {
   const g = Number(input.value);
 
   if (Number.isNaN(g) || g < min || g > max) {
-    showToast("Guess a number within the current range");
+    showToast("Enter a number in the current range.");
     return;
   }
 
@@ -1701,25 +2207,44 @@ bar.onclick = () => {
   currentMode === MODES.MICRO
 ) return;
 
+  const hintApplied = applyWindowSnapHint();
+  if (!hintApplied) {
+    showToast("Hint unavailable at this range.", 1800);
+    haptic(6);
+    return;
+  }
 
   lifelineUsed = true;
   lifelineGuessIndex = guesses.length;
   hintVisible = true;
 
-  applyWindowSnapHint();
-
   tipText.classList.remove("hint");
-  tipText.textContent = "Range narrowed";
+  tipText.textContent = "Range tightened. Make this guess count.";
   tipText.style.opacity = "1";
 
   bar.classList.remove("hint-ready");
   bar.classList.add("hinted");
+
+  if (currentMode === MODES.DAILY) {
+    persistDailyProgress();
+  }
 
   haptic([6, 30, 6]);
 };
 
 function updateOrb() {
   if (!barOrb) return;
+
+  // Inverted mode controls orb position manually (edge start + drag).
+  // Keep visual style synced, but never auto-snap to the secret while active.
+  if (currentMode === MODES.INVERTED && !gameOver) {
+    barOrb.style.background =
+      "radial-gradient(circle at 30% 30%, rgba(108,242,194,0.95), rgba(72,210,160,1))";
+    barOrb.style.boxShadow =
+      "0 0 10px rgba(108,242,194,0.45), inset 0 1px 2px rgba(255,255,255,0.4)";
+    barOrb.classList.remove("win-pulse");
+    return;
+  }
 
   // On game over, normalize range for clarity (DAILY only)
   if (gameOver && currentMode === MODES.DAILY) {
@@ -1768,20 +2293,7 @@ max = Math.max(min, Math.min(max, rangeMax));
   }
 }
 
-function showHintToast(message) {
-  const el = document.getElementById("hintToast");
-  if (!el) return;
-
-  el.textContent = message;
-  el.classList.add("show");
-
-  clearTimeout(el._t);
-  el._t = setTimeout(() => {
-    el.classList.remove("show");
-  }, 1600);
-}
-
-function showToast(msg, duration = 1200) {
+function showToast(msg, duration = 1400) {
   toast.textContent = msg;
   toast.style.opacity = 1;
 
@@ -1795,6 +2307,7 @@ function showToast(msg, duration = 1200) {
 function win() {
   if (currentMode !== MODES.DAILY && currentMode !== MODES.CLASSIC) return;
   if (gameOver) return;
+  const isDailyGame = currentMode === MODES.DAILY;
 
   // --- GA4 tracking ---
   if (typeof gtag === "function") {
@@ -1808,33 +2321,39 @@ function win() {
   gameOver = true;
   gameResult = "win";
 
-  // Disable main input & buttons
+  // Disable input & buttons
   input.disabled = true;
   btn.disabled = true;
-  shareBtn.disabled = false;
+  shareBtn.disabled = !isDailyGame;
 
   // --- Store daily result ---
-  localStorage.setItem(dailyStateKey, JSON.stringify({
-    result: "win",
-    guesses,
-    lifelineUsed,
-    lifelineGuessIndex
-  }));
+  if (isDailyGame) {
+    localStorage.setItem(dailyStateKey, JSON.stringify({
+      result: "win",
+      guesses,
+      lifelineUsed,
+      lifelineGuessIndex,
+      mode: currentMode
+    }));
+    localStorage.setItem(dailyStateKey + "-result", "win");
+    dailyResult = "win";
+  }
 
   // --- Unlock Free Play (Daily only) ---
-  if (currentMode === MODES.DAILY) {
-    unlockFreePlay();
-  }
+  if (isDailyGame) unlockFreePlay();
 
   // --- Update UI ---
   guessCount.textContent = "";
   bar.classList.remove("hinted", "hint-ready");
 
-  feedback.textContent = "🎯 You got it!";
+  feedback.textContent = "🎯 Bullseye.";
   feedback.style.fontSize = "1.25rem";
   feedback.style.fontWeight = "600";
 
-  tipText.textContent = "Want more Narro? Try the free play!";
+  tipText.textContent = isDailyGame
+    ? "Want more Narro? Try the free play!"
+    : "Round complete. Play again.";
+  tipText.classList.remove("hint");
   tipText.style.display = "block";
   tipText.style.opacity = "1";
   tipText.style.transition = "none";
@@ -1843,39 +2362,42 @@ function win() {
   launchConfetti();
   haptic([20, 60, 20]);
 
-  updateStats(true);
+  if (isDailyGame) {
+    updateStats(true);
+  }
 
   // --- WIN STREAK ---
-  const etNow = new Date(new Date().toLocaleString("en-US", {
-    timeZone: "America/New_York"
-  }));
-  const etYesterday = new Date(etNow);
-  etYesterday.setDate(etYesterday.getDate() - 1);
+  if (isDailyGame) {
+    const etNow = new Date(new Date().toLocaleString("en-US", { timeZone: "America/New_York" }));
+    const etYesterday = new Date(etNow);
+    etYesterday.setDate(etYesterday.getDate() - 1);
 
-  const yesterdayKey =
-    `${etYesterday.getFullYear()}-${String(etYesterday.getMonth()+1).padStart(2,"0")}-${String(etYesterday.getDate()).padStart(2,"0")}`;
+    const yesterdayKey = `${etYesterday.getFullYear()}-${String(etYesterday.getMonth()+1).padStart(2,"0")}-${String(etYesterday.getDate()).padStart(2,"0")}`;
+    const prevStreak = Number(localStorage.getItem("narroStreakPrev")) || 0;
 
-  const prevStreak =
-    Number(localStorage.getItem("narroStreakPrev")) || 0;
-
-  const streak =
-    localStorage.getItem("narroLastPlayed") === yesterdayKey
+    const streak = localStorage.getItem("narroLastPlayed") === yesterdayKey
       ? prevStreak + 1
       : 1;
 
-  localStorage.setItem("narroStreakPrev", streak);
-  localStorage.setItem("narroLastPlayed", todayKey);
+    localStorage.setItem("narroStreakPrev", streak);
+    localStorage.setItem("narroLastPlayed", todayKey);
 
-  const streakEl = document.getElementById("streak");
-  if (streakEl) streakEl.textContent = `🔥 Streak: ${streak}`;
+    const streakEl = document.getElementById("streak");
+    if (streakEl) streakEl.textContent = `🔥 Streak: ${streak}`;
+  }
 
   triggerWinVisuals();
+
+  // --- Record session ---
+  recordGameSession();
 }
 
 function lose() {
   if (currentMode !== MODES.DAILY && currentMode !== MODES.CLASSIC) return;
   if (gameOver) return;
+  const isDailyGame = currentMode === MODES.DAILY;
 
+  // --- GA4 tracking ---
   if (typeof gtag === "function") {
     gtag("event", "game_loss", {
       guesses: guesses.length,
@@ -1885,22 +2407,30 @@ function lose() {
   }
 
   gameOver = true;
-  gameResult = "lose"; 
+  gameResult = "lose";
 
-  localStorage.setItem(dailyStateKey, JSON.stringify({
-    result: "lose",
-    guesses,
-    lifelineUsed,
-    lifelineGuessIndex
-  }));
+  // --- Store daily result ---
+  if (isDailyGame) {
+    localStorage.setItem(dailyStateKey, JSON.stringify({
+      result: "lose",
+      guesses,
+      lifelineUsed,
+      lifelineGuessIndex,
+      mode: currentMode
+    }));
+    localStorage.setItem(dailyStateKey + "-result", "lose");
+    dailyResult = "lose";
+  }
 
-  if (currentMode === MODES.DAILY) {
+  // --- Unlock Free Play (Daily only) ---
+  if (isDailyGame) {
     unlockFreePlay();
   }
 
   guessCount.textContent = "";
 
-  feedback.textContent = "Try again tomorrow!";
+  // --- Feedback UI ---
+  feedback.textContent = isDailyGame ? "Want more Narro? Try the free play!" : "Round over.";
   feedback.style.fontSize = "1.15rem";
   feedback.style.fontWeight = "500";
   haptic(15);
@@ -1909,7 +2439,9 @@ function lose() {
   closure.style.color = "#9aa0c3";
   closure.style.fontSize = "0.95rem";
   closure.style.marginTop = "6px";
-  closure.textContent = `Today’s Narro was ${secret}.`;
+  closure.textContent = isDailyGame
+    ? `Today's number was ${secret}.`
+    : `The number was ${secret}.`;
   feedback.appendChild(closure);
 
   const closest = getClosestDistance();
@@ -1919,7 +2451,7 @@ function lose() {
     el.style.marginTop = "4px";
 
     if (closest === 1) {
-      el.textContent = "So close — 1 away";
+      el.textContent = "So close. 1 away.";
       el.classList.add("closest-one");
     } else {
       el.textContent = `Closest guess: ${closest} away`;
@@ -1931,12 +2463,18 @@ function lose() {
 
   input.disabled = true;
   btn.disabled = true;
-  shareBtn.disabled = false;
+  shareBtn.disabled = !isDailyGame;
 
-  tipText.textContent = "New Narro tomorrow";
+  tipText.textContent = isDailyGame ? "New Narro at midnight ET." : "Round complete. Play again.";
+  tipText.classList.remove("hint");
   tipText.style.display = "block";
 
-  updateStats(false);
+  if (isDailyGame) {
+    updateStats(false);
+  }
+
+  // --- Record session ---
+  recordGameSession();
 }
 
 function getClosestDistance() {
@@ -1976,10 +2514,25 @@ function launchConfetti() {
 }
 
 /* ---------- STATS ---------- */
-const stats = JSON.parse(
-  localStorage.getItem("narroStats") ||
-  '{"games":0,"wins":0,"totalGuesses":0,"best":99}'
-);
+const DEFAULT_STATS = { games: 0, wins: 0, totalGuesses: 0, best: 99 };
+let stats = { ...DEFAULT_STATS };
+
+try {
+  const rawStats = localStorage.getItem("narroStats");
+  if (rawStats) {
+    const parsedStats = JSON.parse(rawStats);
+    if (parsedStats && typeof parsedStats === "object") {
+      stats = {
+        games: Number(parsedStats.games) || 0,
+        wins: Number(parsedStats.wins) || 0,
+        totalGuesses: Number(parsedStats.totalGuesses) || 0,
+        best: Number(parsedStats.best) || 99
+      };
+    }
+  }
+} catch (err) {
+  console.warn("Failed to parse narroStats; using defaults", err);
+}
 
 const playedKey = `narroPlayed-${todayKey}`;
 
@@ -1998,7 +2551,10 @@ function updateStats(win) {
   localStorage.setItem(playedKey, "true");
 }
 
-statsBtn.onclick = () => {
+let lastFocusedBeforeStatsModal = null;
+
+function openStatsModal() {
+  lastFocusedBeforeStatsModal = document.activeElement;
   statsModal.style.display = "flex";
   statsGames.textContent = "Games: " + stats.games;
   statsWins.textContent = "Wins: " + stats.wins;
@@ -2008,11 +2564,40 @@ statsBtn.onclick = () => {
   statsBest.textContent = stats.best < 99
     ? "Best: " + stats.best
     : "";
-};
+  statsCloseBtn?.focus();
+}
 
-/* ---------- STREAK ---------- */
-const streakKey = `narroStreak-${todayKey}`;
-let streak = Number(localStorage.getItem("narroStreakPrev")) || 0;
+function closeStatsModal() {
+  statsModal.style.display = "none";
+  if (lastFocusedBeforeStatsModal && typeof lastFocusedBeforeStatsModal.focus === "function") {
+    lastFocusedBeforeStatsModal.focus();
+  } else {
+    statsBtn.focus();
+  }
+}
+
+statsBtn.onclick = openStatsModal;
+
+statsBtn.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    openStatsModal();
+  }
+});
+
+statsCloseBtn?.addEventListener("click", closeStatsModal);
+
+statsModal.addEventListener("click", (e) => {
+  if (e.target === statsModal) {
+    closeStatsModal();
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && statsModal.style.display === "flex") {
+    closeStatsModal();
+  }
+});
 
 /* ---------- SHARE ---------- */
 function generateShareText() {
@@ -2032,7 +2617,6 @@ function generateShareText() {
 
   for (let i = 0; i < guesses.length; i++) {
     const g = guesses[i];
-    const slot = i + 1;
 
     // WIN always terminates
     if (g === secret) {
@@ -2061,11 +2645,15 @@ function generateShareText() {
     }
   }
 
+  if (won && tiles[tiles.length - 1] !== "🎯") {
+    tiles.push("🎯");
+  }
+
   const infoLine = won
-    ? `Got it in ${guesses.length}`
+    ? `Solved in ${guesses.length} guess${guesses.length === 1 ? "" : "es"}.`
     : closestDistance != null
-      ? `Closest guess: ${closestDistance} away`
-      : "No valid guesses";
+      ? `Closest: ${closestDistance} away.`
+      : "No valid guesses.";
 
   return (
     `Narro · ${todayKey}\n\n` +
@@ -2086,10 +2674,10 @@ shareBtn.onclick = async () => {
       });
     } else {
       await navigator.clipboard.writeText(text);
-      showToast("Copied to clipboard");
+      showToast("Result copied.");
     }
   } catch {
-    showToast("Couldn’t share — copied instead");
+    showToast("Couldn't share, result copied.");
     try {
       await navigator.clipboard.writeText(text);
     } catch {}
@@ -2116,6 +2704,12 @@ setInterval(()=>{
 syncInputRange();
 updateBar();
 
+// Final safety: if the game is active, input must remain enabled.
+if (!gameOver) {
+  input.disabled = false;
+  btn.disabled = false;
+}
+
 if (demoMode) {
   const midpoint = Math.floor((MIN_RANGE + MAX_RANGE) / 2);
 
@@ -2125,7 +2719,7 @@ if (demoMode) {
 
     // Let the bar finish and settle
     setTimeout(() => {
-      feedback.textContent = "Your turn.";
+      feedback.textContent = "Your turn. Good luck.";
 
       // Quiet pause before enabling interaction
       setTimeout(() => {
@@ -2149,19 +2743,6 @@ document.getElementById("feedbackBtn")?.addEventListener("click", (e) => {
   e.preventDefault();
   e.stopPropagation();
   window.open(buildFeedbackURL(), "_blank", "noopener");
-});
-
-btn.addEventListener("click", () => {
-  const g = parseInt(input.value, 10);
-  if (isNaN(g) || gameOver) return;
-
-  if (currentMode === MODES.DAILY || currentMode === MODES.CLASSIC) {
-    resolveGuess(g);
-  } else {
-    resolveFreePlayGuess(g);
-  }
-
-  input.value = ""; // optional: clear input after guess
 });
 
 </script>
