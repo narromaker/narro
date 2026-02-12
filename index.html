@@ -2240,7 +2240,7 @@ function microReward(type) {
 }
 
 /* ---------- GUESS ---------- */
-btn.onclick = () => {
+function submitCurrentGuess() {
   if (gameOver) return;
 
   const g = Number(input.value);
@@ -2255,7 +2255,13 @@ btn.onclick = () => {
 }
 
   input.value = "";
-  input.focus();
+
+  if (isMobile()) {
+    // Keep the bar/orb visible after each mobile guess.
+    input.blur();
+  } else {
+    input.focus();
+  }
 
   if (demoMode) {
     resolveDemoGuess(g);
@@ -2268,7 +2274,24 @@ btn.onclick = () => {
   resolveFreePlayGuess(g);
 }
 
-};
+}
+
+let suppressNextGuessClick = false;
+
+btn.addEventListener("touchend", (e) => {
+  if (!isMobile()) return;
+  e.preventDefault();
+  suppressNextGuessClick = true;
+  submitCurrentGuess();
+});
+
+btn.addEventListener("click", () => {
+  if (suppressNextGuessClick) {
+    suppressNextGuessClick = false;
+    return;
+  }
+  submitCurrentGuess();
+});
 
 /* ---------- SHRINK HINT ---------- */
 bar.onclick = () => {
