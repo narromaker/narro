@@ -1018,6 +1018,7 @@ const guessCount = document.getElementById("guessCount");
 const countdown = document.getElementById("countdown");
 let cleanupInvertedDrag = null;
 let orbMovePulseTimer = null;
+let orbMoveRaf = null;
 
 function teardownInvertedInteraction() {
   if (typeof cleanupInvertedDrag === "function") {
@@ -2375,7 +2376,6 @@ function submitCurrentGuess() {
         } catch {
           input.focus();
         }
-        ensurePlayableSectionVisible("auto");
       }, 0);
     } else {
       input.focus();
@@ -2516,7 +2516,20 @@ max = Math.max(min, Math.min(max, rangeMax));
 
   barOrb.style.transition =
     `left ${travelDuration.toFixed(3)}s cubic-bezier(0.18, 0.88, 0.26, 1), filter 0.24s ease-out, box-shadow 0.24s ease-out`;
-  barOrb.style.left = `${percent}%`;
+  const nextLeft = `${percent}%`;
+  if (orbMoveRaf != null) {
+    cancelAnimationFrame(orbMoveRaf);
+    orbMoveRaf = null;
+  }
+
+  if (isMobile()) {
+    orbMoveRaf = requestAnimationFrame(() => {
+      barOrb.style.left = nextLeft;
+      orbMoveRaf = null;
+    });
+  } else {
+    barOrb.style.left = nextLeft;
+  }
 
   if (
     !gameOver &&
@@ -3003,5 +3016,3 @@ document.getElementById("feedbackBtn")?.addEventListener("click", (e) => {
 </script>
 </body>
 </html>
-
-
