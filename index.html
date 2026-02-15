@@ -26,7 +26,12 @@
   }
 </script> 
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script
+  id="supabaseSdk"
+  async
+  crossorigin="anonymous"
+  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+></script>
 
 <!-- Open Graph -->
 <meta property="og:title" content="Narro — Today’s Number Puzzle" />
@@ -862,20 +867,57 @@ document.addEventListener("click", (e) => {
 /* ---------- SUPABASE ---------- */
 const SUPABASE_URL = "https://jxpkrhoizzhmugynocrs.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_z8fQIq8pF-fMao3KGUrMuA_DpwbEej_";
+const SUPABASE_SDK_SCRIPT_ID = "supabaseSdk";
+const SUPABASE_FALLBACK_SRC = "https://unpkg.com/@supabase/supabase-js@2";
 
 let supabaseClient = null;
 
-if (window.supabase?.createClient) {
+function tryInitSupabaseClient() {
+  if (supabaseClient) return true;
+  if (!window.supabase?.createClient) return false;
   try {
     supabaseClient = window.supabase.createClient(
       SUPABASE_URL,
       SUPABASE_ANON_KEY
     );
+    return true;
   } catch (err) {
     console.error("Supabase client init failed", err);
+    return false;
   }
-} else {
-  console.warn("Supabase SDK unavailable; analytics disabled");
+}
+
+function attachSupabaseFallback() {
+  const fallback = document.createElement("script");
+  fallback.async = true;
+  fallback.crossOrigin = "anonymous";
+  fallback.src = SUPABASE_FALLBACK_SRC;
+  fallback.addEventListener("load", () => {
+    if (!tryInitSupabaseClient()) {
+      console.warn("Supabase SDK loaded but client init failed");
+    }
+  }, { once: true });
+  fallback.addEventListener("error", () => {
+    console.warn("Supabase SDK unavailable from primary and fallback CDNs; analytics disabled");
+  }, { once: true });
+  document.head.appendChild(fallback);
+}
+
+if (!tryInitSupabaseClient()) {
+  const supabaseScript = document.getElementById(SUPABASE_SDK_SCRIPT_ID);
+  if (supabaseScript) {
+    supabaseScript.addEventListener("load", () => {
+      if (!tryInitSupabaseClient()) {
+        console.warn("Supabase SDK loaded but client init failed");
+      }
+    }, { once: true });
+
+    supabaseScript.addEventListener("error", () => {
+      attachSupabaseFallback();
+    }, { once: true });
+  } else {
+    attachSupabaseFallback();
+  }
 }
 
 /* ---------- ANON USER ---------- */
@@ -1659,10 +1701,9 @@ function startFreePlay(mode) {
       minLabel.textContent = min;
       maxLabel.textContent = max;
 
-      // Start at the edge farthest from the secret.
-      const secretFraction = (secret - min) / (max - min);
+      // Start centered so it's easy to grab on mobile.
       barOrb.style.transition = "left 0.2s ease";
-      barOrb.style.left = secretFraction < 0.5 ? "100%" : "0%";
+      barOrb.style.left = "50%";
       barOrb.style.cursor = "grab";
 
       let placed = false; // enforce one guess
