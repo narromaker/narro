@@ -1036,6 +1036,8 @@ let millionGuessCounter = 0;
 let gameResult = null; // "win" | "lose"
 let dailyResult = null; // "win", "loss", or null if not played yet
 let gameStartTime = Date.now();
+let roundGuessHistory = [];
+let lastInvertedMiss = null;
 
 /* ---------- ELEMENTS ---------- */
 const input = document.getElementById("guessInput");
@@ -1102,11 +1104,18 @@ function readDailyResult() {
 }
 
 function updateShareButton() {
+  const isFreePlayMode = currentMode !== MODES.DAILY;
+  const hasShareableResult = gameResult === "win" || gameResult === "lose";
   const canShareDaily =
     currentMode === MODES.DAILY &&
     (gameResult === "win" || gameResult === "lose" || dailyResult != null);
+  const canShareFreePlay =
+    isFreePlayMode &&
+    gameOver &&
+    hasShareableResult;
 
-  shareBtn.disabled = !canShareDaily;
+  shareBtn.disabled = !(canShareDaily || canShareFreePlay);
+  shareBtn.textContent = currentMode === MODES.DAILY ? "Share Daily" : "Share Run";
 }
 
 window.addEventListener("load", () => {
@@ -1324,6 +1333,7 @@ if (parsedSavedState && typeof parsedSavedState === "object") {
     gameOver = true;
     gameResult = state.result;
     guesses = state.guesses;
+    roundGuessHistory = state.guesses.slice();
     lifelineUsed = state.lifelineUsed;
     lifelineGuessIndex = state.lifelineGuessIndex;
 
@@ -1341,7 +1351,7 @@ if (parsedSavedState && typeof parsedSavedState === "object") {
     // Lock gameplay for finished daily state.
     input.disabled = true;
     btn.disabled = true;
-    shareBtn.disabled = false;
+    updateShareButton();
 
     if (state.result === "win") {
       feedback.textContent = "🎯 Bullseye.";
@@ -1372,6 +1382,7 @@ if (parsedSavedState && typeof parsedSavedState === "object") {
     gameResult = null;
     dailyResult = null;
     guesses = state.guesses;
+    roundGuessHistory = state.guesses.slice();
     lifelineUsed = state.lifelineUsed;
     lifelineGuessIndex = state.lifelineGuessIndex;
     min = state.min;
@@ -1390,7 +1401,7 @@ if (parsedSavedState && typeof parsedSavedState === "object") {
     guessCount.textContent = "";
     input.disabled = false;
     btn.disabled = false;
-    shareBtn.disabled = true;
+    updateShareButton();
 
     // Ensure stale share result key never blocks progress restore.
     localStorage.removeItem(dailyStateKey + "-result");
@@ -1620,7 +1631,10 @@ function startFreePlay(mode) {
 
   currentMode = mode;
   gameOver = false;
+  gameResult = null;
   guesses = [];
+  roundGuessHistory = [];
+  lastInvertedMiss = null;
   lifelineUsed = false;
   lifelineGuessIndex = null;
   hintAnimating = false;
@@ -1637,7 +1651,7 @@ function startFreePlay(mode) {
   guessCount.textContent = "";
   input.disabled = false;
   btn.disabled = false;
-  shareBtn.disabled = true;
+  updateShareButton();
 
    // Hide “Want more Narro? Try Free Play!” once a free play game starts
   const tipText = document.getElementById("tipText");
@@ -1759,12 +1773,14 @@ function startFreePlay(mode) {
           const clampedX = moveOrbToClientX(ev.clientX);
           const rawNumber = min + (clampedX / rect.width) * (max - min);
           const placedNumber = Math.max(min, Math.min(max, Math.round(rawNumber)));
+          roundGuessHistory = [placedNumber];
           const snappedPercent = ((placedNumber - min) / (max - min)) * 100;
           barOrb.style.transition = "left 0.16s cubic-bezier(0.22, 1, 0.36, 1)";
           barOrb.style.left = `${snappedPercent}%`;
 
           gameOver = true;
           const miss = Math.abs(placedNumber - secret);
+          lastInvertedMiss = miss;
 
           if (miss === 0) {
             gameResult = "win";
@@ -1801,6 +1817,7 @@ function startFreePlay(mode) {
           // End-round lock
           barOrb.classList.remove("inverted-active");
           barOrb.style.cursor = "default";
+          updateShareButton();
           recordGameSession();
         };
 
@@ -1843,6 +1860,8 @@ function startDailyMode() {
   currentMode = MODES.DAILY;
   gameOver = false;
   guesses = [];
+  roundGuessHistory = [];
+  lastInvertedMiss = null;
   lifelineUsed = false;
   lifelineGuessIndex = null;
   hintAnimating = false;
@@ -1864,7 +1883,7 @@ function startDailyMode() {
   guessCount.textContent = "";
   input.disabled = false;
   btn.disabled = false;
-  shareBtn.disabled = true;
+  updateShareButton();
 
   updateBar();
   updateOrb();
@@ -1881,6 +1900,7 @@ function resolveFreePlayGuess(g) {
     }
 
     guesses.push(g);
+    roundGuessHistory.push(g);
     if (g === secret) endFreePlayWin();
     else endFreePlayLoss();
     input.disabled = true;
@@ -1898,6 +1918,7 @@ function resolveFreePlayGuess(g) {
     }
 
     // --- VALID GUESS ---
+    roundGuessHistory.push(g);
     millionGuessCounter++;
     updateMillionGuessDisplay();
 
@@ -1933,6 +1954,7 @@ function triggerWinVisuals() {
 function endFreePlayWin() {
   gameOver = true;
   gameResult = "win"; 
+  updateShareButton();
   feedback.textContent = "🎯 Bullseye.";
   input.disabled = true;
   btn.disabled = true;
@@ -1944,6 +1966,7 @@ function endFreePlayWin() {
 function endFreePlayLoss() {
   gameOver = true;
   gameResult = "lose";
+  updateShareButton();
   feedback.textContent = "Round over.";
   input.disabled = true;
   btn.disabled = true;
@@ -2262,7 +2285,10 @@ function resolveGuess(g, skipPush = false) {
   const prevMax = max;
   const prevRange = prevMax - prevMin + 1;
 
-  if (!skipPush && currentMode !== MODES.MILLION) guesses.push(g); // do not push in Million mode
+  if (!skipPush && currentMode !== MODES.MILLION) {
+    guesses.push(g); // do not push in Million mode
+    roundGuessHistory.push(g);
+  }
   haptic(10);
 
   // --- 1. Check win/lose ---
@@ -2669,7 +2695,7 @@ function win() {
   // Disable input & buttons
   input.disabled = true;
   btn.disabled = true;
-  shareBtn.disabled = !isDailyGame;
+  updateShareButton();
 
   // --- Store daily result ---
   if (isDailyGame) {
@@ -2808,7 +2834,7 @@ function lose() {
 
   input.disabled = true;
   btn.disabled = true;
-  shareBtn.disabled = !isDailyGame;
+  updateShareButton();
 
   tipText.textContent = isDailyGame ? "New Narro at midnight ET." : "Round complete. Play again.";
   tipText.classList.remove("hint");
@@ -2945,14 +2971,57 @@ document.addEventListener("keydown", (e) => {
 });
 
 /* ---------- SHARE ---------- */
-function generateShareText() {
-  const tiles = [];
-  const won = gameResult === "win";
+function getFreePlayModeLabel() {
+  switch (currentMode) {
+    case MODES.CLASSIC:
+      return "Classic";
+    case MODES.MILLION:
+      return "Million";
+    case MODES.MICRO:
+      return "Micro";
+    case MODES.INVERTED:
+      return "Inverted";
+    default:
+      return "Run";
+  }
+}
 
-  // Closest distance (loss only)
+function getShareGuessSeries() {
+  if (currentMode === MODES.MILLION || currentMode === MODES.INVERTED) {
+    return roundGuessHistory.slice();
+  }
+  return guesses.length ? guesses.slice() : roundGuessHistory.slice();
+}
+
+function formatGuessCount(n) {
+  return `${n} guess${n === 1 ? "" : "es"}`;
+}
+
+function getFreePlayChallengeLine() {
+  switch (currentMode) {
+    case MODES.CLASSIC:
+      return "Can you beat this in fewer guesses?";
+    case MODES.MILLION:
+      return "Can you solve Million faster?";
+    case MODES.MICRO:
+      return "Can you hit Micro in one shot?";
+    case MODES.INVERTED:
+      return "Can you place the orb exactly?";
+    default:
+      return "Can you beat this run?";
+  }
+}
+
+function buildShareTiles(shareGuesses, result) {
+  const won = result === "win";
+  const lost = result === "lose";
+  const tiles = [];
+  const VERY_CLOSE_MAX = 50;
+  const GETTING_CLOSE_MAX = 300;
+
   let closestDistance = null;
-  if (gameResult !== "win" && guesses.length) {
-    closestDistance = guesses.reduce((minDist, g) => {
+  if (lost && shareGuesses.length) {
+    closestDistance = shareGuesses.reduce((minDist, g) => {
       const num = Number(g);
       if (!Number.isFinite(num)) return minDist;
       return Math.min(minDist, Math.abs(num - secret));
@@ -2960,61 +3029,130 @@ function generateShareText() {
     if (!Number.isFinite(closestDistance)) closestDistance = null;
   }
 
-  for (let i = 0; i < guesses.length; i++) {
-    const g = guesses[i];
+  for (let i = 0; i < shareGuesses.length; i++) {
+    const num = Number(shareGuesses[i]);
+    const isWinningGuess = num === secret;
+    const isFinalLossGuess = lost && i === shareGuesses.length - 1;
+    let tile;
 
-    // WIN always terminates
-    if (g === secret) {
-      tiles.push("🎯");
-      break;
-    }
-
-    // LOSS terminates
-    if (gameResult === "lose" && i === guesses.length - 1) {
-      tiles.push("❌");
-      break;
-    }
-
-    // Lifeline marker
-    if (lifelineUsed && lifelineGuessIndex === i) {
-      tiles.push("🛟");
-      continue;
-    }
-
-    // Directional arrow, fallback for invalid guesses
-    const num = Number(g);
-    if (!Number.isFinite(num)) {
-      tiles.push("❔");
+    if (isWinningGuess) {
+      tile = "🎯";
+    } else if (isFinalLossGuess) {
+      tile = "❌";
+    } else if (!Number.isFinite(num)) {
+      tile = "❔";
     } else {
-      tiles.push(num < secret ? "⬆️" : "⬇️");
+      const distance = Math.abs(num - secret);
+      if (distance <= VERY_CLOSE_MAX) {
+        tile = "🔥";
+      } else if (distance <= GETTING_CLOSE_MAX) {
+        tile = "🌡️";
+      } else {
+        tile = "🧊";
+      }
+    }
+
+    if (lifelineUsed && lifelineGuessIndex === i) {
+      tile += "🛟";
+    }
+
+    tiles.push(tile);
+
+    if (isWinningGuess || isFinalLossGuess) {
+      break;
     }
   }
 
-  if (won && tiles[tiles.length - 1] !== "🎯") {
+  if (won && !tiles.some(tile => tile.includes("🎯"))) {
     tiles.push("🎯");
   }
 
-  const infoLine = won
-    ? `Solved in ${guesses.length} guess${guesses.length === 1 ? "" : "es"}.`
-    : closestDistance != null
-      ? `Closest: ${closestDistance} away.`
-      : "No valid guesses.";
+  return { tiles, closestDistance };
+}
+
+function generateShareText() {
+  const resolvedResult =
+    gameResult === "win" || gameResult === "lose"
+      ? gameResult
+      : (currentMode === MODES.DAILY &&
+          (dailyResult === "win" || dailyResult === "lose"))
+        ? dailyResult
+        : null;
+  const won = resolvedResult === "win";
+  const lost = resolvedResult === "lose";
+  const shareGuesses = getShareGuessSeries();
+  const { tiles, closestDistance } = buildShareTiles(shareGuesses, resolvedResult);
+  const tileLine = tiles.join(" ") || (won ? "🎯" : lost ? "❌" : "❔");
+
+  if (currentMode === MODES.DAILY) {
+    const solvedGuesses = guesses.length || shareGuesses.length;
+    const infoLine = won
+      ? `Solved in ${formatGuessCount(solvedGuesses)}.`
+      : lost && closestDistance != null
+        ? `Closest: ${closestDistance} away.`
+        : "Result unavailable.";
+
+    return (
+      `Narro · ${todayKey}\n\n` +
+      `${tileLine}\n` +
+      `${infoLine}\n\n` +
+      `${CANONICAL_URL}`
+    );
+  }
+
+  let infoLine;
+  if (currentMode === MODES.INVERTED) {
+    if (won) {
+      infoLine = "Perfect placement.";
+    } else if (Number.isFinite(lastInvertedMiss)) {
+      infoLine = `Missed by ${lastInvertedMiss}.`;
+    } else {
+      infoLine = "One shot missed.";
+    }
+  } else if (currentMode === MODES.MILLION) {
+    infoLine = won
+      ? `Solved Million in ${formatGuessCount(millionGuessCounter)}.`
+      : `Run complete in ${formatGuessCount(millionGuessCounter)}.`;
+  } else if (currentMode === MODES.MICRO) {
+    infoLine = won
+      ? "Bullseye in one."
+      : lost && closestDistance != null
+        ? `Missed by ${closestDistance}.`
+        : "Round complete.";
+  } else {
+    infoLine = won
+      ? `Solved in ${formatGuessCount(shareGuesses.length)}.`
+      : lost && closestDistance != null
+        ? `Closest: ${closestDistance} away.`
+        : "Round complete.";
+  }
+
+  const lifelineLine =
+    currentMode === MODES.CLASSIC
+      ? (lifelineUsed ? "Hint used." : "No hint used.")
+      : null;
+  const challengeLine = getFreePlayChallengeLine();
 
   return (
-    `Narro · ${todayKey}\n\n` +
-    `${tiles.join(" ")}\n` +
-    `${infoLine}\n\n` +
+    `Narro Free Play · ${getFreePlayModeLabel()}\n\n` +
+    `${tileLine}\n` +
+    `${infoLine}\n` +
+    `${lifelineLine ? `${lifelineLine}\n` : ""}` +
+    `${challengeLine}\n\n` +
     `${CANONICAL_URL}`
   );
 }
 
 shareBtn.onclick = async () => {
   const text = generateShareText();
+  const shareTitle = currentMode === MODES.DAILY
+    ? "Narro"
+    : `Narro Free Play · ${getFreePlayModeLabel()}`;
 
   try {
     if (navigator.share) {
       await navigator.share({
-        title: "Narro",
+        title: shareTitle,
         text
       });
     } else {
