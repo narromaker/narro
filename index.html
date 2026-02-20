@@ -46,6 +46,24 @@
 <!-- Twitter / iMessage fallback -->
 <meta name="twitter:card" content="summary_large_image" />
 
+<script>
+  (function () {
+    try {
+      const savedTheme = localStorage.getItem("narroTheme");
+      const prefersLight =
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: light)").matches;
+      const initialTheme =
+        savedTheme === "light" || savedTheme === "dark"
+          ? savedTheme
+          : (prefersLight ? "light" : "dark");
+      document.documentElement.setAttribute("data-theme", initialTheme);
+    } catch (_) {
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+  })();
+</script>
+
 <style>
   :root {
     --bg: #0f1220;
@@ -58,6 +76,20 @@
     --win: hsl(45,100%,50%);
     --win-glow: hsla(45,100%,60%,0.6);
     --keyboard-inset: 0px;
+    color-scheme: dark;
+  }
+
+  :root[data-theme="light"] {
+    --bg: #eef2f7;
+    --card: #ffffff;
+    --text: #172439;
+    --muted: #5f6f85;
+    --accent: #62dcb1;
+    --danger: #cc4949;
+    --hinted: #6786ef;
+    --win: hsl(45,100%,48%);
+    --win-glow: hsla(45,100%,52%,0.48);
+    color-scheme: light;
   }
 
   * { box-sizing: border-box; }
@@ -71,6 +103,15 @@
     align-items: center;
     font-family: system-ui, -apple-system, BlinkMacSystemFont;
     color: var(--text);
+    transition: background 0.24s ease, color 0.24s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :root[data-theme="light"] body {
+    background:
+      radial-gradient(1200px 700px at -120px -160px, rgba(103, 134, 239, 0.08), transparent 68%),
+      radial-gradient(1100px 650px at 120% -150px, rgba(98, 220, 177, 0.09), transparent 66%),
+      var(--bg);
   }
 
   body.keyboard-open {
@@ -93,14 +134,51 @@
 
   .top-row {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 8px;
+  }
+
+  #streak {
+    margin-left: auto;
+    margin-right: 2px;
+    letter-spacing: 0.01em;
+  }
+
+  .top-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .stats-btn {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.06);
     color: var(--muted);
     cursor: pointer;
-    font-size: 1.2rem;
+    font-size: 1rem;
+    line-height: 1;
+    transition: transform 0.16s ease, background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .stats-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.24);
+  }
+
+  :root[data-theme="light"] .stats-btn {
+    background: rgba(23,36,57,0.06);
+    border-color: rgba(23,36,57,0.16);
+  }
+
+  :root[data-theme="light"] .stats-btn:hover {
+    background: rgba(23,36,57,0.1);
+    border-color: rgba(23,36,57,0.24);
   }
 
   .card {
@@ -112,9 +190,22 @@
   border-radius: 18px;
   padding: 22px;
   margin-top: 16px;
+  border: 1px solid rgba(255,255,255,0.06);
   box-shadow:
     0 8px 24px rgba(0,0,0,0.35),
     inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+  :root[data-theme="light"] .card {
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.94),
+    rgba(255,255,255,0.86)
+  ), var(--card);
+  border-color: rgba(23,36,57,0.12);
+  box-shadow:
+    0 8px 22px rgba(17,33,57,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.8);
 }
 
   .sr-only {
@@ -138,6 +229,12 @@
     background: rgba(255,255,255,0.05);
     color: var(--text);
     text-align: center;
+    transition: border-color 0.18s ease, background 0.18s ease;
+  }
+
+  :root[data-theme="light"] input[type="number"] {
+    border-color: rgba(23,36,57,0.18);
+    background: rgba(17,33,57,0.04);
   }
 
   button {
@@ -150,13 +247,139 @@
     background: var(--accent);
     color: #000;
     cursor: pointer;
+    box-shadow: 0 8px 16px rgba(108,242,194,0.24);
+    transition: transform 0.15s ease, filter 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.03);
+    box-shadow: 0 10px 20px rgba(108,242,194,0.28);
+  }
+
+  button:active:not(:disabled) {
+    transform: translateY(0);
+    filter: brightness(0.98);
+  }
+
+  @keyframes demoGuessPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+  }
+
+  #guessBtn.demo-pulse {
+    animation: demoGuessPulse 0.9s ease-in-out infinite;
+  }
+
+  #guessInput.demo-highlight {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(108,242,194,0.25);
+  }
+
+  .theme-btn {
+    width: 32px;
+    height: 32px;
+    margin-top: 0;
+    padding: 0;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.06);
+    color: var(--muted);
+    display: grid;
+    place-items: center;
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: none;
+  }
+
+  .theme-btn:hover:not(:disabled) {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.24);
+    filter: none;
+    box-shadow: none;
+  }
+
+  :root[data-theme="light"] .theme-btn {
+    background: rgba(23,36,57,0.06);
+    border-color: rgba(23,36,57,0.16);
+  }
+
+  :root[data-theme="light"] .theme-btn:hover:not(:disabled) {
+    background: rgba(23,36,57,0.1);
+    border-color: rgba(23,36,57,0.24);
   }
 
   button:disabled { opacity: 0.5; cursor: default; }
 
+  .demo-controls {
+    display: none;
+    margin-top: 8px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .demo-next-btn,
+  .demo-skip-btn {
+    width: auto;
+    margin: 0;
+    border-radius: 9px;
+    border: 1px solid rgba(255,255,255,0.28);
+    box-shadow: none;
+    transform: none;
+    filter: none;
+  }
+
+  .demo-next-btn {
+    padding: 8px 12px;
+    background: rgba(108,242,194,0.16);
+    color: var(--text);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+
+  .demo-skip-btn {
+    padding: 8px 10px;
+    background: rgba(255,255,255,0.04);
+    color: var(--muted);
+    font-size: 0.74rem;
+    line-height: 1;
+    opacity: 0.95;
+  }
+
+  .demo-next-btn:hover:not(:disabled),
+  .demo-skip-btn:hover:not(:disabled) {
+    transform: none;
+    filter: none;
+    box-shadow: none;
+    opacity: 1;
+    background: rgba(255,255,255,0.12);
+  }
+
+  :root[data-theme="light"] .demo-next-btn,
+  :root[data-theme="light"] .demo-skip-btn {
+    border-color: rgba(23,36,57,0.2);
+  }
+
+  :root[data-theme="light"] .demo-next-btn {
+    background: rgba(98,220,177,0.22);
+  }
+
+  :root[data-theme="light"] .demo-skip-btn {
+    background: rgba(23,36,57,0.05);
+  }
+
+  :root[data-theme="light"] .demo-next-btn:hover:not(:disabled),
+  :root[data-theme="light"] .demo-skip-btn:hover:not(:disabled) {
+    background: rgba(23,36,57,0.1);
+  }
+
   input[type="number"]:focus-visible,
   button:focus-visible,
-  .stats-btn:focus-visible {
+  .stats-btn:focus-visible,
+  .theme-btn:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
@@ -312,6 +535,18 @@
   transition:
     box-shadow 0.35s ease,
     transform 0.25s ease;
+}
+
+:root[data-theme="light"] .bar {
+  background: linear-gradient(
+    to bottom,
+    #c4cfdf,
+    #aab8ce
+  );
+  box-shadow:
+    inset 0 2px 4px rgba(255,255,255,0.45),
+    inset 0 -2px 6px rgba(37,52,78,0.28),
+    0 6px 16px rgba(23,36,57,0.16);
 }
 
 /* Subtle “this is interactive” cue */
@@ -490,6 +725,29 @@
     inset 0 1px 2px rgba(255,255,255,0.46);
 }
 
+:root[data-theme="light"] .bar-orb {
+  background:
+    radial-gradient(
+      circle at 32% 30%,
+      #b7ffe6 0%,
+      #39d5ac 46%,
+      #1fa47f 100%
+    );
+  border: 1px solid rgba(255,255,255,0.82);
+  box-shadow:
+    0 0 0 1px rgba(21,45,68,0.32),
+    0 0 12px rgba(31,164,127,0.5),
+    inset 0 1px 2px rgba(255,255,255,0.65);
+}
+
+:root[data-theme="light"] .bar-orb.orb-moving {
+  filter: brightness(1.08) saturate(1.08);
+  box-shadow:
+    0 0 0 1px rgba(21,45,68,0.34),
+    0 0 16px rgba(31,164,127,0.62),
+    inset 0 1px 2px rgba(255,255,255,0.72);
+}
+
 .bar.inverted-mode {
   cursor: default;
 }
@@ -523,6 +781,31 @@
     );
 }
 
+:root[data-theme="light"] .bar.inverted-mode::before {
+  background:
+    linear-gradient(
+      to right,
+      transparent 49.85%,
+      rgba(18,34,56,0.25) 49.85%,
+      rgba(18,34,56,0.25) 50.15%,
+      transparent 50.15%
+    ),
+    linear-gradient(
+      to right,
+      transparent 24.9%,
+      rgba(18,34,56,0.13) 24.9%,
+      rgba(18,34,56,0.13) 25.1%,
+      transparent 25.1%
+    ),
+    linear-gradient(
+      to right,
+      transparent 74.9%,
+      rgba(18,34,56,0.13) 74.9%,
+      rgba(18,34,56,0.13) 75.1%,
+      transparent 75.1%
+    );
+}
+
 .bar-orb.inverted-active {
   pointer-events: auto;
   touch-action: none;
@@ -539,10 +822,31 @@
   box-shadow: 0 0 14px var(--win-glow);
 }
 
+:root[data-theme="light"] .bar.win .bar-orb {
+  box-shadow:
+    0 0 0 1px rgba(100,72,5,0.35),
+    0 0 16px var(--win-glow);
+}
+
 .share button { padding: 10px; font-size: 0.9rem; border-radius: 10px; }
 
   .share {
   text-align: center;
+}
+
+#shareBtn {
+  box-shadow: none;
+  border: 1px solid rgba(255,255,255,0.22);
+}
+
+#shareBtn:hover:not(:disabled),
+#shareBtn:active:not(:disabled) {
+  box-shadow: none;
+  transform: none;
+}
+
+:root[data-theme="light"] #shareBtn {
+  border-color: rgba(23,36,57,0.22);
 }
 
   .feedback-btn {
@@ -558,11 +862,25 @@
   border-radius: 10px;
 
   opacity: 0.9;
+  box-shadow: none;
 }
 
 .feedback-btn:hover {
   opacity: 1;
   background: rgba(255,255,255,0.08);
+  box-shadow: none;
+  transform: none;
+  filter: none;
+}
+
+:root[data-theme="light"] .feedback-btn {
+  background: rgba(23,36,57,0.05);
+  border-color: rgba(23,36,57,0.2);
+  color: var(--muted);
+}
+
+:root[data-theme="light"] .feedback-btn:hover {
+  background: rgba(23,36,57,0.1);
 }
 
   .countdown {
@@ -631,7 +949,7 @@
     z-index: 3000;
   }
 
-  .modal-card {
+.modal-card {
     background: var(--card);
     padding: 20px;
     border-radius: 16px;
@@ -639,6 +957,10 @@
     max-width: 320px;
     position: relative;
     z-index: 3001;
+  }
+
+  :root[data-theme="light"] .modal {
+    background: rgba(15,24,38,0.5);
   }
 
   canvas { position: fixed; inset: 0; pointer-events: none; }
@@ -724,7 +1046,16 @@
     <div class="top-row">
       <h1>Narro</h1>
       <div id="streak" style="color: var(--accent); font-weight:600;"></div>
-      <div class="stats-btn" id="statsBtn" role="button" tabindex="0" aria-label="View stats">ⓘ</div>
+      <div class="top-actions">
+        <button
+          id="themeToggleBtn"
+          class="theme-btn"
+          type="button"
+          aria-label="Switch theme"
+          title="Switch theme"
+        >☀</button>
+        <div class="stats-btn" id="statsBtn" role="button" tabindex="0" aria-label="View stats">ⓘ</div>
+      </div>
     </div>
 
     <!-- Main game card -->
@@ -738,6 +1069,10 @@
       <div id="millionPrompt" class="million-prompt"></div>
       <div id="millionGuessCounter" class="million-counter"></div>
       <div class="tip" id="tipText" aria-live="polite"><div id="hintToast"></div></div>
+      <div id="demoControls" class="demo-controls" hidden>
+        <button id="demoNextBtn" class="demo-next-btn" type="button" hidden>Begin walkthrough</button>
+        <button id="demoSkipBtn" class="demo-skip-btn" type="button" hidden>Skip tutorial</button>
+      </div>
 
       <div class="bar-wrap">
         <div class="bar-labels">
@@ -1020,6 +1355,12 @@ let currentMode = MODES.DAILY;
 let demoMode =
   localStorage.getItem("narroSeenDemo") !== "true" &&
   !localStorage.getItem(dailyStateKey);
+let demoRunning = false;
+let demoTutorialState = null;
+
+const DEMO_SECRET_EXAMPLE = 2368;
+const DEMO_FIRST_GUESS = 5000;
+const DEMO_SECOND_GUESS = 1500;
 
 /* ---------- STATE ---------- */
 let min = MIN_RANGE, max = MAX_RANGE;
@@ -1048,8 +1389,12 @@ const barFill = document.getElementById("barFill");
 const bar = document.getElementById("bar");
 const barOrb = document.getElementById("barOrb");
 const tipText = document.getElementById("tipText");
+const demoControls = document.getElementById("demoControls");
+const demoNextBtn = document.getElementById("demoNextBtn");
+const demoSkipBtn = document.getElementById("demoSkipBtn");
 const toast = document.getElementById("toast");
 const statsBtn = document.getElementById("statsBtn");
+const themeToggleBtn = document.getElementById("themeToggleBtn");
 const statsModal = document.getElementById("statsModal");
 const statsCloseBtn = document.getElementById("statsCloseBtn");
 const statsGames = document.getElementById("statsGames");
@@ -1063,6 +1408,221 @@ const countdown = document.getElementById("countdown");
 let cleanupInvertedDrag = null;
 let orbMovePulseTimer = null;
 let orbMoveRaf = null;
+
+const THEME_STORAGE_KEY = "narroTheme";
+const THEME_DARK = "dark";
+const THEME_LIGHT = "light";
+
+function getCurrentTheme() {
+  return document.documentElement.getAttribute("data-theme") === THEME_LIGHT
+    ? THEME_LIGHT
+    : THEME_DARK;
+}
+
+function updateThemeToggle(theme) {
+  if (!themeToggleBtn) return;
+  const isDark = theme !== THEME_LIGHT;
+  const nextTheme = isDark ? THEME_LIGHT : THEME_DARK;
+  themeToggleBtn.textContent = isDark ? "☀" : "☾";
+  themeToggleBtn.setAttribute("aria-pressed", isDark ? "false" : "true");
+  themeToggleBtn.setAttribute("aria-label", `Switch to ${nextTheme} mode`);
+  themeToggleBtn.setAttribute("title", `Switch to ${nextTheme} mode`);
+}
+
+function applyTheme(theme, options = {}) {
+  const persist = options.persist !== false;
+  const normalizedTheme = theme === THEME_LIGHT ? THEME_LIGHT : THEME_DARK;
+  document.documentElement.setAttribute("data-theme", normalizedTheme);
+  updateThemeToggle(normalizedTheme);
+  if (!persist) return;
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, normalizedTheme);
+  } catch (_) {
+    // noop: unavailable storage should not block theme switching
+  }
+}
+
+function initThemeToggle() {
+  applyTheme(getCurrentTheme(), { persist: false });
+  themeToggleBtn?.addEventListener("click", () => {
+    applyTheme(getCurrentTheme() === THEME_LIGHT ? THEME_DARK : THEME_LIGHT);
+  });
+}
+
+initThemeToggle();
+
+function syncDemoControlsVisibility() {
+  if (!demoControls) return;
+  const showControls =
+    (demoNextBtn && !demoNextBtn.hidden) ||
+    (demoSkipBtn && !demoSkipBtn.hidden);
+  demoControls.hidden = !showControls;
+  demoControls.style.display = showControls ? "flex" : "none";
+}
+
+function setDemoNextVisible(isVisible, labelText = null) {
+  if (!demoNextBtn) return;
+  if (typeof labelText === "string" && labelText.trim()) {
+    demoNextBtn.textContent = labelText;
+  }
+  demoNextBtn.hidden = !isVisible;
+  demoNextBtn.style.display = isVisible ? "inline-flex" : "none";
+  syncDemoControlsVisibility();
+}
+
+function setDemoSkipVisible(isVisible) {
+  if (!demoSkipBtn) return;
+  demoSkipBtn.hidden = !isVisible;
+  demoSkipBtn.style.display = isVisible ? "inline-flex" : "none";
+  syncDemoControlsVisibility();
+}
+
+function requestDemoSkip() {
+  if (!demoRunning) return;
+  const originalSecret = demoTutorialState?.originalSecret ?? secret;
+  finishFirstTimeDemo(true, originalSecret);
+}
+
+function finishFirstTimeDemo(wasSkipped, originalSecret) {
+  secret = originalSecret;
+  min = MIN_RANGE;
+  max = MAX_RANGE;
+
+  barFill.style.transition = "";
+  bar.classList.remove("hint-ready", "hinted");
+  barFill.classList.remove("hint-animating");
+  barFill.classList.remove("near", "win");
+  bar.classList.remove("near");
+
+  btn.classList.remove("demo-pulse");
+  input.classList.remove("demo-highlight");
+
+  input.value = "";
+  tipText.classList.remove("hint");
+  tipText.textContent = wasSkipped
+    ? "Tutorial skipped. Follow the orb as you narrow the range."
+    : "You're set. Follow the orb and narrow the range.";
+  tipText.style.display = "block";
+  tipText.style.opacity = "1";
+  tipShown = true;
+
+  feedback.textContent = wasSkipped
+    ? "You're in. Make your first guess."
+    : "You're ready. Make your first guess.";
+  guessCount.style.color = "var(--muted)";
+  guessCount.style.fontWeight = "400";
+
+  updateBar();
+  syncInputRange();
+  updateGuessUI();
+
+  demoMode = false;
+  demoRunning = false;
+  demoTutorialState = null;
+  localStorage.setItem("narroSeenDemo", "true");
+  setDemoNextVisible(false);
+  setDemoSkipVisible(false);
+
+  input.disabled = false;
+  btn.disabled = false;
+
+  if (!isMobile()) {
+    input.focus();
+  }
+}
+
+function advanceFirstTimeDemoStep() {
+  if (!demoRunning || !demoTutorialState) return;
+
+  const state = demoTutorialState;
+
+  if (state.step === 0) {
+    state.step = 1;
+    guessCount.textContent = "Step 1 of 3";
+    feedback.textContent = "Use the orb's location on the bar to inform your guess.";
+    tipText.textContent = `In this example, the orb points lower, so we'll guess ${DEMO_FIRST_GUESS.toLocaleString()}.`;
+    input.value = String(DEMO_FIRST_GUESS);
+    btn.classList.add("demo-pulse");
+    input.classList.add("demo-highlight");
+    setDemoNextVisible(true, "Next: see what changed");
+    return;
+  }
+
+  if (state.step === 1) {
+    state.step = 2;
+    guessCount.textContent = "Step 2 of 3";
+    barFill.style.transition = "left 0.65s ease, width 0.65s ease";
+    max = DEMO_FIRST_GUESS - 1;
+    updateBar();
+    syncInputRange();
+    feedback.textContent = "That guess was high, so the top half of numbers was removed.";
+    tipText.textContent = `Range is now ${min.toLocaleString()} to ${max.toLocaleString()}. Next we'll try ${DEMO_SECOND_GUESS.toLocaleString()}.`;
+    input.value = String(DEMO_SECOND_GUESS);
+    setDemoNextVisible(true, "Next: narrow again");
+    return;
+  }
+
+  if (state.step === 2) {
+    state.step = 3;
+    guessCount.textContent = "Step 3 of 3";
+    min = DEMO_SECOND_GUESS + 1;
+    updateBar();
+    syncInputRange();
+    feedback.textContent = "Great! That guess was low, so the bottom  of the range moved up.";
+    tipText.textContent = "Keep using the orb and remaining range together to zero in on the hidden number.";
+    input.value = "";
+    btn.classList.remove("demo-pulse");
+    input.classList.remove("demo-highlight");
+    setDemoNextVisible(true, "Start today's puzzle");
+    return;
+  }
+
+  finishFirstTimeDemo(false, state.originalSecret);
+}
+
+function runFirstTimeDemo() {
+  if (!demoMode || demoRunning || gameOver || currentMode !== MODES.DAILY) return;
+
+  demoRunning = true;
+  demoTutorialState = {
+    originalSecret: secret,
+    step: 0
+  };
+  setDemoSkipVisible(true);
+  setDemoNextVisible(true, "Begin walkthrough");
+
+  input.disabled = true;
+  btn.disabled = true;
+  input.value = "";
+
+  secret = DEMO_SECRET_EXAMPLE;
+  min = MIN_RANGE;
+  max = MAX_RANGE;
+
+  updateBar();
+  syncInputRange();
+
+  guessCount.textContent = "Tutorial";
+  guessCount.style.color = "var(--accent)";
+  guessCount.style.fontWeight = "600";
+  tipText.classList.remove("hint");
+  tipText.style.display = "block";
+  tipText.style.opacity = "1";
+  tipText.textContent = "You get 6 gueses each day to find the hidden number.  Start the walkthrough when you're ready.";
+  feedback.textContent = "Welcome to Narro! Here is how the game works.";
+}
+
+demoNextBtn?.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  advanceFirstTimeDemoStep();
+});
+
+demoSkipBtn?.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  requestDemoSkip();
+});
 
 function teardownInvertedInteraction() {
   if (typeof cleanupInvertedDrag === "function") {
@@ -1204,7 +1764,7 @@ function shouldRetainKeyboardOnBlur() {
   // non-interactive taps on the app surface.
   if (
     tapTarget.closest(
-      "#guessBtn, #guessInput, .bar, .stats-btn, #shareBtn, #feedbackBtn, #statsModal, #freePlayPanel button"
+      "#guessBtn, #guessInput, #demoControls button, .bar, .stats-btn, #themeToggleBtn, #shareBtn, #feedbackBtn, #statsModal, #freePlayPanel button"
     )
   ) {
     return false;
@@ -2230,49 +2790,6 @@ function updateBar() {
   updateOrb();
 }
 
-function resolveDemoGuess(g) {
-  feedback.style.opacity = 0;
-
-  // Slow, gentle bar animation for demo only
-  barFill.style.transition = "width 0.9s ease";
-
-  // Step 1: Introduce objective
-  setTimeout(() => {
-    feedback.textContent = "Find today's hidden number between 1 and 10,000.";
-    feedback.style.opacity = 1;
-
-    // Step 2: Introduce the orb
-    setTimeout(() => {
-      feedback.textContent = "The orb points toward the hidden number.";
-
-      // Step 3: Shrink bar & move orb
-      setTimeout(() => {
-        if (g < secret) {
-          min = g + 1;
-        } else if (g > secret) {
-          max = g - 1;
-        }
-
-        updateBar();
-        updateOrb();
-        syncInputRange();
-
-        // Restore normal bar behavior
-        setTimeout(() => {
-          barFill.style.transition = "";
-
-          // Step 4: Your turn handoff
-          feedback.textContent = "Your turn. Make a guess.";
-          feedback.style.opacity = 1;
-        }, 1500); // Give 1.5 seconds to watch bar/orb move
-
-      }, 1500); // Give 1.5 seconds to see the orb pointing
-
-    }, 2000); // Give 2 seconds to read the orb message
-
-  }, 2000); // Give 2 seconds to read the objective
-}
-
 function resolveGuess(g, skipPush = false) {
   // --- 0. Reject guesses outside the current visible range ---
   if (g < min || g > max) {
@@ -2461,7 +2978,7 @@ function submitCurrentGuess() {
   input.value = "";
 
   if (demoMode) {
-    resolveDemoGuess(g);
+    showToast("Use Begin walkthrough or Skip tutorial below.", 1400);
     return;
   }
 
@@ -3016,8 +3533,21 @@ function buildShareTiles(shareGuesses, result) {
   const won = result === "win";
   const lost = result === "lose";
   const tiles = [];
-  const VERY_CLOSE_MAX = 50;
-  const GETTING_CLOSE_MAX = 300;
+  const { min: modeMin, max: modeMax } = getModeRange();
+  const modeSpan = Math.max(1, modeMax - modeMin + 1);
+
+  // Normalize heat bands by mode size so tiles represent comparable skill
+  // across Daily/Classic/Million/Micro.
+  const veryCloseFloor = currentMode === MODES.MICRO ? 1 : 2;
+  const VERY_CLOSE_MAX = Math.max(
+    veryCloseFloor,
+    Math.round(modeSpan * 0.012) // ~1.2%
+  );
+  const gettingCloseFloor = currentMode === MODES.MICRO ? 3 : VERY_CLOSE_MAX + 1;
+  const GETTING_CLOSE_MAX = Math.max(
+    gettingCloseFloor,
+    Math.round(modeSpan * 0.08) // ~8%
+  );
 
   let closestDistance = null;
   if (lost && shareGuesses.length) {
@@ -3188,38 +3718,13 @@ syncInputRange();
 updateBar();
 
 // Final safety: if the game is active, input must remain enabled.
-if (!gameOver) {
+if (!gameOver && !demoMode) {
   input.disabled = false;
   btn.disabled = false;
 }
 
 if (demoMode) {
-  const midpoint = Math.floor((MIN_RANGE + MAX_RANGE) / 2);
-
-  // Small delay before demo starts
-  setTimeout(() => {
-    resolveDemoGuess(midpoint);
-
-    // Let the bar finish and settle
-    setTimeout(() => {
-      feedback.textContent = "Your turn. Good luck.";
-
-      // Quiet pause before enabling interaction
-      setTimeout(() => {
-        demoMode = false;
-        localStorage.setItem("narroSeenDemo", "true");
-
-        tipText.style.opacity = 0;
-        input.disabled = false;
-        btn.disabled = false;
-
-        input.value = midpoint;
-        input.focus();
-      }, 600);
-
-    }, 900);
-
-  }, 400);
+  runFirstTimeDemo();
 }
 
 document.getElementById("feedbackBtn")?.addEventListener("click", (e) => {
