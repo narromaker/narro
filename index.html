@@ -135,6 +135,50 @@
     padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   }
 
+  .game-shell {
+    position: relative;
+    transition:
+      filter 0.24s ease,
+      opacity 0.24s ease,
+      transform 0.24s ease;
+  }
+
+  body.onboarding-active .game-shell {
+    filter: grayscale(0.82) saturate(0.42) brightness(0.72);
+    opacity: 0.52;
+    transform: scale(0.988);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  body.onboarding-active .game-shell::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 24px;
+    background: rgba(8, 12, 24, 0.22);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+    pointer-events: none;
+  }
+
+  body.onboarding-active .top-actions,
+  body.onboarding-active #streak {
+    opacity: 0.35;
+    pointer-events: none;
+    filter: grayscale(0.8);
+  }
+
+  body.onboarding-active #freePlayPanel {
+    opacity: 0.18;
+    pointer-events: none;
+    filter: grayscale(1);
+  }
+
+  :root[data-theme="light"] body.onboarding-active .game-shell::after {
+    background: rgba(238, 242, 247, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(23,36,57,0.06);
+  }
+
   body.keyboard-open .app {
     padding-top: 10px;
     padding-bottom: calc(24px + var(--keyboard-inset));
@@ -1295,40 +1339,42 @@
       </div>
     </div>
 
-    <!-- Main game card -->
-    <div class="card">
-      <label for="guessInput" class="sr-only">Enter your guess</label>
-      <input id="guessInput" type="number" inputmode="numeric" placeholder="Enter a number" autocomplete="off" />
-      <button id="guessBtn">Guess</button>
-      <div class="feedback" id="feedback" aria-live="polite"></div>
-      <div class="toast" id="toast" role="status" aria-live="assertive"></div>
-      <div class="guess-count" id="guessCount">6 guesses left</div>
-      <div id="millionPrompt" class="million-prompt"></div>
-      <div id="millionGuessCounter" class="million-counter"></div>
-      <div class="tip" id="tipText" aria-live="polite"><div id="hintToast"></div></div>
-      <div id="demoControls" class="demo-controls" hidden>
-        <button id="demoNextBtn" class="demo-next-btn" type="button" hidden>Try the 15-second demo</button>
-        <button id="demoSkipBtn" class="demo-skip-btn" type="button" hidden>Hide tutorial</button>
+    <div id="gameShell" class="game-shell">
+      <!-- Main game card -->
+      <div class="card">
+        <label for="guessInput" class="sr-only">Enter your guess</label>
+        <input id="guessInput" type="number" inputmode="numeric" placeholder="Enter a number" autocomplete="off" />
+        <button id="guessBtn">Guess</button>
+        <div class="feedback" id="feedback" aria-live="polite"></div>
+        <div class="toast" id="toast" role="status" aria-live="assertive"></div>
+        <div class="guess-count" id="guessCount">6 guesses left</div>
+        <div id="millionPrompt" class="million-prompt"></div>
+        <div id="millionGuessCounter" class="million-counter"></div>
+        <div class="tip" id="tipText" aria-live="polite"><div id="hintToast"></div></div>
+        <div id="demoControls" class="demo-controls" hidden>
+          <button id="demoNextBtn" class="demo-next-btn" type="button" hidden>Try the 15-second demo</button>
+          <button id="demoSkipBtn" class="demo-skip-btn" type="button" hidden>Hide tutorial</button>
+        </div>
+
+        <div class="bar-wrap">
+          <div class="bar-labels">
+            <span id="minLabel">1</span>
+            <span id="maxLabel">10,000</span>
+          </div>
+          <div class="bar" id="bar" role="img" aria-label="Remaining possible range">
+            <div class="bar-fill" id="barFill"></div>
+            <div class="bar-orb" id="barOrb"></div>
+          </div>
+        </div>
+      </div> <!-- end main card -->
+
+      <div class="share">
+        <button id="shareBtn" disabled>Share Result</button>
+        <button id="feedbackBtn" class="feedback-btn" type="button">Send Feedback</button>
       </div>
 
-      <div class="bar-wrap">
-        <div class="bar-labels">
-          <span id="minLabel">1</span>
-          <span id="maxLabel">10,000</span>
-        </div>
-        <div class="bar" id="bar" role="img" aria-label="Remaining possible range">
-          <div class="bar-fill" id="barFill"></div>
-          <div class="bar-orb" id="barOrb"></div>
-        </div>
-      </div>
-    </div> <!-- end main card -->
-
-    <div class="share">
-      <button id="shareBtn" disabled>Share Result</button>
-      <button id="feedbackBtn" class="feedback-btn" type="button">Send Feedback</button>
+      <div class="countdown" id="countdown"></div>
     </div>
-
-    <div class="countdown" id="countdown"></div>
   </div> <!-- end .app -->
 
   <!-- Persistent Free Play Panel -->
@@ -1624,6 +1670,7 @@ const input = document.getElementById("guessInput");
 const btn = document.getElementById("guessBtn");
 const shareBtn = document.getElementById("shareBtn");
 const feedback = document.getElementById("feedback");
+const gameShell = document.getElementById("gameShell");
 const barFill = document.getElementById("barFill");
 const bar = document.getElementById("bar");
 const barOrb = document.getElementById("barOrb");
@@ -1721,6 +1768,10 @@ function setOnboardingVisible(isVisible) {
   onboardingPrompt.hidden = !isVisible;
   onboardingPrompt.style.display = isVisible ? "block" : "none";
   document.body.classList.toggle("onboarding-active", !!isVisible);
+  if (gameShell) {
+    gameShell.inert = !!isVisible;
+    gameShell.setAttribute("aria-hidden", isVisible ? "true" : "false");
+  }
 }
 
 function setDemoSkipVisible(isVisible, labelText = null) {
