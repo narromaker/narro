@@ -97,6 +97,7 @@
   body {
     margin: 0;
     min-height: 100vh;
+    min-height: 100dvh;
     background: var(--bg);
     display: flex;
     justify-content: center;
@@ -118,11 +119,20 @@
     align-items: flex-start;
   }
 
+  body.onboarding-active {
+    align-items: flex-start;
+  }
+
   .app {
     width: 100%;
     max-width: 420px;
     padding: 20px;
     text-align: center;
+  }
+
+  body.onboarding-active .app {
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   }
 
   body.keyboard-open .app {
@@ -207,6 +217,150 @@
     0 8px 22px rgba(17,33,57,0.12),
     inset 0 1px 0 rgba(255,255,255,0.8);
 }
+
+  .onboarding-callout {
+    position: relative;
+    margin-top: 16px;
+    padding: 16px 16px 14px;
+    border-radius: 18px;
+    text-align: left;
+    background:
+      linear-gradient(145deg, rgba(108,242,194,0.18), rgba(108,242,194,0.06)),
+      rgba(19, 24, 46, 0.92);
+    border: 1px solid rgba(108,242,194,0.34);
+    box-shadow:
+      0 18px 40px rgba(0,0,0,0.28),
+      0 0 0 1px rgba(108,242,194,0.08) inset;
+    animation: onboardingLift 0.5s ease;
+  }
+
+  .onboarding-callout::after {
+    content: "";
+    position: absolute;
+    left: 30px;
+    bottom: -10px;
+    width: 20px;
+    height: 20px;
+    background: inherit;
+    border-right: 1px solid rgba(108,242,194,0.34);
+    border-bottom: 1px solid rgba(108,242,194,0.34);
+    transform: rotate(45deg);
+  }
+
+  :root[data-theme="light"] .onboarding-callout {
+    background:
+      linear-gradient(145deg, rgba(98,220,177,0.22), rgba(98,220,177,0.09)),
+      rgba(255,255,255,0.98);
+    border-color: rgba(31,164,127,0.32);
+    box-shadow:
+      0 16px 34px rgba(17,33,57,0.14),
+      0 0 0 1px rgba(98,220,177,0.14) inset;
+  }
+
+  :root[data-theme="light"] .onboarding-callout::after {
+    border-right-color: rgba(31,164,127,0.32);
+    border-bottom-color: rgba(31,164,127,0.32);
+  }
+
+  .onboarding-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(108,242,194,0.18);
+    color: var(--accent);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  :root[data-theme="light"] .onboarding-eyebrow {
+    background: rgba(98,220,177,0.18);
+    color: #13785e;
+  }
+
+  .onboarding-title {
+    margin: 12px 0 6px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .onboarding-copy {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.45;
+  }
+
+  .onboarding-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .onboarding-demo-btn,
+  .onboarding-play-btn {
+    width: auto;
+    margin-top: 0;
+    justify-content: center;
+    min-height: 48px;
+  }
+
+  .onboarding-demo-btn {
+    flex: 1.3;
+    font-weight: 700;
+    box-shadow:
+      0 10px 22px rgba(108,242,194,0.26),
+      0 0 0 1px rgba(255,255,255,0.08) inset;
+    animation: onboardingPulse 1.7s ease-in-out infinite;
+  }
+
+  .onboarding-play-btn {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    color: var(--text);
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: none;
+  }
+
+  .onboarding-play-btn:hover:not(:disabled) {
+    box-shadow: none;
+  }
+
+  :root[data-theme="light"] .onboarding-play-btn {
+    background: rgba(23,36,57,0.05);
+    border-color: rgba(23,36,57,0.14);
+    color: var(--text);
+  }
+
+  @keyframes onboardingLift {
+    0% {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes onboardingPulse {
+    0%, 100% {
+      transform: translateY(0);
+      box-shadow:
+        0 10px 22px rgba(108,242,194,0.26),
+        0 0 0 1px rgba(255,255,255,0.08) inset;
+    }
+    50% {
+      transform: translateY(-1px);
+      box-shadow:
+        0 14px 28px rgba(108,242,194,0.34),
+        0 0 0 1px rgba(255,255,255,0.12) inset;
+    }
+  }
 
   .sr-only {
     position: absolute;
@@ -314,7 +468,7 @@
 
   .demo-controls {
     display: none;
-    margin-top: 8px;
+    margin-top: 12px;
     align-items: center;
     justify-content: center;
     gap: 8px;
@@ -374,6 +528,77 @@
   :root[data-theme="light"] .demo-next-btn:hover:not(:disabled),
   :root[data-theme="light"] .demo-skip-btn:hover:not(:disabled) {
     background: rgba(23,36,57,0.1);
+  }
+
+  @media (max-width: 480px) {
+    .app {
+      max-width: 100%;
+      padding: 14px;
+    }
+
+    body.onboarding-active .app {
+      padding-top: calc(10px + env(safe-area-inset-top, 0px));
+      padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .card {
+      margin-top: 12px;
+      padding: 18px 16px;
+      border-radius: 16px;
+    }
+
+    .onboarding-callout {
+      margin-top: 12px;
+      padding: 14px 14px 12px;
+      border-radius: 16px;
+    }
+
+    .onboarding-callout::after {
+      display: none;
+    }
+
+    .onboarding-title {
+      margin-top: 10px;
+      font-size: 1rem;
+    }
+
+    .onboarding-copy {
+      font-size: 0.88rem;
+      line-height: 1.35;
+    }
+
+    .onboarding-actions {
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .onboarding-demo-btn,
+    .onboarding-play-btn {
+      width: 100%;
+    }
+
+    .demo-controls {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .demo-next-btn,
+    .demo-skip-btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  @media (max-width: 480px) and (max-height: 760px) {
+    .onboarding-copy {
+      font-size: 0.83rem;
+      line-height: 1.3;
+    }
+
+    .onboarding-title {
+      font-size: 0.96rem;
+    }
   }
 
   input[type="number"]:focus-visible,
@@ -1058,6 +1283,18 @@
       </div>
     </div>
 
+    <div id="onboardingPrompt" class="onboarding-callout" hidden>
+      <div class="onboarding-eyebrow">Quick start</div>
+      <div class="onboarding-title">Can you find the hidden number?</div>
+      <p class="onboarding-copy">
+        Follow the orb and win the game. Try the quick demo, or skip ahead to the real deal.
+      </p>
+      <div class="onboarding-actions">
+        <button id="onboardingDemoBtn" class="onboarding-demo-btn" type="button">Play Demo</button>
+        <button id="onboardingPlayBtn" class="onboarding-play-btn" type="button">Skip Ahead</button>
+      </div>
+    </div>
+
     <!-- Main game card -->
     <div class="card">
       <label for="guessInput" class="sr-only">Enter your guess</label>
@@ -1070,8 +1307,8 @@
       <div id="millionGuessCounter" class="million-counter"></div>
       <div class="tip" id="tipText" aria-live="polite"><div id="hintToast"></div></div>
       <div id="demoControls" class="demo-controls" hidden>
-        <button id="demoNextBtn" class="demo-next-btn" type="button" hidden>Begin walkthrough</button>
-        <button id="demoSkipBtn" class="demo-skip-btn" type="button" hidden>Skip tutorial</button>
+        <button id="demoNextBtn" class="demo-next-btn" type="button" hidden>Try the 15-second demo</button>
+        <button id="demoSkipBtn" class="demo-skip-btn" type="button" hidden>Hide tutorial</button>
       </div>
 
       <div class="bar-wrap">
@@ -1361,6 +1598,8 @@ let demoTutorialState = null;
 const DEMO_SECRET_EXAMPLE = 2368;
 const DEMO_FIRST_GUESS = 5000;
 const DEMO_SECOND_GUESS = 1500;
+const DEMO_PRACTICE_GUESSES = [DEMO_FIRST_GUESS, DEMO_SECOND_GUESS];
+const DEFAULT_GUESS_BUTTON_LABEL = "Guess";
 
 /* ---------- STATE ---------- */
 let min = MIN_RANGE, max = MAX_RANGE;
@@ -1389,6 +1628,9 @@ const barFill = document.getElementById("barFill");
 const bar = document.getElementById("bar");
 const barOrb = document.getElementById("barOrb");
 const tipText = document.getElementById("tipText");
+const onboardingPrompt = document.getElementById("onboardingPrompt");
+const onboardingDemoBtn = document.getElementById("onboardingDemoBtn");
+const onboardingPlayBtn = document.getElementById("onboardingPlayBtn");
 const demoControls = document.getElementById("demoControls");
 const demoNextBtn = document.getElementById("demoNextBtn");
 const demoSkipBtn = document.getElementById("demoSkipBtn");
@@ -1470,20 +1712,63 @@ function setDemoNextVisible(isVisible, labelText = null) {
   syncDemoControlsVisibility();
 }
 
-function setDemoSkipVisible(isVisible) {
+function setGuessButtonLabel(labelText = DEFAULT_GUESS_BUTTON_LABEL) {
+  btn.textContent = labelText || DEFAULT_GUESS_BUTTON_LABEL;
+}
+
+function setOnboardingVisible(isVisible) {
+  if (!onboardingPrompt) return;
+  onboardingPrompt.hidden = !isVisible;
+  onboardingPrompt.style.display = isVisible ? "block" : "none";
+  document.body.classList.toggle("onboarding-active", !!isVisible);
+}
+
+function setDemoSkipVisible(isVisible, labelText = null) {
   if (!demoSkipBtn) return;
+  if (typeof labelText === "string" && labelText.trim()) {
+    demoSkipBtn.textContent = labelText;
+  }
   demoSkipBtn.hidden = !isVisible;
   demoSkipBtn.style.display = isVisible ? "inline-flex" : "none";
   syncDemoControlsVisibility();
 }
 
+function markDemoSeen() {
+  demoMode = false;
+  setOnboardingVisible(false);
+  localStorage.setItem("narroSeenDemo", "true");
+}
+
+function dismissDemoPromptForLiveGame() {
+  if (!demoMode || demoRunning) return;
+
+  markDemoSeen();
+  demoTutorialState = null;
+  setGuessButtonLabel();
+  setDemoNextVisible(false);
+  setDemoSkipVisible(false);
+  btn.classList.remove("demo-pulse");
+  input.classList.remove("demo-highlight");
+
+  feedback.textContent = "";
+  tipText.classList.remove("hint");
+  tipText.textContent = "Follow the orb. It points to the hidden number.";
+  tipText.style.display = "block";
+  tipText.style.opacity = "1";
+  tipShown = true;
+}
+
 function requestDemoSkip() {
-  if (!demoRunning) return;
+  if (!demoMode) return;
   const originalSecret = demoTutorialState?.originalSecret ?? secret;
   finishFirstTimeDemo(true, originalSecret);
 }
 
 function finishFirstTimeDemo(wasSkipped, originalSecret) {
+  const handoffMessage = wasSkipped
+    ? "Today's puzzle is live."
+    : "Practice complete. Today's puzzle is live.";
+
   secret = originalSecret;
   min = MIN_RANGE;
   max = MAX_RANGE;
@@ -1494,21 +1779,22 @@ function finishFirstTimeDemo(wasSkipped, originalSecret) {
   barFill.classList.remove("near", "win");
   bar.classList.remove("near");
 
+  setGuessButtonLabel();
   btn.classList.remove("demo-pulse");
   input.classList.remove("demo-highlight");
 
   input.value = "";
   tipText.classList.remove("hint");
   tipText.textContent = wasSkipped
-    ? "Tutorial skipped. Follow the orb as you narrow the range."
-    : "You're set. Follow the orb and narrow the range.";
+    ? "The orb stays on the hidden number while your guesses shrink the range."
+    : "Same rule, real puzzle: use the orb and the shrinking range together.";
   tipText.style.display = "block";
   tipText.style.opacity = "1";
   tipShown = true;
 
-  feedback.textContent = wasSkipped
-    ? "You're in. Make your first guess."
-    : "You're ready. Make your first guess.";
+  feedback.textContent = "";
+  feedback.classList.remove("critical");
+  feedback.style.opacity = "1";
   guessCount.style.color = "var(--muted)";
   guessCount.style.fontWeight = "400";
 
@@ -1516,112 +1802,173 @@ function finishFirstTimeDemo(wasSkipped, originalSecret) {
   syncInputRange();
   updateGuessUI();
 
-  demoMode = false;
   demoRunning = false;
   demoTutorialState = null;
-  localStorage.setItem("narroSeenDemo", "true");
+  markDemoSeen();
   setDemoNextVisible(false);
   setDemoSkipVisible(false);
 
   input.disabled = false;
   btn.disabled = false;
+  showToast(handoffMessage, 1800);
 
   if (!isMobile()) {
     input.focus();
   }
 }
 
-function advanceFirstTimeDemoStep() {
-  if (!demoRunning || !demoTutorialState) return;
+function setDemoPracticePrompt(index) {
+  const guessValue = DEMO_PRACTICE_GUESSES[index];
+  if (!Number.isFinite(guessValue)) return;
 
-  const state = demoTutorialState;
-
-  if (state.step === 0) {
-    state.step = 1;
-    guessCount.textContent = "Step 1 of 3";
-    feedback.textContent = "Use the orb's location on the bar to inform your guess.";
-    tipText.textContent = `In this example, the orb points lower, so we'll guess ${DEMO_FIRST_GUESS.toLocaleString()}.`;
-    input.value = String(DEMO_FIRST_GUESS);
-    btn.classList.add("demo-pulse");
-    input.classList.add("demo-highlight");
-    setDemoNextVisible(true, "Next: see what changed");
-    return;
-  }
-
-  if (state.step === 1) {
-    state.step = 2;
-    guessCount.textContent = "Step 2 of 3";
-    barFill.style.transition = "left 0.65s ease, width 0.65s ease";
-    max = DEMO_FIRST_GUESS - 1;
-    updateBar();
-    syncInputRange();
-    feedback.textContent = "That guess was high, so the top half of numbers was removed.";
-    tipText.textContent = `Range is now ${min.toLocaleString()} to ${max.toLocaleString()}. Next we'll try ${DEMO_SECOND_GUESS.toLocaleString()}.`;
-    input.value = String(DEMO_SECOND_GUESS);
-    setDemoNextVisible(true, "Next: narrow again");
-    return;
-  }
-
-  if (state.step === 2) {
-    state.step = 3;
-    guessCount.textContent = "Step 3 of 3";
-    min = DEMO_SECOND_GUESS + 1;
-    updateBar();
-    syncInputRange();
-    feedback.textContent = "Great! That guess was low, so the bottom  of the range moved up.";
-    tipText.textContent = "Keep using the orb and remaining range together to zero in on the hidden number.";
-    input.value = "";
-    btn.classList.remove("demo-pulse");
-    input.classList.remove("demo-highlight");
-    setDemoNextVisible(true, "Start today's puzzle");
-    return;
-  }
-
-  finishFirstTimeDemo(false, state.originalSecret);
+  input.value = String(guessValue);
+  btn.classList.add("demo-pulse");
+  input.classList.add("demo-highlight");
+  setGuessButtonLabel(`Try ${guessValue.toLocaleString()}`);
 }
 
-function runFirstTimeDemo() {
+function focusGuessInputForDemo() {
+  if (isMobile()) return;
+  input.focus();
+  input.select();
+}
+
+function startFirstTimeDemoPractice() {
   if (!demoMode || demoRunning || gameOver || currentMode !== MODES.DAILY) return;
 
   demoRunning = true;
+  setOnboardingVisible(false);
   demoTutorialState = {
     originalSecret: secret,
     step: 0
   };
-  setDemoSkipVisible(true);
-  setDemoNextVisible(true, "Begin walkthrough");
-
-  input.disabled = true;
-  btn.disabled = true;
-  input.value = "";
 
   secret = DEMO_SECRET_EXAMPLE;
   min = MIN_RANGE;
   max = MAX_RANGE;
 
+  input.disabled = false;
+  btn.disabled = false;
+  barFill.style.transition = "left 0.55s ease, width 0.55s ease";
   updateBar();
   syncInputRange();
 
-  guessCount.textContent = "Tutorial";
+  guessCount.textContent = "Practice guess 1 of 2";
   guessCount.style.color = "var(--accent)";
   guessCount.style.fontWeight = "600";
+  feedback.textContent = "Watch how one guess cuts away half the possibilities.";
   tipText.classList.remove("hint");
   tipText.style.display = "block";
   tipText.style.opacity = "1";
-  tipText.textContent = "You get 6 gueses each day to find the hidden number.  Start the walkthrough when you're ready.";
-  feedback.textContent = "Welcome to Narro! Here is how the game works.";
+  tipText.textContent = `The orb sits below the midpoint, so start with ${DEMO_FIRST_GUESS.toLocaleString()}.`;
+  tipShown = true;
+
+  setDemoNextVisible(false);
+  setDemoSkipVisible(true, "Exit demo");
+  setDemoPracticePrompt(0);
+  focusGuessInputForDemo();
+}
+
+function handleDemoGuess(g) {
+  if (!demoRunning || !demoTutorialState) return false;
+
+  const state = demoTutorialState;
+  const expectedGuess = DEMO_PRACTICE_GUESSES[state.step];
+
+  if (!Number.isFinite(expectedGuess)) return false;
+
+  if (g !== expectedGuess) {
+    showToast(`For the demo, try ${expectedGuess.toLocaleString()}.`, 1800);
+    setDemoPracticePrompt(state.step);
+    focusGuessInputForDemo();
+    return true;
+  }
+
+  input.value = "";
+
+  if (state.step === 0) {
+    state.step = 1;
+    max = expectedGuess - 1;
+    updateBar();
+    syncInputRange();
+
+    guessCount.textContent = "Practice guess 2 of 2";
+    feedback.textContent = `${expectedGuess.toLocaleString()} was high, so the ceiling dropped.`;
+    tipText.textContent = `Now guess ${DEMO_SECOND_GUESS.toLocaleString()} to squeeze the range from below.`;
+    setDemoPracticePrompt(1);
+    focusGuessInputForDemo();
+    return true;
+  }
+
+  min = expectedGuess + 1;
+  updateBar();
+  syncInputRange();
+
+  feedback.textContent = `${expectedGuess.toLocaleString()} was low, so the floor moved up.`;
+  tipText.textContent = "That squeeze is the whole game. Loading today's real puzzle...";
+  btn.classList.remove("demo-pulse");
+  input.classList.remove("demo-highlight");
+  input.disabled = true;
+  btn.disabled = true;
+  setGuessButtonLabel("Starting...");
+  setDemoSkipVisible(false);
+
+  window.setTimeout(() => {
+    finishFirstTimeDemo(false, state.originalSecret);
+  }, 900);
+
+  return true;
+}
+
+function runFirstTimeDemo() {
+  if (!demoMode || demoRunning || gameOver || currentMode !== MODES.DAILY) return;
+
+  input.disabled = false;
+  btn.disabled = false;
+  input.value = "";
+  setGuessButtonLabel();
+  btn.classList.remove("demo-pulse");
+  input.classList.remove("demo-highlight");
+  updateBar();
+  syncInputRange();
+  updateGuessUI();
+
+  setOnboardingVisible(true);
+  tipText.classList.remove("hint");
+  tipText.style.display = "block";
+  tipText.style.opacity = "1";
+  tipText.textContent = "The orb shows where the hidden number sits inside the current range.";
+  feedback.textContent = "";
+  tipShown = true;
+  setDemoNextVisible(false);
+  setDemoSkipVisible(false);
 }
 
 demoNextBtn?.addEventListener("click", (e) => {
   e.preventDefault();
   e.stopPropagation();
-  advanceFirstTimeDemoStep();
+  startFirstTimeDemoPractice();
 });
 
 demoSkipBtn?.addEventListener("click", (e) => {
   e.preventDefault();
   e.stopPropagation();
   requestDemoSkip();
+});
+
+onboardingDemoBtn?.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  startFirstTimeDemoPractice();
+});
+
+onboardingPlayBtn?.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dismissDemoPromptForLiveGame();
+  if (!isMobile()) {
+    input.focus();
+  }
 });
 
 function teardownInvertedInteraction() {
@@ -2188,6 +2535,8 @@ function startFreePlay(mode) {
   Object.keys(sentimentState).forEach(k => sentimentState[k] = false);
   sentimentState.lastGuessHadSentiment = false;
   teardownInvertedInteraction();
+  setGuessButtonLabel();
+  setOnboardingVisible(false);
 
   currentMode = mode;
   gameOver = false;
@@ -2417,6 +2766,8 @@ function startFreePlay(mode) {
 function startDailyMode() {
   // Reset game state, but do NOT touch free play sentimentState
   teardownInvertedInteraction();
+  setGuessButtonLabel();
+  setOnboardingVisible(false);
   currentMode = MODES.DAILY;
   gameOver = false;
   guesses = [];
@@ -2971,16 +3322,20 @@ function submitCurrentGuess() {
     return;
   }
 
+  if (demoRunning) {
+    handleDemoGuess(g);
+    return;
+  }
+
+  if (demoMode) {
+    dismissDemoPromptForLiveGame();
+  }
+
   if (!gameOver && guesses.length === maxGuessesForMode() - 2) {
   tipText.style.opacity = 0;
   }
 
   input.value = "";
-
-  if (demoMode) {
-    showToast("Use Begin walkthrough or Skip tutorial below.", 1400);
-    return;
-  }
 
   if (currentMode === MODES.DAILY || currentMode === MODES.CLASSIC) {
   resolveGuess(g);
@@ -3716,6 +4071,10 @@ setInterval(()=>{
 
 syncInputRange();
 updateBar();
+
+if (!gameOver && !parsedSavedState) {
+  updateGuessUI();
+}
 
 // Final safety: if the game is active, input must remain enabled.
 if (!gameOver && !demoMode) {
