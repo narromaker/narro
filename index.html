@@ -199,9 +199,119 @@
   }
 
   .top-actions {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  .lang-menu-wrap {
+    position: relative;
+  }
+
+  .lang-menu-btn {
+    width: auto;
+    min-width: 58px;
+    height: 32px;
+    margin-top: 0;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.06);
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 600;
+    line-height: 1;
+    box-shadow: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .lang-menu-btn:hover:not(:disabled) {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.24);
+    transform: none;
+    filter: none;
+    box-shadow: none;
+  }
+
+  .lang-menu-code {
+    letter-spacing: 0.06em;
+  }
+
+  .lang-menu {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: min(190px, calc(100vw - 32px));
+    padding: 12px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0)),
+      var(--card);
+    box-shadow:
+      0 16px 34px rgba(0,0,0,0.28),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+    z-index: 3200;
+  }
+
+  .lang-menu-label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .lang-select {
+    width: 100%;
+    height: 40px;
+    margin-top: 0;
+    padding: 0 36px 0 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.06);
+    color: var(--muted);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1;
+    box-shadow: none;
+    appearance: none;
+    cursor: pointer;
+  }
+
+  .lang-select:hover {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.24);
+  }
+
+  :root[data-theme="light"] .lang-menu-btn,
+  :root[data-theme="light"] .lang-select {
+    background: rgba(23,36,57,0.06);
+    border-color: rgba(23,36,57,0.16);
+  }
+
+  :root[data-theme="light"] .lang-menu-btn:hover:not(:disabled),
+  :root[data-theme="light"] .lang-select:hover {
+    background: rgba(23,36,57,0.1);
+    border-color: rgba(23,36,57,0.24);
+  }
+
+  :root[data-theme="light"] .lang-menu {
+    border-color: rgba(23,36,57,0.12);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,255,255,0.88)),
+      var(--card);
+    box-shadow:
+      0 16px 30px rgba(17,33,57,0.14),
+      inset 0 1px 0 rgba(255,255,255,0.78);
   }
 
   .stats-btn {
@@ -1316,6 +1426,25 @@
       <h1>Narro</h1>
       <div id="streak" style="color: var(--accent); font-weight:600;"></div>
       <div class="top-actions">
+        <div class="lang-menu-wrap">
+          <button
+            id="languageMenuBtn"
+            class="lang-menu-btn"
+            type="button"
+            aria-haspopup="true"
+            aria-expanded="false"
+            aria-controls="languageMenu"
+            aria-label="Language"
+            title="Language"
+          >
+            <span aria-hidden="true">🌐</span>
+            <span id="languageMenuCode" class="lang-menu-code">EN</span>
+          </button>
+          <div id="languageMenu" class="lang-menu" hidden>
+            <label id="languageLabel" class="lang-menu-label" for="languageSelect">Language</label>
+            <select id="languageSelect" class="lang-select" aria-label="Language"></select>
+          </div>
+        </div>
         <button
           id="themeToggleBtn"
           class="theme-btn"
@@ -1328,9 +1457,9 @@
     </div>
 
     <div id="onboardingPrompt" class="onboarding-callout" hidden>
-      <div class="onboarding-eyebrow">Quick start</div>
-      <div class="onboarding-title">Can you find the hidden number?</div>
-      <p class="onboarding-copy">
+      <div id="onboardingEyebrow" class="onboarding-eyebrow">Quick start</div>
+      <div id="onboardingTitle" class="onboarding-title">Can you find the hidden number?</div>
+      <p id="onboardingCopy" class="onboarding-copy">
         Follow the orb and win the game. Try the quick demo, or skip ahead to the real deal.
       </p>
       <div class="onboarding-actions">
@@ -1342,7 +1471,7 @@
     <div id="gameShell" class="game-shell">
       <!-- Main game card -->
       <div class="card">
-        <label for="guessInput" class="sr-only">Enter your guess</label>
+        <label id="guessInputLabel" for="guessInput" class="sr-only">Enter your guess</label>
         <input id="guessInput" type="number" inputmode="numeric" placeholder="Enter a number" autocomplete="off" />
         <button id="guessBtn">Guess</button>
         <div class="feedback" id="feedback" aria-live="polite"></div>
@@ -1645,7 +1774,1178 @@ const DEMO_SECRET_EXAMPLE = 2368;
 const DEMO_FIRST_GUESS = 5000;
 const DEMO_SECOND_GUESS = 1500;
 const DEMO_PRACTICE_GUESSES = [DEMO_FIRST_GUESS, DEMO_SECOND_GUESS];
-const DEFAULT_GUESS_BUTTON_LABEL = "Guess";
+const DEFAULT_GUESS_BUTTON_KEY = "guessButton";
+
+/* ---------- LANGUAGE ---------- */
+const LANGUAGE_STORAGE_KEY = "narroLanguage";
+const DEFAULT_LANGUAGE = "en";
+const LANGUAGE_META = {
+  en: { locale: "en-US", label: "English", dir: "ltr" },
+  es: { locale: "es-ES", label: "Español", dir: "ltr" },
+  hi: { locale: "hi-IN", label: "हिन्दी", dir: "ltr" },
+  fr: { locale: "fr-FR", label: "Français", dir: "ltr" },
+  de: { locale: "de-DE", label: "Deutsch", dir: "ltr" },
+  pt: { locale: "pt-BR", label: "Português", dir: "ltr" },
+  it: { locale: "it-IT", label: "Italiano", dir: "ltr" },
+  ja: { locale: "ja-JP", label: "日本語", dir: "ltr" },
+  ko: { locale: "ko-KR", label: "한국어", dir: "ltr" },
+  "zh-hans": { locale: "zh-CN", label: "简体中文", dir: "ltr" },
+  "zh-hant": { locale: "zh-TW", label: "繁體中文", dir: "ltr" },
+  ar: { locale: "ar", label: "العربية", dir: "rtl" },
+  ru: { locale: "ru-RU", label: "Русский", dir: "ltr" },
+  tr: { locale: "tr-TR", label: "Türkçe", dir: "ltr" },
+  id: { locale: "id-ID", label: "Indonesia", dir: "ltr" },
+  bn: { locale: "bn-BD", label: "বাংলা", dir: "ltr" }
+};
+
+const LANGUAGE_ALIASES = {
+  "pt-br": "pt",
+  "pt-pt": "pt",
+  "es-419": "es",
+  "zh": "zh-hans",
+  "zh-cn": "zh-hans",
+  "zh-sg": "zh-hans",
+  "zh-my": "zh-hans",
+  "zh-hans-cn": "zh-hans",
+  "zh-hans-sg": "zh-hans",
+  "zh-tw": "zh-hant",
+  "zh-hk": "zh-hant",
+  "zh-mo": "zh-hant",
+  "zh-hant-tw": "zh-hant",
+  "zh-hant-hk": "zh-hant"
+};
+
+const EN_MESSAGES = {
+  documentTitle: "Narro | Daily Number Puzzle",
+  languageLabel: "Language",
+  themeModeLight: "light",
+  themeModeDark: "dark",
+  switchThemeTo: ({ mode }) => `Switch to ${mode} mode`,
+  viewStats: "View stats",
+  guessInputLabel: "Enter your guess",
+  inputPlaceholder: "Enter a number",
+  guessButton: "Guess",
+  quickStart: "Quick start",
+  onboardingTitle: "Can you find the hidden number?",
+  onboardingCopy: "Follow the orb and win the game. Try the quick demo, or skip ahead to the real deal.",
+  playDemo: "Play Demo",
+  skipAhead: "Skip Ahead",
+  demoTry15: "Try the 15-second demo",
+  hideTutorial: "Hide tutorial",
+  exitDemo: "Exit demo",
+  starting: "Starting...",
+  tryValue: ({ value }) => `Try ${value}`,
+  demoWrongGuess: ({ value }) => `For the demo, try ${value}.`,
+  followOrbTip: "Follow the orb. It points to the hidden number.",
+  todaysPuzzleLive: "Today's puzzle is live.",
+  practiceCompleteLive: "Practice complete. Today's puzzle is live.",
+  orbStaysHidden: "The orb stays on the hidden number while your guesses shrink the range.",
+  sameRuleRealPuzzle: "Same rule, real puzzle: use the orb and the shrinking range together.",
+  practiceGuess: ({ current, total }) => `Practice guess ${current} of ${total}`,
+  demoWatchHalf: "Watch how one guess cuts away half the possibilities.",
+  demoBelowMidpoint: ({ value }) => `The orb sits below the midpoint, so start with ${value}.`,
+  demoGuessHigh: ({ value }) => `${value} was high, so the ceiling dropped.`,
+  demoGuessLow: ({ value }) => `${value} was low, so the floor moved up.`,
+  demoGuessFromBelow: ({ value }) => `Now guess ${value} to squeeze the range from below.`,
+  demoSqueezeWholeGame: "That squeeze is the whole game. Loading today's real puzzle...",
+  orbShowsPosition: "The orb shows where the hidden number sits inside the current range.",
+  guessesLeft: ({ count }) => `${count} guesses left`,
+  finalGuess: "Final guess",
+  hintPrompt: "Need help? Tap the glowing bar for a one-time hint.",
+  rangeTightened: "Range tightened. Make this guess count.",
+  bullseye: "🎯 Bullseye.",
+  tryAgainTomorrow: "Try again tomorrow!",
+  todaysNarroWas: ({ value }) => `Today's Narro was ${value}.`,
+  wantMoreNarro: "Want more Narro? Try the free play!",
+  roundCompletePlayAgain: "Round complete. Play again.",
+  roundOver: "Round over.",
+  todaysNumberWas: ({ value }) => `Today's number was ${value}.`,
+  numberWas: ({ value }) => `The number was ${value}.`,
+  soCloseOneAway: "So close. 1 away.",
+  closestGuessAway: ({ count }) => `Closest guess: ${count} away`,
+  newNarroAtMidnight: "New Narro at midnight ET.",
+  nextNarroIn: ({ time }) => `Next Narro in ${time}`,
+  freePlay: "Free Play",
+  classic: "Classic",
+  million: "Million",
+  micro: "Micro",
+  inverted: "Inverted",
+  shareDaily: "Share Daily",
+  shareRun: "Share Run",
+  sendFeedback: "Send Feedback",
+  statsHeading: "Stats",
+  close: "Close",
+  statsGames: ({ count }) => `Games: ${count}`,
+  statsWins: ({ count }) => `Wins: ${count}`,
+  statsAvg: ({ count }) => `Avg guesses: ${count}`,
+  statsBest: ({ count }) => `Best: ${count}`,
+  streakLabel: ({ count }) => `🔥 Streak: ${count}`
+};
+
+const MESSAGES = {
+  en: EN_MESSAGES,
+  es: {
+    ...EN_MESSAGES,
+    documentTitle: "Narro | Rompecabezas Numérico Diario",
+    languageLabel: "Idioma",
+    themeModeLight: "claro",
+    themeModeDark: "oscuro",
+    switchThemeTo: ({ mode }) => `Cambiar al modo ${mode}`,
+    viewStats: "Ver estadísticas",
+    guessInputLabel: "Ingresa tu intento",
+    inputPlaceholder: "Ingresa un número",
+    guessButton: "Adivinar",
+    quickStart: "Inicio rápido",
+    onboardingTitle: "¿Puedes encontrar el número oculto?",
+    onboardingCopy: "Sigue el orbe y gana la partida. Prueba la demo rápida o salta directamente al juego real.",
+    playDemo: "Jugar demo",
+    skipAhead: "Saltar",
+    demoTry15: "Probar la demo de 15 segundos",
+    hideTutorial: "Ocultar tutorial",
+    exitDemo: "Salir de la demo",
+    starting: "Iniciando...",
+    tryValue: ({ value }) => `Prueba ${value}`,
+    demoWrongGuess: ({ value }) => `Para la demo, prueba ${value}.`,
+    followOrbTip: "Sigue el orbe. Señala el número oculto.",
+    todaysPuzzleLive: "El reto de hoy está listo.",
+    practiceCompleteLive: "Práctica completada. El reto de hoy está listo.",
+    orbStaysHidden: "El orbe se mantiene sobre el número oculto mientras tus intentos reducen el rango.",
+    sameRuleRealPuzzle: "Misma regla, juego real: usa el orbe y el rango que se reduce juntos.",
+    practiceGuess: ({ current, total }) => `Intento de práctica ${current} de ${total}`,
+    demoWatchHalf: "Mira cómo un intento elimina la mitad de las posibilidades.",
+    demoBelowMidpoint: ({ value }) => `El orbe está por debajo del punto medio, así que empieza con ${value}.`,
+    demoGuessHigh: ({ value }) => `${value} fue alto, así que el límite superior bajó.`,
+    demoGuessLow: ({ value }) => `${value} fue bajo, así que el límite inferior subió.`,
+    demoGuessFromBelow: ({ value }) => `Ahora prueba con ${value} para cerrar el rango desde abajo.`,
+    demoSqueezeWholeGame: "Ese ajuste es todo el juego. Cargando el reto real de hoy...",
+    orbShowsPosition: "El orbe muestra dónde está el número oculto dentro del rango actual.",
+    guessesLeft: ({ count }) => `${count} intentos restantes`,
+    finalGuess: "Último intento",
+    hintPrompt: "¿Necesitas ayuda? Toca la barra brillante para obtener una pista única.",
+    rangeTightened: "El rango se estrechó. Haz que este intento cuente.",
+    bullseye: "🎯 En el blanco.",
+    tryAgainTomorrow: "¡Vuelve a intentarlo mañana!",
+    todaysNarroWas: ({ value }) => `El Narro de hoy era ${value}.`,
+    wantMoreNarro: "¿Quieres más Narro? Prueba el modo libre.",
+    roundCompletePlayAgain: "Ronda terminada. Juega otra vez.",
+    roundOver: "Fin de la ronda.",
+    todaysNumberWas: ({ value }) => `El número de hoy era ${value}.`,
+    numberWas: ({ value }) => `El número era ${value}.`,
+    soCloseOneAway: "Muy cerca. A 1.",
+    closestGuessAway: ({ count }) => `Intento más cercano: a ${count}`,
+    newNarroAtMidnight: "Nuevo Narro a la medianoche ET.",
+    nextNarroIn: ({ time }) => `Próximo Narro en ${time}`,
+    freePlay: "Modo libre",
+    classic: "Clásico",
+    million: "Millón",
+    micro: "Micro",
+    inverted: "Invertido",
+    shareDaily: "Compartir diario",
+    shareRun: "Compartir partida",
+    sendFeedback: "Enviar comentarios",
+    statsHeading: "Estadísticas",
+    close: "Cerrar",
+    statsGames: ({ count }) => `Partidas: ${count}`,
+    statsWins: ({ count }) => `Victorias: ${count}`,
+    statsAvg: ({ count }) => `Promedio de intentos: ${count}`,
+    statsBest: ({ count }) => `Mejor: ${count}`,
+    streakLabel: ({ count }) => `🔥 Racha: ${count}`
+  },
+  hi: {
+    ...EN_MESSAGES,
+    documentTitle: "Narro | रोज़ की नंबर पहेली",
+    languageLabel: "भाषा",
+    themeModeLight: "लाइट",
+    themeModeDark: "डार्क",
+    switchThemeTo: ({ mode }) => `${mode} मोड पर स्विच करें`,
+    viewStats: "आंकड़े देखें",
+    guessInputLabel: "अपना अनुमान दर्ज करें",
+    inputPlaceholder: "एक नंबर दर्ज करें",
+    guessButton: "अनुमान",
+    quickStart: "शुरुआत",
+    onboardingTitle: "क्या आप छिपा हुआ नंबर ढूंढ सकते हैं?",
+    onboardingCopy: "ऑर्ब का पीछा करें और खेल जीतें। जल्दी डेमो आज़माएं, या सीधे असली खेल पर जाएं।",
+    playDemo: "डेमो खेलें",
+    skipAhead: "सीधे खेलें",
+    demoTry15: "15-सेकंड डेमो आज़माएं",
+    hideTutorial: "ट्यूटोरियल छिपाएं",
+    exitDemo: "डेमो से बाहर जाएं",
+    starting: "शुरू हो रहा है...",
+    tryValue: ({ value }) => `${value} आज़माएं`,
+    demoWrongGuess: ({ value }) => `डेमो के लिए ${value} आज़माएं।`,
+    followOrbTip: "ऑर्ब का पीछा करें। यह छिपे हुए नंबर की ओर इशारा करता है।",
+    todaysPuzzleLive: "आज की पहेली तैयार है।",
+    practiceCompleteLive: "अभ्यास पूरा हुआ। आज की पहेली तैयार है।",
+    orbStaysHidden: "जब आपके अनुमान दायरा घटाते हैं, तब ऑर्ब छिपे हुए नंबर पर बना रहता है।",
+    sameRuleRealPuzzle: "नियम वही है, बस अब असली पहेली है: ऑर्ब और घटते दायरे का साथ में उपयोग करें।",
+    practiceGuess: ({ current, total }) => `अभ्यास अनुमान ${current} / ${total}`,
+    demoWatchHalf: "देखिए, एक अनुमान कैसे आधी संभावनाएं हटा देता है।",
+    demoBelowMidpoint: ({ value }) => `ऑर्ब मध्य बिंदु से नीचे है, इसलिए ${value} से शुरू करें।`,
+    demoGuessHigh: ({ value }) => `${value} ज्यादा था, इसलिए ऊपर की सीमा नीचे आ गई।`,
+    demoGuessLow: ({ value }) => `${value} कम था, इसलिए नीचे की सीमा ऊपर आ गई।`,
+    demoGuessFromBelow: ({ value }) => `अब ${value} चुनें ताकि दायरा नीचे से सिमट जाए।`,
+    demoSqueezeWholeGame: "यही सिमटना पूरे खेल का आधार है। आज की असली पहेली लोड हो रही है...",
+    orbShowsPosition: "ऑर्ब दिखाता है कि मौजूदा दायरे में छिपा हुआ नंबर कहाँ है।",
+    guessesLeft: ({ count }) => `${count} अनुमान बाकी`,
+    finalGuess: "आखिरी अनुमान",
+    hintPrompt: "मदद चाहिए? एक बार की हिंट के लिए चमकती बार पर टैप करें।",
+    rangeTightened: "दायरा सिमट गया है। इस अनुमान को सही बनाएं।",
+    bullseye: "🎯 सही निशाना।",
+    tryAgainTomorrow: "कल फिर कोशिश करें!",
+    todaysNarroWas: ({ value }) => `आज का Narro ${value} था।`,
+    wantMoreNarro: "और Narro चाहिए? फ्री प्ले आज़माएं!",
+    roundCompletePlayAgain: "राउंड पूरा हुआ। फिर खेलें।",
+    roundOver: "राउंड खत्म।",
+    todaysNumberWas: ({ value }) => `आज का नंबर ${value} था।`,
+    numberWas: ({ value }) => `नंबर ${value} था।`,
+    soCloseOneAway: "बहुत करीब। सिर्फ 1 दूर।",
+    closestGuessAway: ({ count }) => `सबसे करीब अनुमान: ${count} दूर`,
+    newNarroAtMidnight: "नया Narro आधी रात ET पर।",
+    nextNarroIn: ({ time }) => `अगला Narro ${time} में`,
+    freePlay: "फ्री प्ले",
+    classic: "क्लासिक",
+    million: "मिलियन",
+    micro: "माइक्रो",
+    inverted: "इनवर्टेड",
+    shareDaily: "डेली शेयर करें",
+    shareRun: "रन शेयर करें",
+    sendFeedback: "फीडबैक भेजें",
+    statsHeading: "आंकड़े",
+    close: "बंद करें",
+    statsGames: ({ count }) => `खेल: ${count}`,
+    statsWins: ({ count }) => `जीत: ${count}`,
+    statsAvg: ({ count }) => `औसत अनुमान: ${count}`,
+    statsBest: ({ count }) => `सर्वश्रेष्ठ: ${count}`,
+    streakLabel: ({ count }) => `🔥 स्ट्रीक: ${count}`
+  },
+  fr: {
+    ...EN_MESSAGES,
+    documentTitle: "Narro | Puzzle Numerique Quotidien",
+    languageLabel: "Langue",
+    themeModeLight: "clair",
+    themeModeDark: "sombre",
+    switchThemeTo: ({ mode }) => `Passer en mode ${mode}`,
+    viewStats: "Voir les stats",
+    guessInputLabel: "Entrez votre tentative",
+    inputPlaceholder: "Entrez un nombre",
+    guessButton: "Deviner",
+    quickStart: "Demarrage rapide",
+    onboardingTitle: "Pouvez-vous trouver le nombre cache ?",
+    onboardingCopy: "Suivez l'orbe et gagnez la partie. Essayez la demo rapide ou passez directement au vrai jeu.",
+    playDemo: "Jouer la demo",
+    skipAhead: "Passer",
+    demoTry15: "Essayer la demo de 15 secondes",
+    hideTutorial: "Masquer le tutoriel",
+    exitDemo: "Quitter la demo",
+    starting: "Demarrage...",
+    tryValue: ({ value }) => `Essayez ${value}`,
+    demoWrongGuess: ({ value }) => `Pour la demo, essayez ${value}.`,
+    followOrbTip: "Suivez l'orbe. Il indique le nombre cache.",
+    todaysPuzzleLive: "Le puzzle du jour est pret.",
+    practiceCompleteLive: "Entrainement termine. Le puzzle du jour est pret.",
+    orbStaysHidden: "L'orbe reste sur le nombre cache pendant que vos tentatives reduisent l'intervalle.",
+    sameRuleRealPuzzle: "Meme regle, vrai puzzle : utilisez l'orbe et l'intervalle qui se resserre ensemble.",
+    practiceGuess: ({ current, total }) => `Essai de demo ${current} sur ${total}`,
+    demoWatchHalf: "Regardez comment une tentative elimine la moitie des possibilites.",
+    demoBelowMidpoint: ({ value }) => `L'orbe est sous le milieu, alors commencez avec ${value}.`,
+    demoGuessHigh: ({ value }) => `${value} etait trop haut, le plafond est descendu.`,
+    demoGuessLow: ({ value }) => `${value} etait trop bas, le plancher est monte.`,
+    demoGuessFromBelow: ({ value }) => `Essayez maintenant ${value} pour resserrer l'intervalle par le bas.`,
+    demoSqueezeWholeGame: "Ce resserrement est tout le jeu. Chargement du vrai puzzle du jour...",
+    orbShowsPosition: "L'orbe montre ou se trouve le nombre cache dans l'intervalle actuel.",
+    guessesLeft: ({ count }) => `${count} essais restants`,
+    finalGuess: "Dernier essai",
+    hintPrompt: "Besoin d'aide ? Touchez la barre lumineuse pour un indice unique.",
+    rangeTightened: "L'intervalle s'est resserre. Faites compter cette tentative.",
+    bullseye: "🎯 En plein centre.",
+    tryAgainTomorrow: "Reessayez demain !",
+    todaysNarroWas: ({ value }) => `Le Narro du jour etait ${value}.`,
+    wantMoreNarro: "Encore du Narro ? Essayez le mode libre !",
+    roundCompletePlayAgain: "Manche terminee. Rejouez.",
+    roundOver: "Manche terminee.",
+    todaysNumberWas: ({ value }) => `Le nombre du jour etait ${value}.`,
+    numberWas: ({ value }) => `Le nombre etait ${value}.`,
+    soCloseOneAway: "Tout pres. A 1 pres.",
+    closestGuessAway: ({ count }) => `Tentative la plus proche : a ${count} pres`,
+    newNarroAtMidnight: "Nouveau Narro a minuit ET.",
+    nextNarroIn: ({ time }) => `Prochain Narro dans ${time}`,
+    freePlay: "Mode libre",
+    classic: "Classique",
+    million: "Million",
+    micro: "Micro",
+    inverted: "Inverse",
+    shareDaily: "Partager le quotidien",
+    shareRun: "Partager la partie",
+    sendFeedback: "Envoyer un retour",
+    statsHeading: "Statistiques",
+    close: "Fermer",
+    statsGames: ({ count }) => `Parties : ${count}`,
+    statsWins: ({ count }) => `Victoires : ${count}`,
+    statsAvg: ({ count }) => `Moyenne d'essais : ${count}`,
+    statsBest: ({ count }) => `Meilleur : ${count}`,
+    streakLabel: ({ count }) => `🔥 Serie : ${count}`
+  },
+  de: {
+    ...EN_MESSAGES,
+    documentTitle: "Narro | Tagliches Zahlenpuzzle",
+    languageLabel: "Sprache",
+    themeModeLight: "hell",
+    themeModeDark: "dunkel",
+    switchThemeTo: ({ mode }) => `Zum Modus ${mode} wechseln`,
+    viewStats: "Statistiken anzeigen",
+    guessInputLabel: "Gib deinen Tipp ein",
+    inputPlaceholder: "Zahl eingeben",
+    guessButton: "Tippen",
+    quickStart: "Schnellstart",
+    onboardingTitle: "Kannst du die versteckte Zahl finden?",
+    onboardingCopy: "Folge der Kugel und gewinne das Spiel. Probiere die kurze Demo oder spring direkt ins echte Spiel.",
+    playDemo: "Demo spielen",
+    skipAhead: "Uberspringen",
+    demoTry15: "15-Sekunden-Demo testen",
+    hideTutorial: "Tutorial ausblenden",
+    exitDemo: "Demo verlassen",
+    starting: "Startet...",
+    tryValue: ({ value }) => `${value} versuchen`,
+    demoWrongGuess: ({ value }) => `Fur die Demo versuche ${value}.`,
+    followOrbTip: "Folge der Kugel. Sie zeigt auf die versteckte Zahl.",
+    todaysPuzzleLive: "Das heutige Puzzle ist live.",
+    practiceCompleteLive: "Ubung abgeschlossen. Das heutige Puzzle ist live.",
+    orbStaysHidden: "Die Kugel bleibt auf der versteckten Zahl, wahrend deine Tipps den Bereich verkleinern.",
+    sameRuleRealPuzzle: "Gleiche Regel, echtes Puzzle: Nutze die Kugel zusammen mit dem kleiner werdenden Bereich.",
+    practiceGuess: ({ current, total }) => `Ubungstipp ${current} von ${total}`,
+    demoWatchHalf: "Sieh zu, wie ein Tipp die Halfte aller Moglichkeiten entfernt.",
+    demoBelowMidpoint: ({ value }) => `Die Kugel liegt unter der Mitte, also starte mit ${value}.`,
+    demoGuessHigh: ({ value }) => `${value} war zu hoch, also sank die Obergrenze.`,
+    demoGuessLow: ({ value }) => `${value} war zu niedrig, also stieg die Untergrenze.`,
+    demoGuessFromBelow: ({ value }) => `Tippe jetzt ${value}, um den Bereich von unten einzuengen.`,
+    demoSqueezeWholeGame: "Genau dieses Einengen ist das ganze Spiel. Das echte Tagespuzzle wird geladen...",
+    orbShowsPosition: "Die Kugel zeigt, wo sich die versteckte Zahl im aktuellen Bereich befindet.",
+    guessesLeft: ({ count }) => `${count} Tipps ubrig`,
+    finalGuess: "Letzter Tipp",
+    hintPrompt: "Brauchst du Hilfe? Tippe auf den leuchtenden Balken fur einen einmaligen Hinweis.",
+    rangeTightened: "Der Bereich wurde enger. Dieser Tipp zahlt.",
+    bullseye: "🎯 Volltreffer.",
+    tryAgainTomorrow: "Versuch es morgen wieder!",
+    todaysNarroWas: ({ value }) => `Das heutige Narro war ${value}.`,
+    wantMoreNarro: "Mehr Narro? Probiere den freien Modus!",
+    roundCompletePlayAgain: "Runde beendet. Spiel nochmal.",
+    roundOver: "Runde vorbei.",
+    todaysNumberWas: ({ value }) => `Die heutige Zahl war ${value}.`,
+    numberWas: ({ value }) => `Die Zahl war ${value}.`,
+    soCloseOneAway: "Ganz knapp. Nur 1 daneben.",
+    closestGuessAway: ({ count }) => `Nachster Tipp: ${count} entfernt`,
+    newNarroAtMidnight: "Neues Narro um Mitternacht ET.",
+    nextNarroIn: ({ time }) => `Nachstes Narro in ${time}`,
+    freePlay: "Freies Spiel",
+    classic: "Klassisch",
+    million: "Million",
+    micro: "Mikro",
+    inverted: "Invertiert",
+    shareDaily: "Tag teilen",
+    shareRun: "Runde teilen",
+    sendFeedback: "Feedback senden",
+    statsHeading: "Statistiken",
+    close: "Schliessen",
+    statsGames: ({ count }) => `Spiele: ${count}`,
+    statsWins: ({ count }) => `Siege: ${count}`,
+    statsAvg: ({ count }) => `Durchschnittliche Tipps: ${count}`,
+    statsBest: ({ count }) => `Bestes Ergebnis: ${count}`,
+    streakLabel: ({ count }) => `🔥 Serie: ${count}`
+  },
+  pt: {
+    ...EN_MESSAGES,
+    documentTitle: "Narro | Quebra-cabeca Diario de Numeros",
+    languageLabel: "Idioma",
+    themeModeLight: "claro",
+    themeModeDark: "escuro",
+    switchThemeTo: ({ mode }) => `Mudar para o modo ${mode}`,
+    viewStats: "Ver estatisticas",
+    guessInputLabel: "Digite seu palpite",
+    inputPlaceholder: "Digite um numero",
+    guessButton: "Palpite",
+    quickStart: "Inicio rapido",
+    onboardingTitle: "Voce consegue encontrar o numero escondido?",
+    onboardingCopy: "Siga o orbe e venca o jogo. Teste a demo rapida ou pule direto para a partida real.",
+    playDemo: "Jogar demo",
+    skipAhead: "Pular",
+    demoTry15: "Testar a demo de 15 segundos",
+    hideTutorial: "Ocultar tutorial",
+    exitDemo: "Sair da demo",
+    starting: "Iniciando...",
+    tryValue: ({ value }) => `Tente ${value}`,
+    demoWrongGuess: ({ value }) => `Na demo, tente ${value}.`,
+    followOrbTip: "Siga o orbe. Ele aponta para o numero escondido.",
+    todaysPuzzleLive: "O desafio de hoje esta no ar.",
+    practiceCompleteLive: "Pratica concluida. O desafio de hoje esta no ar.",
+    orbStaysHidden: "O orbe fica sobre o numero escondido enquanto seus palpites diminuem o intervalo.",
+    sameRuleRealPuzzle: "Mesma regra, desafio real: use o orbe junto com o intervalo que encolhe.",
+    practiceGuess: ({ current, total }) => `Palpite de pratica ${current} de ${total}`,
+    demoWatchHalf: "Veja como um palpite elimina metade das possibilidades.",
+    demoBelowMidpoint: ({ value }) => `O orbe esta abaixo do meio, entao comece com ${value}.`,
+    demoGuessHigh: ({ value }) => `${value} foi alto, entao o teto desceu.`,
+    demoGuessLow: ({ value }) => `${value} foi baixo, entao o piso subiu.`,
+    demoGuessFromBelow: ({ value }) => `Agora tente ${value} para apertar o intervalo por baixo.`,
+    demoSqueezeWholeGame: "Esse aperto e o jogo inteiro. Carregando o desafio real de hoje...",
+    orbShowsPosition: "O orbe mostra onde o numero escondido esta dentro do intervalo atual.",
+    guessesLeft: ({ count }) => `${count} palpites restantes`,
+    finalGuess: "Palpite final",
+    hintPrompt: "Precisa de ajuda? Toque na barra brilhante para uma dica unica.",
+    rangeTightened: "O intervalo apertou. Faca este palpite valer.",
+    bullseye: "🎯 Na mosca.",
+    tryAgainTomorrow: "Tente novamente amanha!",
+    todaysNarroWas: ({ value }) => `O Narro de hoje era ${value}.`,
+    wantMoreNarro: "Quer mais Narro? Experimente o modo livre!",
+    roundCompletePlayAgain: "Rodada encerrada. Jogue novamente.",
+    roundOver: "Fim da rodada.",
+    todaysNumberWas: ({ value }) => `O numero de hoje era ${value}.`,
+    numberWas: ({ value }) => `O numero era ${value}.`,
+    soCloseOneAway: "Quase. A 1 de distancia.",
+    closestGuessAway: ({ count }) => `Palpite mais proximo: a ${count}`,
+    newNarroAtMidnight: "Novo Narro a meia-noite ET.",
+    nextNarroIn: ({ time }) => `Proximo Narro em ${time}`,
+    freePlay: "Modo livre",
+    classic: "Classico",
+    million: "Milhao",
+    micro: "Micro",
+    inverted: "Inverso",
+    shareDaily: "Compartilhar diario",
+    shareRun: "Compartilhar rodada",
+    sendFeedback: "Enviar feedback",
+    statsHeading: "Estatisticas",
+    close: "Fechar",
+    statsGames: ({ count }) => `Jogos: ${count}`,
+    statsWins: ({ count }) => `Vitorias: ${count}`,
+    statsAvg: ({ count }) => `Media de palpites: ${count}`,
+    statsBest: ({ count }) => `Melhor: ${count}`,
+    streakLabel: ({ count }) => `🔥 Sequencia: ${count}`
+  },
+  it: {
+    ...EN_MESSAGES,
+    documentTitle: "Narro | Rompicapo Numerico Quotidiano",
+    languageLabel: "Lingua",
+    themeModeLight: "chiaro",
+    themeModeDark: "scuro",
+    switchThemeTo: ({ mode }) => `Passa alla modalita ${mode}`,
+    viewStats: "Vedi statistiche",
+    guessInputLabel: "Inserisci il tuo tentativo",
+    inputPlaceholder: "Inserisci un numero",
+    guessButton: "Indovina",
+    quickStart: "Avvio rapido",
+    onboardingTitle: "Riesci a trovare il numero nascosto?",
+    onboardingCopy: "Segui l'orbe e vinci la partita. Prova la demo rapida oppure vai subito al gioco vero.",
+    playDemo: "Gioca la demo",
+    skipAhead: "Salta",
+    demoTry15: "Prova la demo da 15 secondi",
+    hideTutorial: "Nascondi tutorial",
+    exitDemo: "Esci dalla demo",
+    starting: "Avvio...",
+    tryValue: ({ value }) => `Prova ${value}`,
+    demoWrongGuess: ({ value }) => `Per la demo, prova ${value}.`,
+    followOrbTip: "Segui l'orbe. Indica il numero nascosto.",
+    todaysPuzzleLive: "Il puzzle di oggi e disponibile.",
+    practiceCompleteLive: "Pratica completata. Il puzzle di oggi e disponibile.",
+    orbStaysHidden: "L'orbe resta sul numero nascosto mentre i tuoi tentativi restringono l'intervallo.",
+    sameRuleRealPuzzle: "Stessa regola, puzzle vero: usa insieme l'orbe e l'intervallo che si restringe.",
+    practiceGuess: ({ current, total }) => `Tentativo di pratica ${current} di ${total}`,
+    demoWatchHalf: "Guarda come un tentativo elimina meta delle possibilita.",
+    demoBelowMidpoint: ({ value }) => `L'orbe si trova sotto il punto medio, quindi inizia con ${value}.`,
+    demoGuessHigh: ({ value }) => `${value} era alto, quindi il limite superiore si e abbassato.`,
+    demoGuessLow: ({ value }) => `${value} era basso, quindi il limite inferiore e salito.`,
+    demoGuessFromBelow: ({ value }) => `Ora prova ${value} per stringere l'intervallo dal basso.`,
+    demoSqueezeWholeGame: "Questo restringimento e tutto il gioco. Caricamento del puzzle reale di oggi...",
+    orbShowsPosition: "L'orbe mostra dove si trova il numero nascosto nell'intervallo attuale.",
+    guessesLeft: ({ count }) => `${count} tentativi rimasti`,
+    finalGuess: "Tentativo finale",
+    hintPrompt: "Hai bisogno di aiuto? Tocca la barra luminosa per un aiuto una sola volta.",
+    rangeTightened: "L'intervallo si e ristretto. Fai contare questo tentativo.",
+    bullseye: "🎯 Centro perfetto.",
+    tryAgainTomorrow: "Riprova domani!",
+    todaysNarroWas: ({ value }) => `Il Narro di oggi era ${value}.`,
+    wantMoreNarro: "Vuoi ancora Narro? Prova la modalita libera!",
+    roundCompletePlayAgain: "Round finito. Gioca di nuovo.",
+    roundOver: "Round finito.",
+    todaysNumberWas: ({ value }) => `Il numero di oggi era ${value}.`,
+    numberWas: ({ value }) => `Il numero era ${value}.`,
+    soCloseOneAway: "Vicino. A 1 di distanza.",
+    closestGuessAway: ({ count }) => `Tentativo piu vicino: a ${count}`,
+    newNarroAtMidnight: "Nuovo Narro a mezzanotte ET.",
+    nextNarroIn: ({ time }) => `Prossimo Narro tra ${time}`,
+    freePlay: "Gioco libero",
+    classic: "Classico",
+    million: "Milione",
+    micro: "Micro",
+    inverted: "Invertito",
+    shareDaily: "Condividi il giornaliero",
+    shareRun: "Condividi il round",
+    sendFeedback: "Invia feedback",
+    statsHeading: "Statistiche",
+    close: "Chiudi",
+    statsGames: ({ count }) => `Partite: ${count}`,
+    statsWins: ({ count }) => `Vittorie: ${count}`,
+    statsAvg: ({ count }) => `Media tentativi: ${count}`,
+    statsBest: ({ count }) => `Migliore: ${count}`,
+    streakLabel: ({ count }) => `🔥 Serie: ${count}`
+  },
+  ja: {
+    ...EN_MESSAGES,
+    documentTitle: "Narro | 毎日の数字パズル",
+    languageLabel: "言語",
+    themeModeLight: "ライト",
+    themeModeDark: "ダーク",
+    switchThemeTo: ({ mode }) => `${mode}モードに切り替える`,
+    viewStats: "統計を見る",
+    guessInputLabel: "予想を入力",
+    inputPlaceholder: "数字を入力",
+    guessButton: "予想",
+    quickStart: "クイックスタート",
+    onboardingTitle: "隠された数字を見つけられますか？",
+    onboardingCopy: "オーブを追ってゲームに勝ちましょう。短いデモを試すか、そのまま本番に進めます。",
+    playDemo: "デモを遊ぶ",
+    skipAhead: "スキップ",
+    demoTry15: "15秒デモを試す",
+    hideTutorial: "チュートリアルを隠す",
+    exitDemo: "デモを終了",
+    starting: "開始中...",
+    tryValue: ({ value }) => `${value}を試す`,
+    demoWrongGuess: ({ value }) => `デモでは ${value} を試してください。`,
+    followOrbTip: "オーブを追ってください。隠された数字の位置を示します。",
+    todaysPuzzleLive: "今日のパズルが始まりました。",
+    practiceCompleteLive: "練習完了。今日のパズルが始まりました。",
+    orbStaysHidden: "あなたの予想で範囲が狭まるあいだ、オーブは隠された数字の位置に留まります。",
+    sameRuleRealPuzzle: "ルールは同じです。本番ではオーブと狭まる範囲を一緒に使います。",
+    practiceGuess: ({ current, total }) => `練習 ${current} / ${total}`,
+    demoWatchHalf: "1回の予想で候補の半分が消える様子を見てください。",
+    demoBelowMidpoint: ({ value }) => `オーブは中央より下にあるので、まず ${value} から始めましょう。`,
+    demoGuessHigh: ({ value }) => `${value} は高すぎたので、上限が下がりました。`,
+    demoGuessLow: ({ value }) => `${value} は低すぎたので、下限が上がりました。`,
+    demoGuessFromBelow: ({ value }) => `次は ${value} を予想して、下から範囲を絞りましょう。`,
+    demoSqueezeWholeGame: "この絞り込みがこのゲームの核心です。今日の本番パズルを読み込み中...",
+    orbShowsPosition: "オーブは現在の範囲の中で隠された数字がどこにあるかを示します。",
+    guessesLeft: ({ count }) => `残り ${count} 回`,
+    finalGuess: "最後の予想",
+    hintPrompt: "助けが必要ですか？ 光るバーをタップすると一度だけヒントがもらえます。",
+    rangeTightened: "範囲が狭まりました。この予想を大切に。",
+    bullseye: "🎯 的中。",
+    tryAgainTomorrow: "また明日挑戦してください。",
+    todaysNarroWas: ({ value }) => `今日の Narro は ${value} でした。`,
+    wantMoreNarro: "もっと Narro を遊びますか？ フリープレイを試してください。",
+    roundCompletePlayAgain: "ラウンド終了。もう一度遊びましょう。",
+    roundOver: "ラウンド終了。",
+    todaysNumberWas: ({ value }) => `今日の数字は ${value} でした。`,
+    numberWas: ({ value }) => `数字は ${value} でした。`,
+    soCloseOneAway: "惜しい。あと1。",
+    closestGuessAway: ({ count }) => `最も近い予想: ${count} 離れ`,
+    newNarroAtMidnight: "新しい Narro は ET の深夜に更新されます。",
+    nextNarroIn: ({ time }) => `次の Narro まで ${time}`,
+    freePlay: "フリープレイ",
+    classic: "クラシック",
+    million: "ミリオン",
+    micro: "マイクロ",
+    inverted: "反転",
+    shareDaily: "デイリーを共有",
+    shareRun: "ラウンドを共有",
+    sendFeedback: "フィードバックを送る",
+    statsHeading: "統計",
+    close: "閉じる",
+    statsGames: ({ count }) => `プレイ数: ${count}`,
+    statsWins: ({ count }) => `勝利: ${count}`,
+    statsAvg: ({ count }) => `平均予想数: ${count}`,
+    statsBest: ({ count }) => `ベスト: ${count}`,
+    streakLabel: ({ count }) => `🔥 連勝: ${count}`
+  },
+  ko: {
+    ...EN_MESSAGES,
+    documentTitle: "Narro | 오늘의 숫자 퍼즐",
+    languageLabel: "언어",
+    themeModeLight: "라이트",
+    themeModeDark: "다크",
+    switchThemeTo: ({ mode }) => `${mode} 모드로 전환`,
+    viewStats: "통계 보기",
+    guessInputLabel: "추측을 입력하세요",
+    inputPlaceholder: "숫자를 입력하세요",
+    guessButton: "추측",
+    quickStart: "빠른 시작",
+    onboardingTitle: "숨겨진 숫자를 찾을 수 있나요?",
+    onboardingCopy: "오브를 따라가며 게임을 이겨 보세요. 짧은 데모를 먼저 해 보거나 바로 실전으로 넘어갈 수 있습니다.",
+    playDemo: "데모 플레이",
+    skipAhead: "건너뛰기",
+    demoTry15: "15초 데모 해보기",
+    hideTutorial: "튜토리얼 숨기기",
+    exitDemo: "데모 종료",
+    starting: "시작 중...",
+    tryValue: ({ value }) => `${value} 시도`,
+    demoWrongGuess: ({ value }) => `데모에서는 ${value} 를 시도해 보세요.`,
+    followOrbTip: "오브를 따라가세요. 숨겨진 숫자의 위치를 가리킵니다.",
+    todaysPuzzleLive: "오늘의 퍼즐이 시작되었습니다.",
+    practiceCompleteLive: "연습이 끝났습니다. 오늘의 퍼즐이 시작되었습니다.",
+    orbStaysHidden: "당신의 추측으로 범위가 줄어드는 동안 오브는 숨겨진 숫자 위에 머뭅니다.",
+    sameRuleRealPuzzle: "규칙은 같습니다. 실전에서는 오브와 줄어드는 범위를 함께 사용하세요.",
+    practiceGuess: ({ current, total }) => `연습 추측 ${current} / ${total}`,
+    demoWatchHalf: "한 번의 추측으로 가능성이 절반으로 줄어드는 모습을 보세요.",
+    demoBelowMidpoint: ({ value }) => `오브가 중간보다 아래에 있으니 ${value} 부터 시작하세요.`,
+    demoGuessHigh: ({ value }) => `${value} 는 너무 높아서 상한이 내려왔습니다.`,
+    demoGuessLow: ({ value }) => `${value} 는 너무 낮아서 하한이 올라갔습니다.`,
+    demoGuessFromBelow: ({ value }) => `이제 ${value} 를 추측해 아래쪽에서 범위를 좁혀 보세요.`,
+    demoSqueezeWholeGame: "이 좁히기가 게임의 핵심입니다. 오늘의 실제 퍼즐을 불러오는 중...",
+    orbShowsPosition: "오브는 현재 범위 안에서 숨겨진 숫자가 어디에 있는지 보여줍니다.",
+    guessesLeft: ({ count }) => `남은 추측 ${count}회`,
+    finalGuess: "마지막 추측",
+    hintPrompt: "도움이 필요하신가요? 빛나는 막대를 탭하면 한 번만 힌트를 받을 수 있습니다.",
+    rangeTightened: "범위가 더 좁아졌습니다. 이번 추측이 중요합니다.",
+    bullseye: "🎯 정답입니다.",
+    tryAgainTomorrow: "내일 다시 도전하세요!",
+    todaysNarroWas: ({ value }) => `오늘의 Narro 는 ${value} 였습니다.`,
+    wantMoreNarro: "Narro 를 더 하고 싶나요? 자유 플레이를 해 보세요!",
+    roundCompletePlayAgain: "라운드 종료. 다시 플레이하세요.",
+    roundOver: "라운드 종료.",
+    todaysNumberWas: ({ value }) => `오늘의 숫자는 ${value} 였습니다.`,
+    numberWas: ({ value }) => `숫자는 ${value} 였습니다.`,
+    soCloseOneAway: "아깝습니다. 1 차이였습니다.",
+    closestGuessAway: ({ count }) => `가장 가까운 추측: ${count} 차이`,
+    newNarroAtMidnight: "새 Narro 는 ET 자정에 열립니다.",
+    nextNarroIn: ({ time }) => `다음 Narro 까지 ${time}`,
+    freePlay: "자유 플레이",
+    classic: "클래식",
+    million: "밀리언",
+    micro: "마이크로",
+    inverted: "인버티드",
+    shareDaily: "데일리 공유",
+    shareRun: "라운드 공유",
+    sendFeedback: "피드백 보내기",
+    statsHeading: "통계",
+    close: "닫기",
+    statsGames: ({ count }) => `플레이 수: ${count}`,
+    statsWins: ({ count }) => `승리: ${count}`,
+    statsAvg: ({ count }) => `평균 추측 수: ${count}`,
+    statsBest: ({ count }) => `최고 기록: ${count}`,
+    streakLabel: ({ count }) => `🔥 연속 기록: ${count}`
+  },
+  "zh-hans": {
+    ...EN_MESSAGES,
+    documentTitle: "Narro | 每日数字谜题",
+    languageLabel: "语言",
+    themeModeLight: "浅色",
+    themeModeDark: "深色",
+    switchThemeTo: ({ mode }) => `切换到${mode}模式`,
+    viewStats: "查看统计",
+    guessInputLabel: "输入你的猜测",
+    inputPlaceholder: "输入一个数字",
+    guessButton: "猜",
+    quickStart: "快速开始",
+    onboardingTitle: "你能找到隐藏的数字吗？",
+    onboardingCopy: "跟随光球来赢下游戏。你可以先试玩简短演示，也可以直接进入正式挑战。",
+    playDemo: "玩演示",
+    skipAhead: "跳过",
+    demoTry15: "试试15秒演示",
+    hideTutorial: "隐藏教程",
+    exitDemo: "退出演示",
+    starting: "开始中...",
+    tryValue: ({ value }) => `试试 ${value}`,
+    demoWrongGuess: ({ value }) => `在演示中，请尝试 ${value}。`,
+    followOrbTip: "跟随光球。它会指向隐藏数字所在的位置。",
+    todaysPuzzleLive: "今天的谜题已经开始。",
+    practiceCompleteLive: "练习完成。今天的谜题已经开始。",
+    orbStaysHidden: "当你的猜测不断缩小范围时，光球会一直停在隐藏数字的位置上。",
+    sameRuleRealPuzzle: "规则相同，正式谜题中请同时利用光球和不断缩小的范围。",
+    practiceGuess: ({ current, total }) => `练习猜测 ${current} / ${total}`,
+    demoWatchHalf: "看看一次猜测如何去掉一半的可能性。",
+    demoBelowMidpoint: ({ value }) => `光球在中点以下，所以先从 ${value} 开始。`,
+    demoGuessHigh: ({ value }) => `${value} 偏大了，所以上限下降了。`,
+    demoGuessLow: ({ value }) => `${value} 偏小了，所以下限上升了。`,
+    demoGuessFromBelow: ({ value }) => `现在猜 ${value}，从下方继续压缩范围。`,
+    demoSqueezeWholeGame: "这种收缩就是游戏的核心。正在加载今天的正式谜题...",
+    orbShowsPosition: "光球会显示隐藏数字在当前范围中的位置。",
+    guessesLeft: ({ count }) => `剩余 ${count} 次猜测`,
+    finalGuess: "最后一次猜测",
+    hintPrompt: "需要帮助吗？ 点击发光的条形区域可获得一次性提示。",
+    rangeTightened: "范围已经缩小。这次猜测很关键。",
+    bullseye: "🎯 正中目标。",
+    tryAgainTomorrow: "明天再试一次！",
+    todaysNarroWas: ({ value }) => `今天的 Narro 是 ${value}。`,
+    wantMoreNarro: "还想继续玩 Narro 吗？ 试试自由模式吧！",
+    roundCompletePlayAgain: "本轮结束。再玩一次。",
+    roundOver: "本轮结束。",
+    todaysNumberWas: ({ value }) => `今天的数字是 ${value}。`,
+    numberWas: ({ value }) => `数字是 ${value}。`,
+    soCloseOneAway: "很接近，只差 1。",
+    closestGuessAway: ({ count }) => `最接近的猜测：差 ${count}`,
+    newNarroAtMidnight: "新的 Narro 会在美东时间午夜更新。",
+    nextNarroIn: ({ time }) => `距离下一局 Narro 还有 ${time}`,
+    freePlay: "自由模式",
+    classic: "经典",
+    million: "百万",
+    micro: "微型",
+    inverted: "反转",
+    shareDaily: "分享每日结果",
+    shareRun: "分享本轮",
+    sendFeedback: "发送反馈",
+    statsHeading: "统计",
+    close: "关闭",
+    statsGames: ({ count }) => `游戏数：${count}`,
+    statsWins: ({ count }) => `胜利：${count}`,
+    statsAvg: ({ count }) => `平均猜测：${count}`,
+    statsBest: ({ count }) => `最佳：${count}`,
+    streakLabel: ({ count }) => `🔥 连胜：${count}`
+  },
+  "zh-hant": {
+    ...EN_MESSAGES,
+    documentTitle: "Narro | 每日數字謎題",
+    languageLabel: "語言",
+    themeModeLight: "淺色",
+    themeModeDark: "深色",
+    switchThemeTo: ({ mode }) => `切換到${mode}模式`,
+    viewStats: "查看統計",
+    guessInputLabel: "輸入你的猜測",
+    inputPlaceholder: "輸入一個數字",
+    guessButton: "猜",
+    quickStart: "快速開始",
+    onboardingTitle: "你能找到隱藏的數字嗎？",
+    onboardingCopy: "跟著光球來贏下遊戲。你可以先試玩短短的示範，也可以直接開始正式挑戰。",
+    playDemo: "玩示範",
+    skipAhead: "跳過",
+    demoTry15: "試試 15 秒示範",
+    hideTutorial: "隱藏教學",
+    exitDemo: "離開示範",
+    starting: "開始中...",
+    tryValue: ({ value }) => `試試 ${value}`,
+    demoWrongGuess: ({ value }) => `在示範中，請試試 ${value}。`,
+    followOrbTip: "跟著光球。它會指出隱藏數字的位置。",
+    todaysPuzzleLive: "今天的謎題已開始。",
+    practiceCompleteLive: "練習完成。今天的謎題已開始。",
+    orbStaysHidden: "當你的猜測逐漸縮小範圍時，光球會一直停在隱藏數字的位置上。",
+    sameRuleRealPuzzle: "規則相同，正式謎題中請同時利用光球與不斷縮小的範圍。",
+    practiceGuess: ({ current, total }) => `練習猜測 ${current} / ${total}`,
+    demoWatchHalf: "看看一次猜測如何排除一半的可能。",
+    demoBelowMidpoint: ({ value }) => `光球位在中點以下，所以先從 ${value} 開始。`,
+    demoGuessHigh: ({ value }) => `${value} 太高了，所以上限下降了。`,
+    demoGuessLow: ({ value }) => `${value} 太低了，所以下限上升了。`,
+    demoGuessFromBelow: ({ value }) => `現在猜 ${value}，從下方繼續縮小範圍。`,
+    demoSqueezeWholeGame: "這種收縮就是整個遊戲的核心。正在載入今天的正式謎題...",
+    orbShowsPosition: "光球會顯示隱藏數字在目前範圍中的位置。",
+    guessesLeft: ({ count }) => `剩餘 ${count} 次猜測`,
+    finalGuess: "最後一次猜測",
+    hintPrompt: "需要幫忙嗎？ 點一下發光的長條即可獲得一次提示。",
+    rangeTightened: "範圍已縮小。讓這次猜測發揮作用。",
+    bullseye: "🎯 正中目標。",
+    tryAgainTomorrow: "明天再試一次！",
+    todaysNarroWas: ({ value }) => `今天的 Narro 是 ${value}。`,
+    wantMoreNarro: "還想玩更多 Narro 嗎？ 試試自由模式！",
+    roundCompletePlayAgain: "本輪結束。再玩一次。",
+    roundOver: "本輪結束。",
+    todaysNumberWas: ({ value }) => `今天的數字是 ${value}。`,
+    numberWas: ({ value }) => `數字是 ${value}。`,
+    soCloseOneAway: "很接近，只差 1。",
+    closestGuessAway: ({ count }) => `最接近的猜測：差 ${count}`,
+    newNarroAtMidnight: "新的 Narro 會在美東時間午夜更新。",
+    nextNarroIn: ({ time }) => `距離下一局 Narro 還有 ${time}`,
+    freePlay: "自由模式",
+    classic: "經典",
+    million: "百萬",
+    micro: "微型",
+    inverted: "反轉",
+    shareDaily: "分享每日結果",
+    shareRun: "分享本輪",
+    sendFeedback: "送出回饋",
+    statsHeading: "統計",
+    close: "關閉",
+    statsGames: ({ count }) => `遊戲數：${count}`,
+    statsWins: ({ count }) => `勝利：${count}`,
+    statsAvg: ({ count }) => `平均猜測：${count}`,
+    statsBest: ({ count }) => `最佳：${count}`,
+    streakLabel: ({ count }) => `🔥 連勝：${count}`
+  },
+  ar: {
+    ...EN_MESSAGES,
+    documentTitle: "Narro | لغز الأرقام اليومي",
+    languageLabel: "اللغة",
+    themeModeLight: "الفاتح",
+    themeModeDark: "الداكن",
+    switchThemeTo: ({ mode }) => `التبديل إلى الوضع ${mode}`,
+    viewStats: "عرض الإحصاءات",
+    guessInputLabel: "أدخل تخمينك",
+    inputPlaceholder: "أدخل رقماً",
+    guessButton: "خمن",
+    quickStart: "بداية سريعة",
+    onboardingTitle: "هل يمكنك العثور على الرقم المخفي؟",
+    onboardingCopy: "اتبع الكرة المضيئة واربح اللعبة. جرّب العرض السريع أو انتقل مباشرة إلى التحدي الحقيقي.",
+    playDemo: "تشغيل العرض",
+    skipAhead: "تخطي",
+    demoTry15: "جرّب عرض 15 ثانية",
+    hideTutorial: "إخفاء الشرح",
+    exitDemo: "الخروج من العرض",
+    starting: "جارٍ البدء...",
+    tryValue: ({ value }) => `جرّب ${value}`,
+    demoWrongGuess: ({ value }) => `في العرض، جرّب ${value}.`,
+    followOrbTip: "اتبع الكرة المضيئة. إنها تشير إلى مكان الرقم المخفي.",
+    todaysPuzzleLive: "لغز اليوم أصبح جاهزاً.",
+    practiceCompleteLive: "اكتمل التدريب. لغز اليوم أصبح جاهزاً.",
+    orbStaysHidden: "تبقى الكرة المضيئة فوق الرقم المخفي بينما تقلّص تخميناتك النطاق.",
+    sameRuleRealPuzzle: "نفس القاعدة، لكن هذه هي اللعبة الحقيقية: استخدم الكرة المضيئة مع النطاق الذي يضيق.",
+    practiceGuess: ({ current, total }) => `تخمين تدريبي ${current} من ${total}`,
+    demoWatchHalf: "شاهد كيف يزيل تخمين واحد نصف الاحتمالات.",
+    demoBelowMidpoint: ({ value }) => `الكرة المضيئة تقع أسفل المنتصف، لذا ابدأ بـ ${value}.`,
+    demoGuessHigh: ({ value }) => `كان ${value} مرتفعاً، لذلك انخفض الحد الأعلى.`,
+    demoGuessLow: ({ value }) => `كان ${value} منخفضاً، لذلك ارتفع الحد الأدنى.`,
+    demoGuessFromBelow: ({ value }) => `جرّب الآن ${value} لتضييق النطاق من الأسفل.`,
+    demoSqueezeWholeGame: "هذا التضييق هو جوهر اللعبة. جارٍ تحميل لغز اليوم الحقيقي...",
+    orbShowsPosition: "تُظهر الكرة المضيئة مكان الرقم المخفي داخل النطاق الحالي.",
+    guessesLeft: ({ count }) => `تبقّى ${count} من التخمينات`,
+    finalGuess: "التخمين الأخير",
+    hintPrompt: "هل تحتاج إلى مساعدة؟ اضغط على الشريط المتوهج للحصول على تلميح لمرة واحدة.",
+    rangeTightened: "ضاق النطاق. اجعل هذا التخمين مهماً.",
+    bullseye: "🎯 إصابة مباشرة.",
+    tryAgainTomorrow: "حاول مرة أخرى غداً!",
+    todaysNarroWas: ({ value }) => `كان Narro اليوم هو ${value}.`,
+    wantMoreNarro: "هل تريد المزيد من Narro؟ جرّب اللعب الحر!",
+    roundCompletePlayAgain: "انتهت الجولة. العب مرة أخرى.",
+    roundOver: "انتهت الجولة.",
+    todaysNumberWas: ({ value }) => `كان رقم اليوم هو ${value}.`,
+    numberWas: ({ value }) => `كان الرقم هو ${value}.`,
+    soCloseOneAway: "قريب جداً. بفارق 1 فقط.",
+    closestGuessAway: ({ count }) => `أقرب تخمين: بفارق ${count}`,
+    newNarroAtMidnight: "Narro جديد عند منتصف الليل بتوقيت ET.",
+    nextNarroIn: ({ time }) => `Narro التالي خلال ${time}`,
+    freePlay: "اللعب الحر",
+    classic: "كلاسيكي",
+    million: "مليون",
+    micro: "صغير",
+    inverted: "معكوس",
+    shareDaily: "مشاركة اليومي",
+    shareRun: "مشاركة الجولة",
+    sendFeedback: "إرسال ملاحظات",
+    statsHeading: "الإحصاءات",
+    close: "إغلاق",
+    statsGames: ({ count }) => `الألعاب: ${count}`,
+    statsWins: ({ count }) => `الانتصارات: ${count}`,
+    statsAvg: ({ count }) => `متوسط التخمينات: ${count}`,
+    statsBest: ({ count }) => `الأفضل: ${count}`,
+    streakLabel: ({ count }) => `🔥 سلسلة: ${count}`
+  },
+  ru: {
+    ...EN_MESSAGES,
+    documentTitle: "Narro | Ежедневная числовая головоломка",
+    languageLabel: "Язык",
+    themeModeLight: "светлый",
+    themeModeDark: "тёмный",
+    switchThemeTo: ({ mode }) => `Переключить на ${mode} режим`,
+    viewStats: "Показать статистику",
+    guessInputLabel: "Введите число",
+    inputPlaceholder: "Введите число",
+    guessButton: "Угадать",
+    quickStart: "Быстрый старт",
+    onboardingTitle: "Сможете найти скрытое число?",
+    onboardingCopy: "Следуйте за шаром и выиграйте игру. Попробуйте короткую демонстрацию или сразу переходите к реальной задаче.",
+    playDemo: "Играть демо",
+    skipAhead: "Пропустить",
+    demoTry15: "Попробовать 15-секундное демо",
+    hideTutorial: "Скрыть обучение",
+    exitDemo: "Выйти из демо",
+    starting: "Запуск...",
+    tryValue: ({ value }) => `Попробуйте ${value}`,
+    demoWrongGuess: ({ value }) => `Для демо попробуйте ${value}.`,
+    followOrbTip: "Следуйте за шаром. Он показывает, где находится скрытое число.",
+    todaysPuzzleLive: "Сегодняшняя головоломка уже доступна.",
+    practiceCompleteLive: "Тренировка завершена. Сегодняшняя головоломка уже доступна.",
+    orbStaysHidden: "Шар остаётся на скрытом числе, пока ваши попытки сужают диапазон.",
+    sameRuleRealPuzzle: "Правило то же, но это уже настоящая задача: используйте шар и сужающийся диапазон вместе.",
+    practiceGuess: ({ current, total }) => `Тренировочная попытка ${current} из ${total}`,
+    demoWatchHalf: "Посмотрите, как одна попытка убирает половину вариантов.",
+    demoBelowMidpoint: ({ value }) => `Шар находится ниже середины, поэтому начните с ${value}.`,
+    demoGuessHigh: ({ value }) => `${value} было слишком большим, поэтому верхняя граница опустилась.`,
+    demoGuessLow: ({ value }) => `${value} было слишком маленьким, поэтому нижняя граница поднялась.`,
+    demoGuessFromBelow: ({ value }) => `Теперь попробуйте ${value}, чтобы сузить диапазон снизу.`,
+    demoSqueezeWholeGame: "Это сужение и есть вся суть игры. Загружается сегодняшняя реальная головоломка...",
+    orbShowsPosition: "Шар показывает, где скрытое число находится внутри текущего диапазона.",
+    guessesLeft: ({ count }) => `Осталось попыток: ${count}`,
+    finalGuess: "Последняя попытка",
+    hintPrompt: "Нужна помощь? Нажмите на светящуюся полосу, чтобы получить одноразовую подсказку.",
+    rangeTightened: "Диапазон сузился. Пусть эта попытка будет удачной.",
+    bullseye: "🎯 Точное попадание.",
+    tryAgainTomorrow: "Попробуйте снова завтра!",
+    todaysNarroWas: ({ value }) => `Сегодняшний Narro был ${value}.`,
+    wantMoreNarro: "Хотите ещё Narro? Попробуйте свободную игру!",
+    roundCompletePlayAgain: "Раунд завершён. Сыграйте ещё раз.",
+    roundOver: "Раунд окончен.",
+    todaysNumberWas: ({ value }) => `Сегодняшнее число было ${value}.`,
+    numberWas: ({ value }) => `Число было ${value}.`,
+    soCloseOneAway: "Почти. Разница всего 1.",
+    closestGuessAway: ({ count }) => `Ближайшая попытка: разница ${count}`,
+    newNarroAtMidnight: "Новый Narro в полночь по ET.",
+    nextNarroIn: ({ time }) => `Следующий Narro через ${time}`,
+    freePlay: "Свободная игра",
+    classic: "Классика",
+    million: "Миллион",
+    micro: "Микро",
+    inverted: "Инверсия",
+    shareDaily: "Поделиться днём",
+    shareRun: "Поделиться раундом",
+    sendFeedback: "Отправить отзыв",
+    statsHeading: "Статистика",
+    close: "Закрыть",
+    statsGames: ({ count }) => `Игр: ${count}`,
+    statsWins: ({ count }) => `Побед: ${count}`,
+    statsAvg: ({ count }) => `Среднее число попыток: ${count}`,
+    statsBest: ({ count }) => `Лучший результат: ${count}`,
+    streakLabel: ({ count }) => `🔥 Серия: ${count}`
+  },
+  tr: {
+    ...EN_MESSAGES,
+    documentTitle: "Narro | Gunluk Sayi Bulmacasi",
+    languageLabel: "Dil",
+    themeModeLight: "acik",
+    themeModeDark: "koyu",
+    switchThemeTo: ({ mode }) => `${mode} moda gec`,
+    viewStats: "Istatistikleri gor",
+    guessInputLabel: "Tahminini gir",
+    inputPlaceholder: "Bir sayi gir",
+    guessButton: "Tahmin et",
+    quickStart: "Hizli baslangic",
+    onboardingTitle: "Gizli sayiyi bulabilir misin?",
+    onboardingCopy: "Kureyi takip et ve oyunu kazan. Hizli demoyu dene ya da dogrudan gercek oyuna gec.",
+    playDemo: "Demoyu oyna",
+    skipAhead: "Gec",
+    demoTry15: "15 saniyelik demoyu dene",
+    hideTutorial: "Egitimi gizle",
+    exitDemo: "Demodan cik",
+    starting: "Basliyor...",
+    tryValue: ({ value }) => `${value} dene`,
+    demoWrongGuess: ({ value }) => `Demo icin ${value} dene.`,
+    followOrbTip: "Kureyi takip et. Gizli sayinin yerini gosterir.",
+    todaysPuzzleLive: "Bugunun bulmacasi hazir.",
+    practiceCompleteLive: "Alistirma tamamlandi. Bugunun bulmacasi hazir.",
+    orbStaysHidden: "Tahminlerin araligi daraltirken kure gizli sayinin ustunde kalir.",
+    sameRuleRealPuzzle: "Kural ayni, ama bu gercek bulmaca: kureyi ve daralan araligi birlikte kullan.",
+    practiceGuess: ({ current, total }) => `Alistirma tahmini ${current} / ${total}`,
+    demoWatchHalf: "Tek bir tahminin olasiliklarin yarisini nasil eledigine bak.",
+    demoBelowMidpoint: ({ value }) => `Kure orta noktanin altinda, bu yuzden ${value} ile basla.`,
+    demoGuessHigh: ({ value }) => `${value} yuksekti, bu yuzden ust sinir indi.`,
+    demoGuessLow: ({ value }) => `${value} dusuktu, bu yuzden alt sinir yukseldi.`,
+    demoGuessFromBelow: ({ value }) => `Simdi ${value} tahmin et ve araligi alttan sikistir.`,
+    demoSqueezeWholeGame: "Oyunun ozeti bu sikistirma. Bugunun gercek bulmacasi yukleniyor...",
+    orbShowsPosition: "Kure, gizli sayinin mevcut aralikta nerede oldugunu gosterir.",
+    guessesLeft: ({ count }) => `${count} tahmin kaldi`,
+    finalGuess: "Son tahmin",
+    hintPrompt: "Yardim mi gerekiyor? Tek seferlik ipucu icin parlayan cubuga dokun.",
+    rangeTightened: "Aralik daraldi. Bu tahmini iyi kullan.",
+    bullseye: "🎯 Tam isabet.",
+    tryAgainTomorrow: "Yarin tekrar dene!",
+    todaysNarroWas: ({ value }) => `Bugunun Narro'su ${value} idi.`,
+    wantMoreNarro: "Daha fazla Narro ister misin? Serbest modu dene!",
+    roundCompletePlayAgain: "Tur bitti. Tekrar oyna.",
+    roundOver: "Tur bitti.",
+    todaysNumberWas: ({ value }) => `Bugunun sayisi ${value} idi.`,
+    numberWas: ({ value }) => `Sayi ${value} idi.`,
+    soCloseOneAway: "Cok yakin. Sadece 1 fark.",
+    closestGuessAway: ({ count }) => `En yakin tahmin: ${count} fark`,
+    newNarroAtMidnight: "Yeni Narro ET gece yarisi gelir.",
+    nextNarroIn: ({ time }) => `Siradaki Narro'ya ${time} kaldi`,
+    freePlay: "Serbest mod",
+    classic: "Klasik",
+    million: "Milyon",
+    micro: "Mikro",
+    inverted: "Ters",
+    shareDaily: "Gunlugu paylas",
+    shareRun: "Turu paylas",
+    sendFeedback: "Geri bildirim gonder",
+    statsHeading: "Istatistikler",
+    close: "Kapat",
+    statsGames: ({ count }) => `Oyunlar: ${count}`,
+    statsWins: ({ count }) => `Galibiyetler: ${count}`,
+    statsAvg: ({ count }) => `Ortalama tahmin: ${count}`,
+    statsBest: ({ count }) => `En iyi: ${count}`,
+    streakLabel: ({ count }) => `🔥 Seri: ${count}`
+  },
+  id: {
+    ...EN_MESSAGES,
+    documentTitle: "Narro | Teka-teki Angka Harian",
+    languageLabel: "Bahasa",
+    themeModeLight: "terang",
+    themeModeDark: "gelap",
+    switchThemeTo: ({ mode }) => `Ganti ke mode ${mode}`,
+    viewStats: "Lihat statistik",
+    guessInputLabel: "Masukkan tebakanmu",
+    inputPlaceholder: "Masukkan angka",
+    guessButton: "Tebak",
+    quickStart: "Mulai cepat",
+    onboardingTitle: "Bisa menemukan angka tersembunyi?",
+    onboardingCopy: "Ikuti orb dan menangkan permainan. Coba demo singkat atau langsung masuk ke permainan utama.",
+    playDemo: "Main demo",
+    skipAhead: "Lewati",
+    demoTry15: "Coba demo 15 detik",
+    hideTutorial: "Sembunyikan tutorial",
+    exitDemo: "Keluar dari demo",
+    starting: "Memulai...",
+    tryValue: ({ value }) => `Coba ${value}`,
+    demoWrongGuess: ({ value }) => `Untuk demo, coba ${value}.`,
+    followOrbTip: "Ikuti orb. Ia menunjukkan posisi angka tersembunyi.",
+    todaysPuzzleLive: "Teka-teki hari ini sudah aktif.",
+    practiceCompleteLive: "Latihan selesai. Teka-teki hari ini sudah aktif.",
+    orbStaysHidden: "Orb tetap berada di angka tersembunyi saat tebakanmu mempersempit rentangnya.",
+    sameRuleRealPuzzle: "Aturannya sama, ini teka-teki sungguhan: gunakan orb dan rentang yang menyusut bersama.",
+    practiceGuess: ({ current, total }) => `Tebakan latihan ${current} dari ${total}`,
+    demoWatchHalf: "Lihat bagaimana satu tebakan bisa menghapus setengah kemungkinan.",
+    demoBelowMidpoint: ({ value }) => `Orb berada di bawah titik tengah, jadi mulai dengan ${value}.`,
+    demoGuessHigh: ({ value }) => `${value} terlalu tinggi, jadi batas atas turun.`,
+    demoGuessLow: ({ value }) => `${value} terlalu rendah, jadi batas bawah naik.`,
+    demoGuessFromBelow: ({ value }) => `Sekarang tebak ${value} untuk mempersempit rentang dari bawah.`,
+    demoSqueezeWholeGame: "Penyempitan inilah inti permainannya. Memuat teka-teki asli hari ini...",
+    orbShowsPosition: "Orb menunjukkan posisi angka tersembunyi di dalam rentang saat ini.",
+    guessesLeft: ({ count }) => `Sisa tebakan: ${count}`,
+    finalGuess: "Tebakan terakhir",
+    hintPrompt: "Butuh bantuan? Ketuk batang bercahaya untuk petunjuk satu kali.",
+    rangeTightened: "Rentang menyempit. Pastikan tebakan ini berarti.",
+    bullseye: "🎯 Tepat sasaran.",
+    tryAgainTomorrow: "Coba lagi besok!",
+    todaysNarroWas: ({ value }) => `Narro hari ini adalah ${value}.`,
+    wantMoreNarro: "Mau lebih banyak Narro? Coba mode bebas!",
+    roundCompletePlayAgain: "Ronde selesai. Main lagi.",
+    roundOver: "Ronde selesai.",
+    todaysNumberWas: ({ value }) => `Angka hari ini adalah ${value}.`,
+    numberWas: ({ value }) => `Angkanya adalah ${value}.`,
+    soCloseOneAway: "Hampir. Selisih 1.",
+    closestGuessAway: ({ count }) => `Tebakan terdekat: selisih ${count}`,
+    newNarroAtMidnight: "Narro baru hadir tengah malam ET.",
+    nextNarroIn: ({ time }) => `Narro berikutnya dalam ${time}`,
+    freePlay: "Mode bebas",
+    classic: "Klasik",
+    million: "Jutaan",
+    micro: "Mikro",
+    inverted: "Terbalik",
+    shareDaily: "Bagikan harian",
+    shareRun: "Bagikan ronde",
+    sendFeedback: "Kirim masukan",
+    statsHeading: "Statistik",
+    close: "Tutup",
+    statsGames: ({ count }) => `Permainan: ${count}`,
+    statsWins: ({ count }) => `Menang: ${count}`,
+    statsAvg: ({ count }) => `Rata-rata tebakan: ${count}`,
+    statsBest: ({ count }) => `Terbaik: ${count}`,
+    streakLabel: ({ count }) => `🔥 Rentetan: ${count}`
+  },
+  bn: {
+    ...EN_MESSAGES,
+    documentTitle: "Narro | দৈনিক সংখ্যা ধাঁধা",
+    languageLabel: "ভাষা",
+    themeModeLight: "লাইট",
+    themeModeDark: "ডার্ক",
+    switchThemeTo: ({ mode }) => `${mode} মোডে বদলান`,
+    viewStats: "পরিসংখ্যান দেখুন",
+    guessInputLabel: "আপনার অনুমান লিখুন",
+    inputPlaceholder: "একটি সংখ্যা লিখুন",
+    guessButton: "অনুমান",
+    quickStart: "দ্রুত শুরু",
+    onboardingTitle: "আপনি কি লুকানো সংখ্যাটি খুঁজে পাবেন?",
+    onboardingCopy: "অরব অনুসরণ করুন এবং খেলাটি জিতুন। ছোট ডেমোটি চেষ্টা করুন, অথবা সরাসরি আসল খেলায় যান।",
+    playDemo: "ডেমো খেলুন",
+    skipAhead: "এগিয়ে যান",
+    demoTry15: "১৫ সেকেন্ডের ডেমো চেষ্টা করুন",
+    hideTutorial: "টিউটোরিয়াল লুকান",
+    exitDemo: "ডেমো থেকে বের হন",
+    starting: "শুরু হচ্ছে...",
+    tryValue: ({ value }) => `${value} চেষ্টা করুন`,
+    demoWrongGuess: ({ value }) => `ডেমোর জন্য ${value} চেষ্টা করুন।`,
+    followOrbTip: "অরব অনুসরণ করুন। এটি লুকানো সংখ্যার অবস্থান দেখায়।",
+    todaysPuzzleLive: "আজকের ধাঁধা এখন প্রস্তুত।",
+    practiceCompleteLive: "অনুশীলন শেষ। আজকের ধাঁধা এখন প্রস্তুত।",
+    orbStaysHidden: "আপনার অনুমানে সীমা ছোট হতে থাকলে অরব লুকানো সংখ্যার উপরেই থাকে।",
+    sameRuleRealPuzzle: "একই নিয়ম, তবে এটি আসল ধাঁধা: অরব এবং ছোট হতে থাকা সীমা একসাথে ব্যবহার করুন।",
+    practiceGuess: ({ current, total }) => `অনুশীলন অনুমান ${current} / ${total}`,
+    demoWatchHalf: "দেখুন কীভাবে একটি অনুমান অর্ধেক সম্ভাবনা বাদ দেয়।",
+    demoBelowMidpoint: ({ value }) => `অরবটি মাঝামাঝির নিচে আছে, তাই ${value} দিয়ে শুরু করুন।`,
+    demoGuessHigh: ({ value }) => `${value} বেশি ছিল, তাই উপরের সীমা নেমে গেছে।`,
+    demoGuessLow: ({ value }) => `${value} কম ছিল, তাই নিচের সীমা উঠে গেছে।`,
+    demoGuessFromBelow: ({ value }) => `এবার ${value} অনুমান করুন যাতে নিচ থেকে সীমা আরও ছোট হয়।`,
+    demoSqueezeWholeGame: "এই সংকোচনই পুরো খেলার মূল বিষয়। আজকের আসল ধাঁধা লোড হচ্ছে...",
+    orbShowsPosition: "অরব দেখায় বর্তমান সীমার মধ্যে লুকানো সংখ্যাটি কোথায় আছে।",
+    guessesLeft: ({ count }) => `${count}টি অনুমান বাকি`,
+    finalGuess: "শেষ অনুমান",
+    hintPrompt: "সহায়তা দরকার? একবারের ইঙ্গিত পেতে জ্বলজ্বলে বারটিতে ট্যাপ করুন।",
+    rangeTightened: "সীমা আরও ছোট হয়েছে। এই অনুমানটি গুরুত্বপূর্ণ।",
+    bullseye: "🎯 একদম ঠিক।",
+    tryAgainTomorrow: "আগামীকাল আবার চেষ্টা করুন!",
+    todaysNarroWas: ({ value }) => `আজকের Narro ছিল ${value}।`,
+    wantMoreNarro: "আরও Narro চান? ফ্রি প্লে চেষ্টা করুন!",
+    roundCompletePlayAgain: "রাউন্ড শেষ। আবার খেলুন।",
+    roundOver: "রাউন্ড শেষ।",
+    todaysNumberWas: ({ value }) => `আজকের সংখ্যা ছিল ${value}।`,
+    numberWas: ({ value }) => `সংখ্যাটি ছিল ${value}।`,
+    soCloseOneAway: "খুব কাছাকাছি। মাত্র ১ দূরে।",
+    closestGuessAway: ({ count }) => `সবচেয়ে কাছের অনুমান: ${count} দূরে`,
+    newNarroAtMidnight: "নতুন Narro ET মধ্যরাতে আসবে।",
+    nextNarroIn: ({ time }) => `পরের Narro আসতে ${time} বাকি`,
+    freePlay: "ফ্রি প্লে",
+    classic: "ক্লাসিক",
+    million: "মিলিয়ন",
+    micro: "মাইক্রো",
+    inverted: "ইনভার্টেড",
+    shareDaily: "ডেইলি শেয়ার করুন",
+    shareRun: "রাউন্ড শেয়ার করুন",
+    sendFeedback: "মতামত পাঠান",
+    statsHeading: "পরিসংখ্যান",
+    close: "বন্ধ করুন",
+    statsGames: ({ count }) => `খেলা: ${count}`,
+    statsWins: ({ count }) => `জয়: ${count}`,
+    statsAvg: ({ count }) => `গড় অনুমান: ${count}`,
+    statsBest: ({ count }) => `সেরা: ${count}`,
+    streakLabel: ({ count }) => `🔥 ধারাবাহিকতা: ${count}`
+  }
+};
+
+function normalizeLanguageCode(rawValue) {
+  return String(rawValue || "")
+    .trim()
+    .toLowerCase()
+    .replace(/_/g, "-");
+}
+
+function resolveSupportedLanguage(rawValue) {
+  const normalized = normalizeLanguageCode(rawValue);
+  if (!normalized) return null;
+  if (LANGUAGE_META[normalized]) return normalized;
+  if (LANGUAGE_ALIASES[normalized]) return LANGUAGE_ALIASES[normalized];
+
+  const parts = normalized.split("-");
+  if (parts.length > 1) {
+    const composite = `${parts[0]}-${parts[1]}`;
+    if (LANGUAGE_META[composite]) return composite;
+    if (LANGUAGE_ALIASES[composite]) return LANGUAGE_ALIASES[composite];
+  }
+
+  const base = parts[0];
+  return LANGUAGE_META[base] ? base : null;
+}
+
+function detectPreferredLanguage() {
+  const browserLanguages = Array.isArray(navigator.languages) && navigator.languages.length
+    ? navigator.languages
+    : [navigator.language, navigator.userLanguage].filter(Boolean);
+
+  for (const browserLanguage of browserLanguages) {
+    const supportedLanguage = resolveSupportedLanguage(browserLanguage);
+    if (supportedLanguage) return supportedLanguage;
+  }
+
+  return DEFAULT_LANGUAGE;
+}
+
+let currentLanguage = resolveSupportedLanguage(localStorage.getItem(LANGUAGE_STORAGE_KEY)) ||
+  detectPreferredLanguage();
+
+function getMessage(key, vars = {}, language = currentLanguage) {
+  const pack = MESSAGES[language] || MESSAGES[DEFAULT_LANGUAGE];
+  const fallbackPack = MESSAGES[DEFAULT_LANGUAGE];
+  const template = pack[key] ?? fallbackPack[key] ?? "";
+  return typeof template === "function" ? template(vars) : template;
+}
+
+function formatNumber(value, language = currentLanguage) {
+  const locale = LANGUAGE_META[language]?.locale || LANGUAGE_META[DEFAULT_LANGUAGE].locale;
+  return new Intl.NumberFormat(locale).format(value);
+}
+
+function formatCountdownUnit(value) {
+  return String(value).padStart(2, "0");
+}
 
 /* ---------- STATE ---------- */
 let min = MIN_RANGE, max = MAX_RANGE;
@@ -1664,6 +2964,7 @@ let dailyResult = null; // "win", "loss", or null if not played yet
 let gameStartTime = Date.now();
 let roundGuessHistory = [];
 let lastInvertedMiss = null;
+let gameOverDisplaySource = "live";
 
 /* ---------- ELEMENTS ---------- */
 const input = document.getElementById("guessInput");
@@ -1675,6 +2976,15 @@ const barFill = document.getElementById("barFill");
 const bar = document.getElementById("bar");
 const barOrb = document.getElementById("barOrb");
 const tipText = document.getElementById("tipText");
+const languageMenuBtn = document.getElementById("languageMenuBtn");
+const languageMenu = document.getElementById("languageMenu");
+const languageMenuCode = document.getElementById("languageMenuCode");
+const languageLabel = document.getElementById("languageLabel");
+const languageSelect = document.getElementById("languageSelect");
+const guessInputLabel = document.getElementById("guessInputLabel");
+const onboardingEyebrow = document.getElementById("onboardingEyebrow");
+const onboardingTitle = document.getElementById("onboardingTitle");
+const onboardingCopy = document.getElementById("onboardingCopy");
 const onboardingPrompt = document.getElementById("onboardingPrompt");
 const onboardingDemoBtn = document.getElementById("onboardingDemoBtn");
 const onboardingPlayBtn = document.getElementById("onboardingPlayBtn");
@@ -1682,9 +2992,11 @@ const demoControls = document.getElementById("demoControls");
 const demoNextBtn = document.getElementById("demoNextBtn");
 const demoSkipBtn = document.getElementById("demoSkipBtn");
 const toast = document.getElementById("toast");
+const feedbackBtn = document.getElementById("feedbackBtn");
 const statsBtn = document.getElementById("statsBtn");
 const themeToggleBtn = document.getElementById("themeToggleBtn");
 const statsModal = document.getElementById("statsModal");
+const statsHeading = document.getElementById("statsHeading");
 const statsCloseBtn = document.getElementById("statsCloseBtn");
 const statsGames = document.getElementById("statsGames");
 const statsWins = document.getElementById("statsWins");
@@ -1697,6 +3009,9 @@ const countdown = document.getElementById("countdown");
 let cleanupInvertedDrag = null;
 let orbMovePulseTimer = null;
 let orbMoveRaf = null;
+let activeFeedbackMessage = null;
+let activeTipMessage = null;
+let activeGuessCountMessage = null;
 
 const THEME_STORAGE_KEY = "narroTheme";
 const THEME_DARK = "dark";
@@ -1708,14 +3023,311 @@ function getCurrentTheme() {
     : THEME_DARK;
 }
 
+function setFeedbackMessage(key, vars = {}) {
+  activeFeedbackMessage = { key, vars };
+  feedback.textContent = getMessage(key, vars);
+}
+
+function clearFeedbackMessage() {
+  activeFeedbackMessage = null;
+  feedback.textContent = "";
+}
+
+function setTipMessage(key, vars = {}) {
+  activeTipMessage = { key, vars };
+  tipText.textContent = getMessage(key, vars);
+}
+
+function clearTipMessage() {
+  activeTipMessage = null;
+  tipText.textContent = "";
+}
+
+function setGuessCountMessage(key, vars = {}) {
+  activeGuessCountMessage = { key, vars };
+  guessCount.textContent = getMessage(key, vars);
+}
+
+function clearGuessCountMessage() {
+  activeGuessCountMessage = null;
+  guessCount.textContent = "";
+}
+
+function getLanguageMenuCode(language = currentLanguage) {
+  switch (language) {
+    case "zh-hans":
+      return "简";
+    case "zh-hant":
+      return "繁";
+    default:
+      return String(language || DEFAULT_LANGUAGE).split("-")[0].toUpperCase();
+  }
+}
+
+function closeLanguageMenu(options = {}) {
+  if (!languageMenu || !languageMenuBtn) return;
+  const restoreFocus = options.restoreFocus === true;
+  languageMenu.hidden = true;
+  languageMenuBtn.setAttribute("aria-expanded", "false");
+  if (restoreFocus) {
+    languageMenuBtn.focus();
+  }
+}
+
+function openLanguageMenu() {
+  if (!languageMenu || !languageMenuBtn) return;
+  languageMenu.hidden = false;
+  languageMenuBtn.setAttribute("aria-expanded", "true");
+}
+
+function toggleLanguageMenu() {
+  if (!languageMenu || !languageMenuBtn) return;
+  if (languageMenu.hidden) {
+    openLanguageMenu();
+  } else {
+    closeLanguageMenu();
+  }
+}
+
+function updateLanguageSelector() {
+  if (languageLabel) languageLabel.textContent = getMessage("languageLabel");
+  if (!languageSelect) return;
+  const optionMarkup = Object.entries(LANGUAGE_META)
+    .map(([code, meta]) => `<option value="${code}">${meta.label}</option>`)
+    .join("");
+  if (languageSelect.innerHTML !== optionMarkup) {
+    languageSelect.innerHTML = optionMarkup;
+  }
+  languageSelect.value = currentLanguage;
+  languageSelect.setAttribute("aria-label", getMessage("languageLabel"));
+  if (languageMenuCode) {
+    languageMenuCode.textContent = getLanguageMenuCode(currentLanguage);
+  }
+  if (languageMenuBtn) {
+    const title = `${getMessage("languageLabel")}: ${LANGUAGE_META[currentLanguage]?.label || currentLanguage}`;
+    languageMenuBtn.setAttribute("aria-label", title);
+    languageMenuBtn.setAttribute("title", title);
+  }
+}
+
+function setStreakText(count) {
+  const streakEl = document.getElementById("streak");
+  if (!streakEl) return;
+  streakEl.textContent = count > 0 ? getMessage("streakLabel", { count }) : "";
+}
+
+function syncStreakDisplay() {
+  const streakCount = Number(localStorage.getItem("narroStreakPrev")) || 0;
+  setStreakText(streakCount);
+}
+
+function refreshStaticTranslations() {
+  document.documentElement.lang = currentLanguage;
+  document.documentElement.dir = LANGUAGE_META[currentLanguage]?.dir || "ltr";
+  document.title = getMessage("documentTitle");
+  updateLanguageSelector();
+  if (guessInputLabel) guessInputLabel.textContent = getMessage("guessInputLabel");
+  input.placeholder = getMessage("inputPlaceholder");
+  if (onboardingEyebrow) onboardingEyebrow.textContent = getMessage("quickStart");
+  if (onboardingTitle) onboardingTitle.textContent = getMessage("onboardingTitle");
+  if (onboardingCopy) onboardingCopy.textContent = getMessage("onboardingCopy");
+  if (onboardingDemoBtn) onboardingDemoBtn.textContent = getMessage("playDemo");
+  if (onboardingPlayBtn) onboardingPlayBtn.textContent = getMessage("skipAhead");
+  if (demoNextBtn && demoNextBtn.hidden) demoNextBtn.textContent = getMessage("demoTry15");
+  if (demoSkipBtn && demoSkipBtn.hidden) demoSkipBtn.textContent = getMessage("hideTutorial");
+  if (feedbackBtn) feedbackBtn.textContent = getMessage("sendFeedback");
+  if (statsBtn) statsBtn.setAttribute("aria-label", getMessage("viewStats"));
+  if (freePlayMainBtn) freePlayMainBtn.textContent = getMessage("freePlay");
+  if (statsHeading) statsHeading.innerHTML = `<strong>${getMessage("statsHeading")}</strong>`;
+  if (statsCloseBtn) statsCloseBtn.textContent = getMessage("close");
+  if (Array.isArray(freePlayModeBtns) || typeof freePlayModeBtns?.forEach === "function") {
+    freePlayModeBtns.forEach(modeBtn => {
+      if (modeBtn.dataset.mode === "classic") modeBtn.textContent = getMessage("classic");
+      if (modeBtn.dataset.mode === "million") modeBtn.textContent = getMessage("million");
+      if (modeBtn.dataset.mode === "micro") modeBtn.textContent = getMessage("micro");
+      if (modeBtn.dataset.mode === "inverted") modeBtn.textContent = getMessage("inverted");
+    });
+  }
+}
+
+function refreshStatsModalContent() {
+  statsGames.textContent = getMessage("statsGames", { count: stats.games });
+  statsWins.textContent = getMessage("statsWins", { count: stats.wins });
+  statsAvg.textContent = stats.wins
+    ? getMessage("statsAvg", { count: (stats.totalGuesses / stats.wins).toFixed(1) })
+    : "";
+  statsBest.textContent = stats.best < 99
+    ? getMessage("statsBest", { count: stats.best })
+    : "";
+}
+
+function renderGameOverState() {
+  if (!gameOver) return;
+
+  const isDailyGame = currentMode === MODES.DAILY;
+  const formattedSecret = formatNumber(secret);
+  feedback.classList.remove("critical");
+  feedback.style.opacity = "1";
+  feedback.innerHTML = "";
+  clearGuessCountMessage();
+  activeFeedbackMessage = null;
+  activeTipMessage = null;
+
+  if (gameResult === "win") {
+    feedback.style.fontSize = "1.25rem";
+    feedback.style.fontWeight = "600";
+    setFeedbackMessage("bullseye");
+    tipText.classList.remove("hint");
+    tipText.style.display = "block";
+    tipText.style.opacity = "1";
+    tipText.style.transition = "none";
+    setTipMessage(isDailyGame ? "wantMoreNarro" : "roundCompletePlayAgain");
+    return;
+  }
+
+  feedback.style.fontSize = gameOverDisplaySource === "restored" ? "" : "1.15rem";
+  feedback.style.fontWeight = gameOverDisplaySource === "restored" ? "" : "500";
+  setFeedbackMessage(
+    isDailyGame && gameOverDisplaySource === "restored"
+      ? "tryAgainTomorrow"
+      : isDailyGame
+        ? "wantMoreNarro"
+        : "roundOver"
+  );
+
+  const closure = document.createElement("div");
+  closure.style.color = "#9aa0c3";
+  closure.style.fontSize = "0.95rem";
+  closure.style.marginTop = "6px";
+  closure.textContent = getMessage(
+    isDailyGame
+      ? gameOverDisplaySource === "restored"
+        ? "todaysNarroWas"
+        : "todaysNumberWas"
+      : "numberWas",
+    { value: formattedSecret }
+  );
+  feedback.appendChild(closure);
+
+  if (gameOverDisplaySource !== "restored") {
+    const closest = getClosestDistance();
+    if (Number.isFinite(closest)) {
+      const detail = document.createElement("div");
+      detail.style.fontSize = "0.9rem";
+      detail.style.marginTop = "4px";
+
+      if (closest === 1) {
+        detail.textContent = getMessage("soCloseOneAway");
+        detail.classList.add("closest-one");
+      } else {
+        detail.textContent = getMessage("closestGuessAway", { count: closest });
+        detail.style.color = "#9aa0c3";
+      }
+
+      feedback.appendChild(detail);
+    }
+  }
+
+  tipText.classList.remove("hint");
+  tipText.style.display = "block";
+  tipText.style.opacity = "1";
+  tipText.style.transition = "none";
+  setTipMessage(
+    isDailyGame
+      ? gameOverDisplaySource === "restored"
+        ? "wantMoreNarro"
+        : "newNarroAtMidnight"
+      : "roundCompletePlayAgain"
+  );
+}
+
+function renderDemoLanguageState() {
+  if (currentMode !== MODES.DAILY) return false;
+
+  if (demoRunning && demoTutorialState) {
+    guessCount.style.color = "var(--accent)";
+    guessCount.style.fontWeight = "600";
+    tipText.classList.remove("hint");
+    tipText.style.display = "block";
+    tipText.style.opacity = "1";
+
+    if (demoTutorialState.step === 0) {
+      setGuessCountMessage("practiceGuess", { current: 1, total: 2 });
+      setFeedbackMessage("demoWatchHalf");
+      setTipMessage("demoBelowMidpoint", { value: formatNumber(DEMO_FIRST_GUESS) });
+      setDemoSkipVisible(true, getMessage("exitDemo"));
+      setGuessButtonLabel(getMessage("tryValue", { value: formatNumber(DEMO_FIRST_GUESS) }));
+      return true;
+    }
+
+    if (demoTutorialState.step === 1) {
+      setGuessCountMessage("practiceGuess", { current: 2, total: 2 });
+      setFeedbackMessage("demoGuessHigh", { value: formatNumber(DEMO_FIRST_GUESS) });
+      setTipMessage("demoGuessFromBelow", { value: formatNumber(DEMO_SECOND_GUESS) });
+      setDemoSkipVisible(true, getMessage("exitDemo"));
+      setGuessButtonLabel(getMessage("tryValue", { value: formatNumber(DEMO_SECOND_GUESS) }));
+      return true;
+    }
+
+    if (demoTutorialState.step >= 2) {
+      setGuessCountMessage("practiceGuess", { current: 2, total: 2 });
+      setFeedbackMessage("demoGuessLow", { value: formatNumber(DEMO_SECOND_GUESS) });
+      setTipMessage("demoSqueezeWholeGame");
+      setGuessButtonLabel(getMessage("starting"));
+      setDemoSkipVisible(false);
+      return true;
+    }
+  }
+
+  if (demoMode && !gameOver && !demoRunning && !onboardingPrompt.hidden) {
+    tipText.classList.remove("hint");
+    tipText.style.display = "block";
+    tipText.style.opacity = "1";
+    setTipMessage("orbShowsPosition");
+    clearFeedbackMessage();
+    setDemoNextVisible(false);
+    setDemoSkipVisible(false);
+    setGuessButtonLabel();
+    return true;
+  }
+
+  return false;
+}
+
+function updateCountdownText() {
+  const now = new Date();
+  const easternNow = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const nextMidnight = new Date(easternNow);
+  nextMidnight.setHours(24, 0, 0, 0);
+  const diff = nextMidnight - easternNow;
+  const h = Math.floor(diff / 36e5);
+  const m = Math.floor((diff % 36e5) / 6e4);
+  const s = Math.floor((diff % 6e4) / 1000);
+  const timeText =
+    `${formatCountdownUnit(h)}<span class="colon-blink">:</span>` +
+    `${formatCountdownUnit(m)}<span class="colon-blink">:</span>` +
+    `${formatCountdownUnit(s)}`;
+  countdown.innerHTML = getMessage("nextNarroIn", { time: timeText });
+}
+
 function updateThemeToggle(theme) {
   if (!themeToggleBtn) return;
   const isDark = theme !== THEME_LIGHT;
   const nextTheme = isDark ? THEME_LIGHT : THEME_DARK;
   themeToggleBtn.textContent = isDark ? "☀" : "☾";
   themeToggleBtn.setAttribute("aria-pressed", isDark ? "false" : "true");
-  themeToggleBtn.setAttribute("aria-label", `Switch to ${nextTheme} mode`);
-  themeToggleBtn.setAttribute("title", `Switch to ${nextTheme} mode`);
+  themeToggleBtn.setAttribute(
+    "aria-label",
+    getMessage("switchThemeTo", {
+      mode: getMessage(nextTheme === THEME_LIGHT ? "themeModeLight" : "themeModeDark")
+    })
+  );
+  themeToggleBtn.setAttribute(
+    "title",
+    getMessage("switchThemeTo", {
+      mode: getMessage(nextTheme === THEME_LIGHT ? "themeModeLight" : "themeModeDark")
+    })
+  );
 }
 
 function applyTheme(theme, options = {}) {
@@ -1738,7 +3350,73 @@ function initThemeToggle() {
   });
 }
 
+function applyLanguage(language, options = {}) {
+  const persist = options.persist !== false;
+  currentLanguage = resolveSupportedLanguage(language) || DEFAULT_LANGUAGE;
+
+  if (persist) {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, currentLanguage);
+  }
+
+  refreshStaticTranslations();
+  updateThemeToggle(getCurrentTheme());
+  updateShareButton();
+  syncStreakDisplay();
+
+  if (statsModal?.style.display === "flex") {
+    refreshStatsModalContent();
+  }
+
+  if (
+    !gameOver &&
+    !demoRunning &&
+    currentMode !== MODES.DAILY &&
+    currentMode !== MODES.CLASSIC
+  ) {
+    activeFeedbackMessage = null;
+    activeTipMessage = null;
+    activeGuessCountMessage = null;
+    updateGuessUI();
+  } else if (gameOver && (currentMode === MODES.DAILY || currentMode === MODES.CLASSIC)) {
+    renderGameOverState();
+  } else if (!renderDemoLanguageState()) {
+    if (activeFeedbackMessage) {
+      feedback.textContent = getMessage(activeFeedbackMessage.key, activeFeedbackMessage.vars);
+    }
+    if (activeTipMessage) {
+      tipText.textContent = getMessage(activeTipMessage.key, activeTipMessage.vars);
+    }
+    if (activeGuessCountMessage) {
+      guessCount.textContent = getMessage(activeGuessCountMessage.key, activeGuessCountMessage.vars);
+    } else {
+      updateGuessUI();
+    }
+  }
+
+  updateCountdownText();
+}
+
+languageSelect?.addEventListener("change", event => {
+  applyLanguage(event.target.value);
+  closeLanguageMenu();
+});
+
+languageMenuBtn?.addEventListener("click", (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  toggleLanguageMenu();
+});
+
+document.addEventListener("click", (event) => {
+  if (!languageMenu || languageMenu.hidden) return;
+  const target = event.target;
+  if (!(target instanceof Node)) return;
+  if (languageMenu.contains(target) || languageMenuBtn?.contains(target)) return;
+  closeLanguageMenu();
+});
+
 initThemeToggle();
+applyLanguage(currentLanguage, { persist: false });
 
 function syncDemoControlsVisibility() {
   if (!demoControls) return;
@@ -1753,14 +3431,16 @@ function setDemoNextVisible(isVisible, labelText = null) {
   if (!demoNextBtn) return;
   if (typeof labelText === "string" && labelText.trim()) {
     demoNextBtn.textContent = labelText;
+  } else if (isVisible) {
+    demoNextBtn.textContent = getMessage("demoTry15");
   }
   demoNextBtn.hidden = !isVisible;
   demoNextBtn.style.display = isVisible ? "inline-flex" : "none";
   syncDemoControlsVisibility();
 }
 
-function setGuessButtonLabel(labelText = DEFAULT_GUESS_BUTTON_LABEL) {
-  btn.textContent = labelText || DEFAULT_GUESS_BUTTON_LABEL;
+function setGuessButtonLabel(labelText = getMessage(DEFAULT_GUESS_BUTTON_KEY)) {
+  btn.textContent = labelText || getMessage(DEFAULT_GUESS_BUTTON_KEY);
 }
 
 function setOnboardingVisible(isVisible) {
@@ -1778,6 +3458,8 @@ function setDemoSkipVisible(isVisible, labelText = null) {
   if (!demoSkipBtn) return;
   if (typeof labelText === "string" && labelText.trim()) {
     demoSkipBtn.textContent = labelText;
+  } else if (isVisible) {
+    demoSkipBtn.textContent = getMessage("hideTutorial");
   }
   demoSkipBtn.hidden = !isVisible;
   demoSkipBtn.style.display = isVisible ? "inline-flex" : "none";
@@ -1801,9 +3483,9 @@ function dismissDemoPromptForLiveGame() {
   btn.classList.remove("demo-pulse");
   input.classList.remove("demo-highlight");
 
-  feedback.textContent = "";
+  clearFeedbackMessage();
   tipText.classList.remove("hint");
-  tipText.textContent = "Follow the orb. It points to the hidden number.";
+  setTipMessage("followOrbTip");
   tipText.style.display = "block";
   tipText.style.opacity = "1";
   tipShown = true;
@@ -1817,8 +3499,8 @@ function requestDemoSkip() {
 
 function finishFirstTimeDemo(wasSkipped, originalSecret) {
   const handoffMessage = wasSkipped
-    ? "Today's puzzle is live."
-    : "Practice complete. Today's puzzle is live.";
+    ? getMessage("todaysPuzzleLive")
+    : getMessage("practiceCompleteLive");
 
   secret = originalSecret;
   min = MIN_RANGE;
@@ -1836,14 +3518,12 @@ function finishFirstTimeDemo(wasSkipped, originalSecret) {
 
   input.value = "";
   tipText.classList.remove("hint");
-  tipText.textContent = wasSkipped
-    ? "The orb stays on the hidden number while your guesses shrink the range."
-    : "Same rule, real puzzle: use the orb and the shrinking range together.";
+  setTipMessage(wasSkipped ? "orbStaysHidden" : "sameRuleRealPuzzle");
   tipText.style.display = "block";
   tipText.style.opacity = "1";
   tipShown = true;
 
-  feedback.textContent = "";
+  clearFeedbackMessage();
   feedback.classList.remove("critical");
   feedback.style.opacity = "1";
   guessCount.style.color = "var(--muted)";
@@ -1875,7 +3555,7 @@ function setDemoPracticePrompt(index) {
   input.value = String(guessValue);
   btn.classList.add("demo-pulse");
   input.classList.add("demo-highlight");
-  setGuessButtonLabel(`Try ${guessValue.toLocaleString()}`);
+  setGuessButtonLabel(getMessage("tryValue", { value: formatNumber(guessValue) }));
 }
 
 function focusGuessInputForDemo() {
@@ -1904,18 +3584,18 @@ function startFirstTimeDemoPractice() {
   updateBar();
   syncInputRange();
 
-  guessCount.textContent = "Practice guess 1 of 2";
+  setGuessCountMessage("practiceGuess", { current: 1, total: 2 });
   guessCount.style.color = "var(--accent)";
   guessCount.style.fontWeight = "600";
-  feedback.textContent = "Watch how one guess cuts away half the possibilities.";
+  setFeedbackMessage("demoWatchHalf");
   tipText.classList.remove("hint");
   tipText.style.display = "block";
   tipText.style.opacity = "1";
-  tipText.textContent = `The orb sits below the midpoint, so start with ${DEMO_FIRST_GUESS.toLocaleString()}.`;
+  setTipMessage("demoBelowMidpoint", { value: formatNumber(DEMO_FIRST_GUESS) });
   tipShown = true;
 
   setDemoNextVisible(false);
-  setDemoSkipVisible(true, "Exit demo");
+  setDemoSkipVisible(true, getMessage("exitDemo"));
   setDemoPracticePrompt(0);
   focusGuessInputForDemo();
 }
@@ -1929,7 +3609,7 @@ function handleDemoGuess(g) {
   if (!Number.isFinite(expectedGuess)) return false;
 
   if (g !== expectedGuess) {
-    showToast(`For the demo, try ${expectedGuess.toLocaleString()}.`, 1800);
+    showToast(getMessage("demoWrongGuess", { value: formatNumber(expectedGuess) }), 1800);
     setDemoPracticePrompt(state.step);
     focusGuessInputForDemo();
     return true;
@@ -1943,25 +3623,26 @@ function handleDemoGuess(g) {
     updateBar();
     syncInputRange();
 
-    guessCount.textContent = "Practice guess 2 of 2";
-    feedback.textContent = `${expectedGuess.toLocaleString()} was high, so the ceiling dropped.`;
-    tipText.textContent = `Now guess ${DEMO_SECOND_GUESS.toLocaleString()} to squeeze the range from below.`;
+    setGuessCountMessage("practiceGuess", { current: 2, total: 2 });
+    setFeedbackMessage("demoGuessHigh", { value: formatNumber(expectedGuess) });
+    setTipMessage("demoGuessFromBelow", { value: formatNumber(DEMO_SECOND_GUESS) });
     setDemoPracticePrompt(1);
     focusGuessInputForDemo();
     return true;
   }
 
+  state.step = 2;
   min = expectedGuess + 1;
   updateBar();
   syncInputRange();
 
-  feedback.textContent = `${expectedGuess.toLocaleString()} was low, so the floor moved up.`;
-  tipText.textContent = "That squeeze is the whole game. Loading today's real puzzle...";
+  setFeedbackMessage("demoGuessLow", { value: formatNumber(expectedGuess) });
+  setTipMessage("demoSqueezeWholeGame");
   btn.classList.remove("demo-pulse");
   input.classList.remove("demo-highlight");
   input.disabled = true;
   btn.disabled = true;
-  setGuessButtonLabel("Starting...");
+  setGuessButtonLabel(getMessage("starting"));
   setDemoSkipVisible(false);
 
   window.setTimeout(() => {
@@ -1988,8 +3669,8 @@ function runFirstTimeDemo() {
   tipText.classList.remove("hint");
   tipText.style.display = "block";
   tipText.style.opacity = "1";
-  tipText.textContent = "The orb shows where the hidden number sits inside the current range.";
-  feedback.textContent = "";
+  setTipMessage("orbShowsPosition");
+  clearFeedbackMessage();
   tipShown = true;
   setDemoNextVisible(false);
   setDemoSkipVisible(false);
@@ -2073,7 +3754,9 @@ function updateShareButton() {
     hasShareableResult;
 
   shareBtn.disabled = !(canShareDaily || canShareFreePlay);
-  shareBtn.textContent = currentMode === MODES.DAILY ? "Share Daily" : "Share Run";
+  shareBtn.textContent = currentMode === MODES.DAILY
+    ? getMessage("shareDaily")
+    : getMessage("shareRun");
 }
 
 window.addEventListener("load", () => {
@@ -2162,7 +3845,7 @@ function shouldRetainKeyboardOnBlur() {
   // non-interactive taps on the app surface.
   if (
     tapTarget.closest(
-      "#guessBtn, #guessInput, #demoControls button, .bar, .stats-btn, #themeToggleBtn, #shareBtn, #feedbackBtn, #statsModal, #freePlayPanel button"
+      "#guessBtn, #guessInput, #demoControls button, .bar, .stats-btn, #themeToggleBtn, #languageMenuBtn, #languageMenu, #shareBtn, #feedbackBtn, #statsModal, #freePlayPanel button"
     )
   ) {
     return false;
@@ -2290,6 +3973,7 @@ if (parsedSavedState && typeof parsedSavedState === "object") {
 
     gameOver = true;
     gameResult = state.result;
+    gameOverDisplaySource = "restored";
     guesses = state.guesses;
     roundGuessHistory = state.guesses.slice();
     lifelineUsed = state.lifelineUsed;
@@ -2310,26 +3994,11 @@ if (parsedSavedState && typeof parsedSavedState === "object") {
     input.disabled = true;
     btn.disabled = true;
     updateShareButton();
-
+    renderGameOverState();
     if (state.result === "win") {
-      feedback.textContent = "🎯 Bullseye.";
       bar.classList.add("win");
       barFill.classList.add("win");
-    } else {
-      feedback.textContent = "Try again tomorrow!";
-      const closure = document.createElement("div");
-      closure.style.color = "#9aa0c3";
-      closure.style.fontSize = "0.95rem";
-      closure.style.marginTop = "6px";
-      closure.textContent = `Today's Narro was ${secret}.`;
-      feedback.appendChild(closure);
     }
-
-    tipText.textContent = "Want more Narro? Try the free play!";
-    tipText.classList.remove("hint");
-    tipText.style.display = "block";
-    tipText.style.opacity = "1";
-    tipText.style.transition = "none";
     tipShown = true;
   } else {
     // Resume in-progress Daily exactly where the player left off.
@@ -2352,11 +4021,11 @@ if (parsedSavedState && typeof parsedSavedState === "object") {
     bar.className = "bar";
     bar.classList.toggle("hinted", lifelineUsed);
     barFill.className = "bar-fill";
-    feedback.textContent = "";
+    clearFeedbackMessage();
     tipText.classList.remove("hint");
     tipText.style.display = "none";
-    tipText.textContent = "";
-    guessCount.textContent = "";
+    clearTipMessage();
+    clearGuessCountMessage();
     input.disabled = false;
     btn.disabled = false;
     updateShareButton();
@@ -2573,7 +4242,7 @@ function activateHintOrb() {
 function maybeShowOrbTip() {
   if (!gameOver && !lifelineUsed && !tipShown) {
     tipText.classList.remove("hint");
-    tipText.textContent = "Follow the orb. It points to the hidden number.";
+    setTipMessage("followOrbTip");
     tipText.style.opacity = "1";
     tipText.style.display = "block";
     activateHintOrb();
@@ -2607,8 +4276,8 @@ function startFreePlay(mode) {
   bar.classList.remove("near");
   barFill.className = "bar-fill";
   barFill.classList.remove("near");
-  feedback.textContent = "";
-  guessCount.textContent = "";
+  clearFeedbackMessage();
+  clearGuessCountMessage();
   input.disabled = false;
   btn.disabled = false;
   updateShareButton();
@@ -2617,7 +4286,7 @@ function startFreePlay(mode) {
   const tipText = document.getElementById("tipText");
   if (tipText) {
     tipText.style.display = "none";
-    tipText.textContent = "";
+    clearTipMessage();
     tipText.classList.remove("hint");
   }
 
@@ -2666,8 +4335,10 @@ function startFreePlay(mode) {
       btn.disabled = true;
 
       // Show secret number (static for the round)
+      activeFeedbackMessage = null;
       feedback.textContent = `The secret number is ${secret}`;
       tipText.classList.remove("hint");
+      activeTipMessage = null;
       tipText.textContent = "One shot. Drag the orb to the exact number.";
       tipText.style.display = "block";
       tipText.style.opacity = "1";
@@ -2840,9 +4511,9 @@ function startDailyMode() {
   // Reset visuals
   bar.className = "bar";
   barFill.className = "bar-fill";
-  feedback.textContent = "";
+  clearFeedbackMessage();
   tipText.classList.remove("hint");
-  guessCount.textContent = "";
+  clearGuessCountMessage();
   input.disabled = false;
   btn.disabled = false;
   updateShareButton();
@@ -2915,9 +4586,10 @@ function triggerWinVisuals() {
 
 function endFreePlayWin() {
   gameOver = true;
-  gameResult = "win"; 
+  gameResult = "win";
+  gameOverDisplaySource = "live";
   updateShareButton();
-  feedback.textContent = "🎯 Bullseye.";
+  setFeedbackMessage("bullseye");
   input.disabled = true;
   btn.disabled = true;
 
@@ -2928,15 +4600,16 @@ function endFreePlayWin() {
 function endFreePlayLoss() {
   gameOver = true;
   gameResult = "lose";
+  gameOverDisplaySource = "live";
   updateShareButton();
-  feedback.textContent = "Round over.";
+  activeFeedbackMessage = null;
   input.disabled = true;
   btn.disabled = true;
 
   if (currentMode === MODES.MICRO) {
-    feedback.textContent = `Round over. Number was ${secret}.`;
+    feedback.textContent = `${getMessage("roundOver")} ${getMessage("numberWas", { value: formatNumber(secret) })}`;
   } else {
-    feedback.textContent = "Round over.";
+    feedback.textContent = getMessage("roundOver");
   }
   gameResult = "lose";
   recordGameSession();
@@ -3287,7 +4960,7 @@ function updateGuessUI() {
   feedback.style.opacity = 1;
 
   if (gameOver) {
-    guessCount.textContent = "";
+    clearGuessCountMessage();
     bar.classList.remove("hint-ready");
     tipText.classList.remove("hint");
     return;
@@ -3296,56 +4969,60 @@ function updateGuessUI() {
   const remaining = maxGuessesForMode() - guesses.length;
 
   if (currentMode === MODES.INVERTED) {
-    guessCount.textContent = "";
+    clearGuessCountMessage();
     bar.classList.remove("hint-ready");
     tipText.classList.remove("hint");
-    if (!tipText.textContent.trim()) {
-      tipText.textContent = "One shot. Drag the orb to the exact number.";
-    }
+    activeTipMessage = null;
+    tipText.textContent = "One shot. Drag the orb to the exact number.";
     tipText.style.display = "block";
     tipText.style.opacity = "1";
     return;
   }
 
   if (currentMode !== MODES.DAILY && currentMode !== MODES.CLASSIC) {
-  bar.classList.remove("hint-ready");
-  tipText.style.display = "none";
-  return;
-}
+    bar.classList.remove("hint-ready");
+    tipText.style.display = "none";
+    activeGuessCountMessage = null;
+    activeTipMessage = null;
+    return;
+  }
 
-if (!hintAllowed) {
-  bar.classList.remove("hint-ready", "hinted");
-  tipText.style.display = "none";
-  return;
-}
+  if (!hintAllowed) {
+    bar.classList.remove("hint-ready", "hinted");
+    tipText.style.display = "none";
+    activeGuessCountMessage = null;
+    activeTipMessage = null;
+    return;
+  }
 
   if (remaining > 1) {
-    guessCount.textContent = `${remaining} guesses left`;
+    setGuessCountMessage("guessesLeft", { count: remaining });
     guessCount.style.color = "var(--muted)";
   } else if (remaining === 1) {
-    guessCount.textContent = "Final guess";
+    setGuessCountMessage("finalGuess");
     guessCount.style.color = "var(--accent)";
     guessCount.style.fontWeight = "600";
   } else {
-    guessCount.textContent = "";
+    clearGuessCountMessage();
   }
 
   if (
-  !gameOver &&
-  guesses.length === maxGuessesForMode()- 2 &&
-  !lifelineUsed
-) {
-  bar.classList.add("hint-ready");
-
-tipText.textContent = "Need help? Tap the glowing bar for a one-time hint.";
-tipText.classList.add("hint");
-tipText.style.display = "block";
-tipText.style.opacity = "1";
-
-} else {
-  bar.classList.remove("hint-ready");
-  tipText.classList.remove("hint");
-}
+    !gameOver &&
+    guesses.length === maxGuessesForMode() - 2 &&
+    !lifelineUsed
+  ) {
+    bar.classList.add("hint-ready");
+    setTipMessage("hintPrompt");
+    tipText.classList.add("hint");
+    tipText.style.display = "block";
+    tipText.style.opacity = "1";
+  } else {
+    bar.classList.remove("hint-ready");
+    tipText.classList.remove("hint");
+    if (activeTipMessage?.key === "hintPrompt") {
+      activeTipMessage = null;
+    }
+  }
 }
 
 function microReward(type) {
@@ -3478,7 +5155,7 @@ bar.onclick = () => {
   hintVisible = true;
 
   tipText.classList.remove("hint");
-  tipText.textContent = "Range tightened. Make this guess count.";
+  setTipMessage("rangeTightened");
   tipText.style.opacity = "1";
 
   bar.classList.remove("hint-ready");
@@ -3614,6 +5291,7 @@ function win() {
 
   gameOver = true;
   gameResult = "win";
+  gameOverDisplaySource = "live";
 
   // Disable input & buttons
   input.disabled = true;
@@ -3637,20 +5315,9 @@ function win() {
   if (isDailyGame) unlockFreePlay();
 
   // --- Update UI ---
-  guessCount.textContent = "";
+  clearGuessCountMessage();
   bar.classList.remove("hinted", "hint-ready");
-
-  feedback.textContent = "🎯 Bullseye.";
-  feedback.style.fontSize = "1.25rem";
-  feedback.style.fontWeight = "600";
-
-  tipText.textContent = isDailyGame
-    ? "Want more Narro? Try the free play!"
-    : "Round complete. Play again.";
-  tipText.classList.remove("hint");
-  tipText.style.display = "block";
-  tipText.style.opacity = "1";
-  tipText.style.transition = "none";
+  renderGameOverState();
 
   // --- Celebration ---
   launchConfetti();
@@ -3675,9 +5342,7 @@ function win() {
 
     localStorage.setItem("narroStreakPrev", streak);
     localStorage.setItem("narroLastPlayed", todayKey);
-
-    const streakEl = document.getElementById("streak");
-    if (streakEl) streakEl.textContent = `🔥 Streak: ${streak}`;
+    setStreakText(streak);
   }
 
   triggerWinVisuals();
@@ -3702,6 +5367,7 @@ function lose() {
 
   gameOver = true;
   gameResult = "lose";
+  gameOverDisplaySource = "live";
 
   // --- Store daily result ---
   if (isDailyGame) {
@@ -3721,47 +5387,13 @@ function lose() {
     unlockFreePlay();
   }
 
-  guessCount.textContent = "";
-
-  // --- Feedback UI ---
-  feedback.textContent = isDailyGame ? "Want more Narro? Try the free play!" : "Round over.";
-  feedback.style.fontSize = "1.15rem";
-  feedback.style.fontWeight = "500";
+  clearGuessCountMessage();
   haptic(15);
-
-  const closure = document.createElement("div");
-  closure.style.color = "#9aa0c3";
-  closure.style.fontSize = "0.95rem";
-  closure.style.marginTop = "6px";
-  closure.textContent = isDailyGame
-    ? `Today's number was ${secret}.`
-    : `The number was ${secret}.`;
-  feedback.appendChild(closure);
-
-  const closest = getClosestDistance();
-  if (Number.isFinite(closest)) {
-    const el = document.createElement("div");
-    el.style.fontSize = "0.9rem";
-    el.style.marginTop = "4px";
-
-    if (closest === 1) {
-      el.textContent = "So close. 1 away.";
-      el.classList.add("closest-one");
-    } else {
-      el.textContent = `Closest guess: ${closest} away`;
-      el.style.color = "#9aa0c3";
-    }
-
-    feedback.appendChild(el);
-  }
+  renderGameOverState();
 
   input.disabled = true;
   btn.disabled = true;
   updateShareButton();
-
-  tipText.textContent = isDailyGame ? "New Narro at midnight ET." : "Round complete. Play again.";
-  tipText.classList.remove("hint");
-  tipText.style.display = "block";
 
   if (isDailyGame) {
     updateStats(false);
@@ -3850,14 +5482,7 @@ let lastFocusedBeforeStatsModal = null;
 function openStatsModal() {
   lastFocusedBeforeStatsModal = document.activeElement;
   statsModal.style.display = "flex";
-  statsGames.textContent = "Games: " + stats.games;
-  statsWins.textContent = "Wins: " + stats.wins;
-  statsAvg.textContent = stats.wins
-    ? "Avg guesses: " + (stats.totalGuesses / stats.wins).toFixed(1)
-    : "";
-  statsBest.textContent = stats.best < 99
-    ? "Best: " + stats.best
-    : "";
+  refreshStatsModalContent();
   statsCloseBtn?.focus();
 }
 
@@ -3888,6 +5513,10 @@ statsModal.addEventListener("click", (e) => {
 });
 
 document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && languageMenu && !languageMenu.hidden) {
+    closeLanguageMenu({ restoreFocus: true });
+    return;
+  }
   if (e.key === "Escape" && statsModal.style.display === "flex") {
     closeStatsModal();
   }
@@ -4104,21 +5733,8 @@ shareBtn.onclick = async () => {
 };
 
 /* ---------- COUNTDOWN ---------- */
-setInterval(()=>{
-  const now = new Date();
-  const easternNow = new Date(now.toLocaleString("en-US",{timeZone:"America/New_York"}));
-  const nextMidnight = new Date(easternNow);
-  nextMidnight.setHours(24,0,0,0);
-  const diff = nextMidnight - easternNow;
-  const h = Math.floor(diff/36e5);
-  const m = Math.floor((diff%36e5)/6e4);
-  const s = Math.floor((diff%6e4)/1000);
-  countdown.innerHTML =
-  `Next Narro in ${h}<span class="colon-blink">:</span>` +
-  `${m.toString().padStart(2,"0")}<span class="colon-blink">:</span>` +
-  `${s.toString().padStart(2,"0")}`;
-
-},1000);
+updateCountdownText();
+setInterval(updateCountdownText, 1000);
 
 syncInputRange();
 updateBar();
