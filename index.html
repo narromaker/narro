@@ -2891,6 +2891,842 @@ const MESSAGES = {
   }
 };
 
+const EXTRA_MESSAGES = {
+  en: {
+    remainingRangeAria: ({ min, max }) => `Remaining possible range: ${min} to ${max}`,
+    enterCurrentRange: "Enter a number in the current range.",
+    stayInRange: ({ min, max }) => `Stay in range: ${min} to ${max}.`,
+    hintUnavailableRange: "Hint unavailable at this range.",
+    feedbackEarlyInefficiency1: "Small gain. Cut deeper.",
+    feedbackEarlyInefficiency2: "Wide move. Tighten the range.",
+    feedbackEarlyInefficiency3: "Good probe. Narrow harder.",
+    feedbackMidCompression1: "Nice. The window is shrinking.",
+    feedbackMidCompression2: "Good pace. Keep narrowing.",
+    feedbackMidCompression3: "You're getting warm.",
+    feedbackEfficientCut1: "Big cut. Great read.",
+    feedbackEfficientCut2: "Clean slice. Keep going.",
+    feedbackEfficientCut3: "Excellent narrowing.",
+    feedbackStakes1: "Final stretch. Stay sharp.",
+    feedbackStakes2: "Pressure on. Make this one count.",
+    feedbackStakes3: "Clutch guess coming up.",
+    feedbackSuperClose1: "You're right on it."
+  },
+  es: {
+    remainingRangeAria: ({ min, max }) => `Rango posible restante: ${min} a ${max}`,
+    enterCurrentRange: "Introduce un numero dentro del rango actual.",
+    stayInRange: ({ min, max }) => `Mantente dentro del rango: ${min} a ${max}.`,
+    hintUnavailableRange: "La pista no esta disponible en este rango.",
+    feedbackEarlyInefficiency1: "Avance pequeno. Recorta mas.",
+    feedbackEarlyInefficiency2: "Movimiento amplio. Cierra el rango.",
+    feedbackEarlyInefficiency3: "Buena prueba. Reduce mas.",
+    feedbackMidCompression1: "Bien. La ventana se esta cerrando.",
+    feedbackMidCompression2: "Buen ritmo. Sigue acotando.",
+    feedbackMidCompression3: "Te estas acercando.",
+    feedbackEfficientCut1: "Gran recorte. Muy buena lectura.",
+    feedbackEfficientCut2: "Corte limpio. Sigue asi.",
+    feedbackEfficientCut3: "Excelente reduccion del rango.",
+    feedbackStakes1: "Tramo final. Mantente alerta.",
+    feedbackStakes2: "Hay presion. Haz que esta cuente.",
+    feedbackStakes3: "Se viene un intento decisivo.",
+    feedbackSuperClose1: "Lo tienes casi encima."
+  },
+  hi: {
+    remainingRangeAria: ({ min, max }) => `शेष संभावित सीमा: ${min} से ${max}`,
+    enterCurrentRange: "वर्तमान सीमा के भीतर एक संख्या दर्ज करें।",
+    stayInRange: ({ min, max }) => `सीमा में रहें: ${min} से ${max}।`,
+    hintUnavailableRange: "इस सीमा में संकेत उपलब्ध नहीं है।",
+    feedbackEarlyInefficiency1: "थोड़ी प्रगति। और गहरा काटो।",
+    feedbackEarlyInefficiency2: "चौड़ा कदम। सीमा और कसो।",
+    feedbackEarlyInefficiency3: "अच्छी जांच। और संकुचित करो।",
+    feedbackMidCompression1: "अच्छा। दायरा छोटा हो रहा है।",
+    feedbackMidCompression2: "अच्छी रफ्तार। सीमा घटाते रहो।",
+    feedbackMidCompression3: "तुम करीब आ रहे हो।",
+    feedbackEfficientCut1: "बड़ा कट। शानदार पढ़ाई।",
+    feedbackEfficientCut2: "साफ कट। जारी रखो।",
+    feedbackEfficientCut3: "बेहतरीन संकुचन।",
+    feedbackStakes1: "अंतिम चरण। सतर्क रहो।",
+    feedbackStakes2: "दबाव है। इस कोशिश को मायनेदार बनाओ।",
+    feedbackStakes3: "निर्णायक अनुमान आने वाला है।",
+    feedbackSuperClose1: "तुम बिलकुल करीब हो।"
+  },
+  fr: {
+    remainingRangeAria: ({ min, max }) => `Plage possible restante : ${min} a ${max}`,
+    enterCurrentRange: "Entrez un nombre dans la plage actuelle.",
+    stayInRange: ({ min, max }) => `Restez dans la plage : ${min} a ${max}.`,
+    hintUnavailableRange: "Indice indisponible dans cette plage.",
+    feedbackEarlyInefficiency1: "Petit gain. Coupez davantage.",
+    feedbackEarlyInefficiency2: "Mouvement large. Resserrez la plage.",
+    feedbackEarlyInefficiency3: "Bonne sonde. Reduisez plus fort.",
+    feedbackMidCompression1: "Bien. La fenetre se resserre.",
+    feedbackMidCompression2: "Bon rythme. Continuez a resserrer.",
+    feedbackMidCompression3: "Vous chauffez.",
+    feedbackEfficientCut1: "Grosse coupe. Belle lecture.",
+    feedbackEfficientCut2: "Coupe nette. Continuez.",
+    feedbackEfficientCut3: "Excellent resserrement.",
+    feedbackStakes1: "Derniere ligne droite. Restez alerte.",
+    feedbackStakes2: "La pression monte. Faites compter celui-ci.",
+    feedbackStakes3: "Un coup decisif arrive.",
+    feedbackSuperClose1: "Vous etes tout pres."
+  },
+  de: {
+    remainingRangeAria: ({ min, max }) => `Verbleibender moglicher Bereich: ${min} bis ${max}`,
+    enterCurrentRange: "Gib eine Zahl im aktuellen Bereich ein.",
+    stayInRange: ({ min, max }) => `Bleib im Bereich: ${min} bis ${max}.`,
+    hintUnavailableRange: "Hinweis fur diesen Bereich nicht verfugbar.",
+    feedbackEarlyInefficiency1: "Kleiner Fortschritt. Schneide tiefer.",
+    feedbackEarlyInefficiency2: "Weiter Zug. Zieh den Bereich enger.",
+    feedbackEarlyInefficiency3: "Guter Test. Verenge starker.",
+    feedbackMidCompression1: "Gut. Das Fenster wird kleiner.",
+    feedbackMidCompression2: "Gutes Tempo. Weiter eingrenzen.",
+    feedbackMidCompression3: "Du kommst naher.",
+    feedbackEfficientCut1: "Grosser Schnitt. Stark gelesen.",
+    feedbackEfficientCut2: "Sauberer Schnitt. Weiter so.",
+    feedbackEfficientCut3: "Ausgezeichnet eingegrenzt.",
+    feedbackStakes1: "Endspurt. Bleib wach.",
+    feedbackStakes2: "Druck ist da. Lass diesen Tipp zahlen.",
+    feedbackStakes3: "Ein wichtiger Tipp kommt.",
+    feedbackSuperClose1: "Du bist direkt dran."
+  },
+  pt: {
+    remainingRangeAria: ({ min, max }) => `Faixa possivel restante: ${min} a ${max}`,
+    enterCurrentRange: "Digite um numero dentro da faixa atual.",
+    stayInRange: ({ min, max }) => `Fique na faixa: ${min} a ${max}.`,
+    hintUnavailableRange: "Dica indisponivel nesta faixa.",
+    feedbackEarlyInefficiency1: "Ganho pequeno. Corte mais fundo.",
+    feedbackEarlyInefficiency2: "Movimento amplo. Aperte a faixa.",
+    feedbackEarlyInefficiency3: "Boa leitura. Feche mais.",
+    feedbackMidCompression1: "Boa. A janela esta encolhendo.",
+    feedbackMidCompression2: "Bom ritmo. Continue apertando.",
+    feedbackMidCompression3: "Voce esta chegando perto.",
+    feedbackEfficientCut1: "Grande corte. Excelente leitura.",
+    feedbackEfficientCut2: "Corte limpo. Continue.",
+    feedbackEfficientCut3: "Excelente reducao.",
+    feedbackStakes1: "Trecho final. Fique atento.",
+    feedbackStakes2: "A pressao chegou. Faca esta contar.",
+    feedbackStakes3: "Vem ai um palpite decisivo.",
+    feedbackSuperClose1: "Voce esta em cima."
+  },
+  it: {
+    remainingRangeAria: ({ min, max }) => `Intervallo possibile rimasto: ${min} a ${max}`,
+    enterCurrentRange: "Inserisci un numero nell'intervallo attuale.",
+    stayInRange: ({ min, max }) => `Resta nell'intervallo: ${min} a ${max}.`,
+    hintUnavailableRange: "Aiuto non disponibile in questo intervallo.",
+    feedbackEarlyInefficiency1: "Piccolo guadagno. Stringi di piu.",
+    feedbackEarlyInefficiency2: "Mossa ampia. Restringi l'intervallo.",
+    feedbackEarlyInefficiency3: "Buon sondaggio. Stringi ancora.",
+    feedbackMidCompression1: "Bene. La finestra si sta restringendo.",
+    feedbackMidCompression2: "Bel ritmo. Continua a stringere.",
+    feedbackMidCompression3: "Ti stai avvicinando.",
+    feedbackEfficientCut1: "Taglio grande. Ottima lettura.",
+    feedbackEfficientCut2: "Taglio pulito. Continua cosi.",
+    feedbackEfficientCut3: "Restringimento eccellente.",
+    feedbackStakes1: "Fase finale. Resta lucido.",
+    feedbackStakes2: "C'e pressione. Fai contare questo tentativo.",
+    feedbackStakes3: "Sta arrivando un tentativo decisivo.",
+    feedbackSuperClose1: "Ci sei quasi."
+  },
+  ja: {
+    remainingRangeAria: ({ min, max }) => `残りの可能範囲: ${min} から ${max}`,
+    enterCurrentRange: "現在の範囲内の数字を入力してください。",
+    stayInRange: ({ min, max }) => `範囲内で入力してください: ${min} から ${max}。`,
+    hintUnavailableRange: "この範囲ではヒントは使えません。",
+    feedbackEarlyInefficiency1: "少ししか縮まりませんでした。もっと深く切り込みましょう。",
+    feedbackEarlyInefficiency2: "大きく動きました。範囲をもっと絞りましょう。",
+    feedbackEarlyInefficiency3: "いい探りです。さらに狭めましょう。",
+    feedbackMidCompression1: "いい感じです。候補が絞れてきました。",
+    feedbackMidCompression2: "いいペースです。このまま絞り込みましょう。",
+    feedbackMidCompression3: "かなり近づいています。",
+    feedbackEfficientCut1: "大きく削れました。読みがいいです。",
+    feedbackEfficientCut2: "きれいな切り方です。その調子。",
+    feedbackEfficientCut3: "見事な絞り込みです。",
+    feedbackStakes1: "終盤です。集中してください。",
+    feedbackStakes2: "プレッシャーがかかっています。この一手を生かしましょう。",
+    feedbackStakes3: "勝負どころの予想です。",
+    feedbackSuperClose1: "ほぼ捉えています。"
+  },
+  ko: {
+    remainingRangeAria: ({ min, max }) => `남은 가능한 범위: ${min}부터 ${max}까지`,
+    enterCurrentRange: "현재 범위 안의 숫자를 입력하세요.",
+    stayInRange: ({ min, max }) => `범위를 지키세요: ${min}부터 ${max}까지.`,
+    hintUnavailableRange: "이 범위에서는 힌트를 사용할 수 없습니다.",
+    feedbackEarlyInefficiency1: "조금만 좁혀졌어요. 더 과감하게 줄여보세요.",
+    feedbackEarlyInefficiency2: "범위가 넓게 움직였어요. 더 조여보세요.",
+    feedbackEarlyInefficiency3: "좋은 탐색이에요. 더 좁혀보세요.",
+    feedbackMidCompression1: "좋아요. 범위가 줄어들고 있어요.",
+    feedbackMidCompression2: "좋은 속도예요. 계속 좁혀가세요.",
+    feedbackMidCompression3: "점점 가까워지고 있어요.",
+    feedbackEfficientCut1: "크게 잘랐어요. 좋은 판단입니다.",
+    feedbackEfficientCut2: "깔끔한 컷이에요. 계속 가세요.",
+    feedbackEfficientCut3: "훌륭한 압축이에요.",
+    feedbackStakes1: "마지막 구간입니다. 집중하세요.",
+    feedbackStakes2: "압박이 옵니다. 이번 추측을 살리세요.",
+    feedbackStakes3: "결정적인 추측이 다가옵니다.",
+    feedbackSuperClose1: "거의 다 왔어요."
+  },
+  "zh-hans": {
+    remainingRangeAria: ({ min, max }) => `剩余可能范围：${min} 到 ${max}`,
+    enterCurrentRange: "请输入当前范围内的数字。",
+    stayInRange: ({ min, max }) => `请保持在范围内：${min} 到 ${max}。`,
+    hintUnavailableRange: "当前范围无法使用提示。",
+    feedbackEarlyInefficiency1: "缩小得不多，再大胆一点。",
+    feedbackEarlyInefficiency2: "幅度有点大，把范围再收紧些。",
+    feedbackEarlyInefficiency3: "试探不错，再缩小一些。",
+    feedbackMidCompression1: "不错，范围正在缩小。",
+    feedbackMidCompression2: "节奏很好，继续收窄。",
+    feedbackMidCompression3: "你越来越接近了。",
+    feedbackEfficientCut1: "一下削掉很多，判断很准。",
+    feedbackEfficientCut2: "切得很干净，继续。",
+    feedbackEfficientCut3: "缩得非常漂亮。",
+    feedbackStakes1: "最后阶段，保持专注。",
+    feedbackStakes2: "压力来了，这一猜要算数。",
+    feedbackStakes3: "关键一猜要来了。",
+    feedbackSuperClose1: "你已经非常接近了。"
+  },
+  "zh-hant": {
+    remainingRangeAria: ({ min, max }) => `剩餘可能範圍：${min} 到 ${max}`,
+    enterCurrentRange: "請輸入目前範圍內的數字。",
+    stayInRange: ({ min, max }) => `請保持在範圍內：${min} 到 ${max}。`,
+    hintUnavailableRange: "此範圍無法使用提示。",
+    feedbackEarlyInefficiency1: "縮小得不多，再更大膽一些。",
+    feedbackEarlyInefficiency2: "動作有點大，把範圍再收緊些。",
+    feedbackEarlyInefficiency3: "試探得不錯，再縮小一些。",
+    feedbackMidCompression1: "很好，範圍正在縮小。",
+    feedbackMidCompression2: "節奏很好，繼續收窄。",
+    feedbackMidCompression3: "你越來越接近了。",
+    feedbackEfficientCut1: "一下切掉很多，判斷很準。",
+    feedbackEfficientCut2: "切得很俐落，繼續。",
+    feedbackEfficientCut3: "縮得非常漂亮。",
+    feedbackStakes1: "最後階段，保持專注。",
+    feedbackStakes2: "壓力來了，這一猜要有價值。",
+    feedbackStakes3: "關鍵一猜要到了。",
+    feedbackSuperClose1: "你已經非常接近了。"
+  },
+  ar: {
+    remainingRangeAria: ({ min, max }) => `النطاق المحتمل المتبقي: ${min} إلى ${max}`,
+    enterCurrentRange: "أدخل رقما ضمن النطاق الحالي.",
+    stayInRange: ({ min, max }) => `ابق ضمن النطاق: ${min} إلى ${max}.`,
+    hintUnavailableRange: "التلميح غير متاح في هذا النطاق.",
+    feedbackEarlyInefficiency1: "تقدم بسيط. قلص أكثر.",
+    feedbackEarlyInefficiency2: "خطوة واسعة. شدد النطاق.",
+    feedbackEarlyInefficiency3: "استكشاف جيد. ضيق أكثر.",
+    feedbackMidCompression1: "جيد. النافذة تضيق.",
+    feedbackMidCompression2: "إيقاع جيد. واصل التضييق.",
+    feedbackMidCompression3: "أنت تقترب.",
+    feedbackEfficientCut1: "تقليص كبير. قراءة ممتازة.",
+    feedbackEfficientCut2: "تقليص نظيف. تابع.",
+    feedbackEfficientCut3: "تضييق ممتاز.",
+    feedbackStakes1: "المرحلة الأخيرة. ابق منتبها.",
+    feedbackStakes2: "الضغط حاضر. اجعل هذه المحاولة مهمة.",
+    feedbackStakes3: "تخمين حاسم قادم.",
+    feedbackSuperClose1: "أنت فوقها تقريبا."
+  },
+  ru: {
+    remainingRangeAria: ({ min, max }) => `Оставшийся возможный диапазон: от ${min} до ${max}`,
+    enterCurrentRange: "Введите число в текущем диапазоне.",
+    stayInRange: ({ min, max }) => `Оставайтесь в диапазоне: от ${min} до ${max}.`,
+    hintUnavailableRange: "Подсказка недоступна для этого диапазона.",
+    feedbackEarlyInefficiency1: "Небольшой прогресс. Сужайте смелее.",
+    feedbackEarlyInefficiency2: "Широкий ход. Сужайте диапазон сильнее.",
+    feedbackEarlyInefficiency3: "Хорошая проверка. Сужайте еще.",
+    feedbackMidCompression1: "Хорошо. Окно сужается.",
+    feedbackMidCompression2: "Хороший темп. Продолжайте сужать.",
+    feedbackMidCompression3: "Вы приближаетесь.",
+    feedbackEfficientCut1: "Большое сужение. Отличное чтение.",
+    feedbackEfficientCut2: "Чистый срез. Продолжайте.",
+    feedbackEfficientCut3: "Отличное сужение.",
+    feedbackStakes1: "Финальный отрезок. Будьте собраны.",
+    feedbackStakes2: "Напряжение растет. Пусть эта попытка будет важной.",
+    feedbackStakes3: "Идет решающая попытка.",
+    feedbackSuperClose1: "Вы совсем рядом."
+  },
+  tr: {
+    remainingRangeAria: ({ min, max }) => `Kalan olasi aralik: ${min} ile ${max}`,
+    enterCurrentRange: "Guncel aralik icinde bir sayi gir.",
+    stayInRange: ({ min, max }) => `Aralikta kal: ${min} ile ${max}.`,
+    hintUnavailableRange: "Bu aralikta ipucu kullanilamiyor.",
+    feedbackEarlyInefficiency1: "Kucuk kazanc. Daha derin kes.",
+    feedbackEarlyInefficiency2: "Genis hamle. Araligi daha cok daralt.",
+    feedbackEarlyInefficiency3: "Iyi yoklama. Daha da daralt.",
+    feedbackMidCompression1: "Guzel. Pencere daraliyor.",
+    feedbackMidCompression2: "Iyi tempo. Daraltmaya devam et.",
+    feedbackMidCompression3: "Isiniyorsun.",
+    feedbackEfficientCut1: "Buyuk kesim. Harika okuma.",
+    feedbackEfficientCut2: "Temiz kesim. Devam et.",
+    feedbackEfficientCut3: "Mukemmel daraltma.",
+    feedbackStakes1: "Final bolumu. Dikkatini koru.",
+    feedbackStakes2: "Baski var. Bu tahmini degerli kil.",
+    feedbackStakes3: "Kritik tahmin geliyor.",
+    feedbackSuperClose1: "Tam ustundesin."
+  },
+  id: {
+    remainingRangeAria: ({ min, max }) => `Rentang kemungkinan tersisa: ${min} sampai ${max}`,
+    enterCurrentRange: "Masukkan angka dalam rentang saat ini.",
+    stayInRange: ({ min, max }) => `Tetap di rentang: ${min} sampai ${max}.`,
+    hintUnavailableRange: "Petunjuk tidak tersedia pada rentang ini.",
+    feedbackEarlyInefficiency1: "Kemajuan kecil. Persempit lebih dalam.",
+    feedbackEarlyInefficiency2: "Langkahnya lebar. Perketat rentangnya.",
+    feedbackEarlyInefficiency3: "Pembacaan bagus. Persempit lagi.",
+    feedbackMidCompression1: "Bagus. Jendelanya makin sempit.",
+    feedbackMidCompression2: "Tempo bagus. Terus sempitkan.",
+    feedbackMidCompression3: "Kamu makin dekat.",
+    feedbackEfficientCut1: "Potongan besar. Bacaan bagus.",
+    feedbackEfficientCut2: "Potongan rapi. Lanjutkan.",
+    feedbackEfficientCut3: "Penyempitan yang bagus sekali.",
+    feedbackStakes1: "Bagian akhir. Tetap tajam.",
+    feedbackStakes2: "Tekanan mulai terasa. Buat tebakan ini berarti.",
+    feedbackStakes3: "Tebakan penentu segera datang.",
+    feedbackSuperClose1: "Kamu sudah sangat dekat."
+  },
+  bn: {
+    remainingRangeAria: ({ min, max }) => `অবশিষ্ট সম্ভাব্য সীমা: ${min} থেকে ${max}`,
+    enterCurrentRange: "বর্তমান সীমার মধ্যে একটি সংখ্যা দিন।",
+    stayInRange: ({ min, max }) => `সীমার মধ্যে থাকুন: ${min} থেকে ${max}।`,
+    hintUnavailableRange: "এই সীমায় ইঙ্গিত পাওয়া যাবে না।",
+    feedbackEarlyInefficiency1: "অল্প অগ্রগতি। আরও গভীরভাবে কাটুন।",
+    feedbackEarlyInefficiency2: "বড় পদক্ষেপ। সীমা আরও আঁটসাঁট করুন।",
+    feedbackEarlyInefficiency3: "ভালো পরীক্ষা। আরও সংকুচিত করুন।",
+    feedbackMidCompression1: "ভালো। সীমা ছোট হচ্ছে।",
+    feedbackMidCompression2: "ভালো গতি। সীমা কমাতে থাকুন।",
+    feedbackMidCompression3: "আপনি কাছাকাছি চলে এসেছেন।",
+    feedbackEfficientCut1: "বড় কাট। দারুণ পড়া।",
+    feedbackEfficientCut2: "পরিষ্কার কাট। চালিয়ে যান।",
+    feedbackEfficientCut3: "চমৎকার সংকোচন।",
+    feedbackStakes1: "শেষ পর্ব। সতর্ক থাকুন।",
+    feedbackStakes2: "চাপ বাড়ছে। এই অনুমানটাকে গুরুত্বপূর্ণ করুন।",
+    feedbackStakes3: "একটি গুরুত্বপূর্ণ অনুমান আসছে।",
+    feedbackSuperClose1: "আপনি একেবারে কাছে।"
+  }
+};
+
+for (const [language, extraPack] of Object.entries(EXTRA_MESSAGES)) {
+  MESSAGES[language] = {
+    ...(MESSAGES[language] || EN_MESSAGES),
+    ...extraPack
+  };
+}
+
+const GAMEPLAY_MESSAGES = {
+  en: {
+    shareGuessCount: ({ count, rawCount }) => `${count} guess${rawCount === 1 ? "" : "es"}`,
+    millionPrompt: "How fast can you solve one million?",
+    millionCounter: ({ count }) => `Guesses: ${count}`,
+    invertedSecretNumber: ({ value }) => `The secret number is ${value}`,
+    invertedInstruction: "One shot. Drag the orb to the exact number.",
+    invertedPerfectPlacement: "🎯 Perfect placement!",
+    invertedPerfectReplay: ({ mode }) => `Perfect. Tap ${mode} to play again.`,
+    invertedMissOne: ({ placed, target }) => `Off by 1. You placed ${placed}. Target was ${target}.`,
+    invertedOneAwayReplay: ({ mode }) => `One away. Tap ${mode} to play again.`,
+    invertedMissSharp: ({ distance, placed, target }) => `Sharp miss. ${distance} away. You placed ${placed}. Target was ${target}.`,
+    invertedMissSolid: ({ distance, placed, target }) => `Solid read. ${distance} away. You placed ${placed}. Target was ${target}.`,
+    invertedMissWide: ({ distance, placed, target }) => `Off by ${distance}. You placed ${placed}. Target was ${target}.`,
+    invertedOneShotReplay: ({ mode }) => `One shot only. Tap ${mode} to play again.`,
+    challengeClassic: "Can you beat this in fewer guesses?",
+    challengeMillion: "Can you solve Million faster?",
+    challengeMicro: "Can you hit Micro in one shot?",
+    challengeInverted: "Can you place the orb exactly?",
+    shareSolvedIn: ({ guessCount }) => `Solved in ${guessCount}.`,
+    shareClosestAway: ({ distance }) => `Closest: ${distance} away.`,
+    shareResultUnavailable: "Result unavailable.",
+    sharePerfectPlacement: "Perfect placement.",
+    shareMissedBy: ({ distance }) => `Missed by ${distance}.`,
+    shareOneShotMissed: "One shot missed.",
+    shareRunCompleteIn: ({ guessCount }) => `Run complete in ${guessCount}.`,
+    shareBullseyeInOne: "Bullseye in one.",
+    shareRoundComplete: "Round complete.",
+    shareHintUsed: "Hint used.",
+    shareNoHintUsed: "No hint used.",
+    shareResultCopied: "Result copied.",
+    shareFallbackCopied: "Couldn't share, result copied."
+  },
+  es: {
+    shareGuessCount: ({ count, rawCount }) => `${count} intento${rawCount === 1 ? "" : "s"}`,
+    millionPrompt: "Que tan rapido puedes resolver un millon?",
+    millionCounter: ({ count }) => `Intentos: ${count}`,
+    invertedSecretNumber: ({ value }) => `El numero secreto es ${value}`,
+    invertedInstruction: "Un solo intento. Arrastra el orbe al numero exacto.",
+    invertedPerfectPlacement: "🎯 Colocacion perfecta!",
+    invertedPerfectReplay: ({ mode }) => `Perfecto. Toca ${mode} para jugar de nuevo.`,
+    invertedMissOne: ({ placed, target }) => `Fallaste por 1. Colocaste ${placed}. El objetivo era ${target}.`,
+    invertedOneAwayReplay: ({ mode }) => `A uno. Toca ${mode} para jugar de nuevo.`,
+    invertedMissSharp: ({ distance, placed, target }) => `Fallo fino. A ${distance}. Colocaste ${placed}. El objetivo era ${target}.`,
+    invertedMissSolid: ({ distance, placed, target }) => `Buena lectura. A ${distance}. Colocaste ${placed}. El objetivo era ${target}.`,
+    invertedMissWide: ({ distance, placed, target }) => `Fallaste por ${distance}. Colocaste ${placed}. El objetivo era ${target}.`,
+    invertedOneShotReplay: ({ mode }) => `Solo hay un intento. Toca ${mode} para jugar de nuevo.`,
+    challengeClassic: "Puedes superarlo en menos intentos?",
+    challengeMillion: "Puedes resolver Million mas rapido?",
+    challengeMicro: "Puedes acertar Micro en un solo intento?",
+    challengeInverted: "Puedes colocar el orbe exactamente?",
+    shareSolvedIn: ({ guessCount }) => `Resuelto en ${guessCount}.`,
+    shareClosestAway: ({ distance }) => `Mas cerca: a ${distance}.`,
+    shareResultUnavailable: "Resultado no disponible.",
+    sharePerfectPlacement: "Colocacion perfecta.",
+    shareMissedBy: ({ distance }) => `Fallaste por ${distance}.`,
+    shareOneShotMissed: "Fallaste el unico intento.",
+    shareRunCompleteIn: ({ guessCount }) => `Ronda completada en ${guessCount}.`,
+    shareBullseyeInOne: "Pleno al primer intento.",
+    shareRoundComplete: "Ronda completada.",
+    shareHintUsed: "Pista usada.",
+    shareNoHintUsed: "Sin pista.",
+    shareResultCopied: "Resultado copiado.",
+    shareFallbackCopied: "No se pudo compartir; se copio el resultado."
+  },
+  hi: {
+    shareGuessCount: ({ count }) => `${count} अनुमान`,
+    millionPrompt: "आप दस लाख को कितनी जल्दी हल कर सकते हैं?",
+    millionCounter: ({ count }) => `अनुमान: ${count}`,
+    invertedSecretNumber: ({ value }) => `गुप्त संख्या ${value} है`,
+    invertedInstruction: "सिर्फ एक मौका। ऑर्ब को ठीक संख्या पर खींचें।",
+    invertedPerfectPlacement: "🎯 बिल्कुल सटीक स्थान!",
+    invertedPerfectReplay: ({ mode }) => `शानदार। फिर से खेलने के लिए ${mode} टैप करें।`,
+    invertedMissOne: ({ placed, target }) => `1 से चूके। आपने ${placed} रखा। लक्ष्य ${target} था।`,
+    invertedOneAwayReplay: ({ mode }) => `बस एक दूर। फिर से खेलने के लिए ${mode} टैप करें।`,
+    invertedMissSharp: ({ distance, placed, target }) => `करीबी चूक। ${distance} दूर। आपने ${placed} रखा। लक्ष्य ${target} था।`,
+    invertedMissSolid: ({ distance, placed, target }) => `अच्छा अनुमान। ${distance} दूर। आपने ${placed} रखा। लक्ष्य ${target} था।`,
+    invertedMissWide: ({ distance, placed, target }) => `${distance} से चूके। आपने ${placed} रखा। लक्ष्य ${target} था।`,
+    invertedOneShotReplay: ({ mode }) => `सिर्फ एक मौका। फिर से खेलने के लिए ${mode} टैप करें।`,
+    challengeClassic: "क्या आप इसे कम अनुमानों में हरा सकते हैं?",
+    challengeMillion: "क्या आप Million को और तेज हल कर सकते हैं?",
+    challengeMicro: "क्या आप Micro को एक ही मौके में मार सकते हैं?",
+    challengeInverted: "क्या आप ऑर्ब को बिल्कुल सही जगह रख सकते हैं?",
+    shareSolvedIn: ({ guessCount }) => `${guessCount} में हल किया।`,
+    shareClosestAway: ({ distance }) => `सबसे करीब: ${distance} दूर।`,
+    shareResultUnavailable: "परिणाम उपलब्ध नहीं है।",
+    sharePerfectPlacement: "एकदम सही स्थान।",
+    shareMissedBy: ({ distance }) => `${distance} से चूके।`,
+    shareOneShotMissed: "एकमात्र मौका चूक गए।",
+    shareRunCompleteIn: ({ guessCount }) => `${guessCount} में राउंड पूरा हुआ।`,
+    shareBullseyeInOne: "पहले ही प्रयास में निशाने पर।",
+    shareRoundComplete: "राउंड पूरा हुआ।",
+    shareHintUsed: "संकेत लिया गया।",
+    shareNoHintUsed: "कोई संकेत नहीं लिया गया।",
+    shareResultCopied: "परिणाम कॉपी हो गया।",
+    shareFallbackCopied: "साझा नहीं हो सका; परिणाम कॉपी हो गया।"
+  },
+  fr: {
+    shareGuessCount: ({ count, rawCount }) => `${count} essai${rawCount === 1 ? "" : "s"}`,
+    millionPrompt: "Pouvez-vous resoudre un million rapidement ?",
+    millionCounter: ({ count }) => `Essais : ${count}`,
+    invertedSecretNumber: ({ value }) => `Le nombre secret est ${value}`,
+    invertedInstruction: "Un seul essai. Faites glisser l'orbe sur le nombre exact.",
+    invertedPerfectPlacement: "🎯 Placement parfait !",
+    invertedPerfectReplay: ({ mode }) => `Parfait. Touchez ${mode} pour rejouer.`,
+    invertedMissOne: ({ placed, target }) => `A 1 pres. Vous avez place ${placed}. La cible etait ${target}.`,
+    invertedOneAwayReplay: ({ mode }) => `A un pres. Touchez ${mode} pour rejouer.`,
+    invertedMissSharp: ({ distance, placed, target }) => `Bel essai. A ${distance} pres. Vous avez place ${placed}. La cible etait ${target}.`,
+    invertedMissSolid: ({ distance, placed, target }) => `Bonne lecture. A ${distance} pres. Vous avez place ${placed}. La cible etait ${target}.`,
+    invertedMissWide: ({ distance, placed, target }) => `Ecart de ${distance}. Vous avez place ${placed}. La cible etait ${target}.`,
+    invertedOneShotReplay: ({ mode }) => `Un seul essai. Touchez ${mode} pour rejouer.`,
+    challengeClassic: "Pouvez-vous faire mieux avec moins d'essais ?",
+    challengeMillion: "Pouvez-vous resoudre Million plus vite ?",
+    challengeMicro: "Pouvez-vous reussir Micro en un seul essai ?",
+    challengeInverted: "Pouvez-vous placer l'orbe exactement ?",
+    shareSolvedIn: ({ guessCount }) => `Resolu en ${guessCount}.`,
+    shareClosestAway: ({ distance }) => `Plus proche : a ${distance}.`,
+    shareResultUnavailable: "Resultat indisponible.",
+    sharePerfectPlacement: "Placement parfait.",
+    shareMissedBy: ({ distance }) => `Manque de ${distance}.`,
+    shareOneShotMissed: "Essai unique manque.",
+    shareRunCompleteIn: ({ guessCount }) => `Partie terminee en ${guessCount}.`,
+    shareBullseyeInOne: "Pleine cible du premier coup.",
+    shareRoundComplete: "Partie terminee.",
+    shareHintUsed: "Indice utilise.",
+    shareNoHintUsed: "Aucun indice utilise.",
+    shareResultCopied: "Resultat copie.",
+    shareFallbackCopied: "Partage impossible ; resultat copie."
+  },
+  de: {
+    shareGuessCount: ({ count, rawCount }) => `${count} Tipp${rawCount === 1 ? "" : "s"}`,
+    millionPrompt: "Wie schnell kannst du eine Million losen?",
+    millionCounter: ({ count }) => `Tipps: ${count}`,
+    invertedSecretNumber: ({ value }) => `Die geheime Zahl ist ${value}`,
+    invertedInstruction: "Nur ein Versuch. Ziehe die Kugel auf die exakte Zahl.",
+    invertedPerfectPlacement: "🎯 Perfekt platziert!",
+    invertedPerfectReplay: ({ mode }) => `Perfekt. Tippe auf ${mode}, um erneut zu spielen.`,
+    invertedMissOne: ({ placed, target }) => `Um 1 daneben. Du hast ${placed} gesetzt. Ziel war ${target}.`,
+    invertedOneAwayReplay: ({ mode }) => `Nur eins daneben. Tippe auf ${mode}, um erneut zu spielen.`,
+    invertedMissSharp: ({ distance, placed, target }) => `Knapp daneben. ${distance} entfernt. Du hast ${placed} gesetzt. Ziel war ${target}.`,
+    invertedMissSolid: ({ distance, placed, target }) => `Gute Lesung. ${distance} entfernt. Du hast ${placed} gesetzt. Ziel war ${target}.`,
+    invertedMissWide: ({ distance, placed, target }) => `Um ${distance} daneben. Du hast ${placed} gesetzt. Ziel war ${target}.`,
+    invertedOneShotReplay: ({ mode }) => `Nur ein Versuch. Tippe auf ${mode}, um erneut zu spielen.`,
+    challengeClassic: "Schaffst du es mit weniger Tipps?",
+    challengeMillion: "Kannst du Million schneller losen?",
+    challengeMicro: "Kannst du Micro mit einem Versuch treffen?",
+    challengeInverted: "Kannst du die Kugel exakt platzieren?",
+    shareSolvedIn: ({ guessCount }) => `Geloest in ${guessCount}.`,
+    shareClosestAway: ({ distance }) => `Am nachsten: ${distance} entfernt.`,
+    shareResultUnavailable: "Ergebnis nicht verfugbar.",
+    sharePerfectPlacement: "Perfekt platziert.",
+    shareMissedBy: ({ distance }) => `Um ${distance} verfehlt.`,
+    shareOneShotMissed: "Einzelversuch verfehlt.",
+    shareRunCompleteIn: ({ guessCount }) => `Runde beendet in ${guessCount}.`,
+    shareBullseyeInOne: "Volltreffer mit einem Versuch.",
+    shareRoundComplete: "Runde beendet.",
+    shareHintUsed: "Hinweis genutzt.",
+    shareNoHintUsed: "Kein Hinweis genutzt.",
+    shareResultCopied: "Ergebnis kopiert.",
+    shareFallbackCopied: "Teilen fehlgeschlagen; Ergebnis kopiert."
+  },
+  pt: {
+    shareGuessCount: ({ count, rawCount }) => `${count} palpite${rawCount === 1 ? "" : "s"}`,
+    millionPrompt: "Quao rapido voce consegue resolver um milhao?",
+    millionCounter: ({ count }) => `Palpites: ${count}`,
+    invertedSecretNumber: ({ value }) => `O numero secreto e ${value}`,
+    invertedInstruction: "Apenas uma tentativa. Arraste o orbe para o numero exato.",
+    invertedPerfectPlacement: "🎯 Colocacao perfeita!",
+    invertedPerfectReplay: ({ mode }) => `Perfeito. Toque em ${mode} para jogar de novo.`,
+    invertedMissOne: ({ placed, target }) => `Errou por 1. Voce colocou ${placed}. O alvo era ${target}.`,
+    invertedOneAwayReplay: ({ mode }) => `A um de distancia. Toque em ${mode} para jogar de novo.`,
+    invertedMissSharp: ({ distance, placed, target }) => `Quase. A ${distance}. Voce colocou ${placed}. O alvo era ${target}.`,
+    invertedMissSolid: ({ distance, placed, target }) => `Boa leitura. A ${distance}. Voce colocou ${placed}. O alvo era ${target}.`,
+    invertedMissWide: ({ distance, placed, target }) => `Errou por ${distance}. Voce colocou ${placed}. O alvo era ${target}.`,
+    invertedOneShotReplay: ({ mode }) => `So ha uma tentativa. Toque em ${mode} para jogar de novo.`,
+    challengeClassic: "Voce consegue bater isso com menos palpites?",
+    challengeMillion: "Voce consegue resolver Million mais rapido?",
+    challengeMicro: "Voce consegue acertar Micro de primeira?",
+    challengeInverted: "Voce consegue posicionar o orbe exatamente?",
+    shareSolvedIn: ({ guessCount }) => `Resolvido em ${guessCount}.`,
+    shareClosestAway: ({ distance }) => `Mais perto: a ${distance}.`,
+    shareResultUnavailable: "Resultado indisponivel.",
+    sharePerfectPlacement: "Colocacao perfeita.",
+    shareMissedBy: ({ distance }) => `Errou por ${distance}.`,
+    shareOneShotMissed: "Errou a unica tentativa.",
+    shareRunCompleteIn: ({ guessCount }) => `Rodada concluida em ${guessCount}.`,
+    shareBullseyeInOne: "Acertou em cheio na primeira.",
+    shareRoundComplete: "Rodada concluida.",
+    shareHintUsed: "Dica usada.",
+    shareNoHintUsed: "Nenhuma dica usada.",
+    shareResultCopied: "Resultado copiado.",
+    shareFallbackCopied: "Nao foi possivel compartilhar; resultado copiado."
+  },
+  it: {
+    shareGuessCount: ({ count, rawCount }) => `${count} tentativ${rawCount === 1 ? "o" : "i"}`,
+    millionPrompt: "Quanto in fretta riesci a risolvere un milione?",
+    millionCounter: ({ count }) => `Tentativi: ${count}`,
+    invertedSecretNumber: ({ value }) => `Il numero segreto e ${value}`,
+    invertedInstruction: "Un solo tentativo. Trascina l'orbe sul numero esatto.",
+    invertedPerfectPlacement: "🎯 Posizionamento perfetto!",
+    invertedPerfectReplay: ({ mode }) => `Perfetto. Tocca ${mode} per giocare ancora.`,
+    invertedMissOne: ({ placed, target }) => `Fuori di 1. Hai messo ${placed}. Il bersaglio era ${target}.`,
+    invertedOneAwayReplay: ({ mode }) => `A uno di distanza. Tocca ${mode} per giocare ancora.`,
+    invertedMissSharp: ({ distance, placed, target }) => `Quasi. A ${distance}. Hai messo ${placed}. Il bersaglio era ${target}.`,
+    invertedMissSolid: ({ distance, placed, target }) => `Buona lettura. A ${distance}. Hai messo ${placed}. Il bersaglio era ${target}.`,
+    invertedMissWide: ({ distance, placed, target }) => `Fuori di ${distance}. Hai messo ${placed}. Il bersaglio era ${target}.`,
+    invertedOneShotReplay: ({ mode }) => `C'e un solo tentativo. Tocca ${mode} per giocare ancora.`,
+    challengeClassic: "Riesci a fare meglio con meno tentativi?",
+    challengeMillion: "Riesci a risolvere Million piu velocemente?",
+    challengeMicro: "Riesci a colpire Micro in un solo tentativo?",
+    challengeInverted: "Riesci a posizionare l'orbe con precisione?",
+    shareSolvedIn: ({ guessCount }) => `Risolto in ${guessCount}.`,
+    shareClosestAway: ({ distance }) => `Piu vicino: a ${distance}.`,
+    shareResultUnavailable: "Risultato non disponibile.",
+    sharePerfectPlacement: "Posizionamento perfetto.",
+    shareMissedBy: ({ distance }) => `Fuori di ${distance}.`,
+    shareOneShotMissed: "Tentativo unico mancato.",
+    shareRunCompleteIn: ({ guessCount }) => `Round completato in ${guessCount}.`,
+    shareBullseyeInOne: "Centro al primo colpo.",
+    shareRoundComplete: "Round completato.",
+    shareHintUsed: "Aiuto usato.",
+    shareNoHintUsed: "Nessun aiuto usato.",
+    shareResultCopied: "Risultato copiato.",
+    shareFallbackCopied: "Impossibile condividere; risultato copiato."
+  },
+  ja: {
+    shareGuessCount: ({ count }) => `${count}回`,
+    millionPrompt: "100万をどれだけ速く解けますか？",
+    millionCounter: ({ count }) => `予想: ${count}`,
+    invertedSecretNumber: ({ value }) => `秘密の数字は ${value}`,
+    invertedInstruction: "1回勝負。オーブをぴったりの数字までドラッグしてください。",
+    invertedPerfectPlacement: "🎯 完璧な配置！",
+    invertedPerfectReplay: ({ mode }) => `完璧です。もう一度遊ぶには${mode}をタップ。`,
+    invertedMissOne: ({ placed, target }) => `1違いでした。あなたは${placed}に置きました。正解は${target}でした。`,
+    invertedOneAwayReplay: ({ mode }) => `あと1でした。もう一度遊ぶには${mode}をタップ。`,
+    invertedMissSharp: ({ distance, placed, target }) => `惜しいです。${distance}違い。あなたは${placed}に置きました。正解は${target}でした。`,
+    invertedMissSolid: ({ distance, placed, target }) => `いい読みです。${distance}違い。あなたは${placed}に置きました。正解は${target}でした。`,
+    invertedMissWide: ({ distance, placed, target }) => `${distance}違いでした。あなたは${placed}に置きました。正解は${target}でした。`,
+    invertedOneShotReplay: ({ mode }) => `勝負は1回だけ。もう一度遊ぶには${mode}をタップ。`,
+    challengeClassic: "もっと少ない回数で勝てますか？",
+    challengeMillion: "Millionをもっと速く解けますか？",
+    challengeMicro: "Microを一発で当てられますか？",
+    challengeInverted: "オーブをぴったり置けますか？",
+    shareSolvedIn: ({ guessCount }) => `${guessCount}でクリア。`,
+    shareClosestAway: ({ distance }) => `最接近: ${distance}差。`,
+    shareResultUnavailable: "結果を表示できません。",
+    sharePerfectPlacement: "完璧な配置。",
+    shareMissedBy: ({ distance }) => `${distance}差で外れ。`,
+    shareOneShotMissed: "一発勝負を外しました。",
+    shareRunCompleteIn: ({ guessCount }) => `${guessCount}でラウンド完了。`,
+    shareBullseyeInOne: "一発で命中。",
+    shareRoundComplete: "ラウンド完了。",
+    shareHintUsed: "ヒント使用。",
+    shareNoHintUsed: "ヒント未使用。",
+    shareResultCopied: "結果をコピーしました。",
+    shareFallbackCopied: "共有できなかったため、結果をコピーしました。"
+  },
+  ko: {
+    shareGuessCount: ({ count }) => `${count}번`,
+    millionPrompt: "백만을 얼마나 빨리 풀 수 있나요?",
+    millionCounter: ({ count }) => `추측: ${count}`,
+    invertedSecretNumber: ({ value }) => `비밀 숫자는 ${value}입니다`,
+    invertedInstruction: "한 번의 기회입니다. 오브를 정확한 숫자까지 끌어오세요.",
+    invertedPerfectPlacement: "🎯 완벽한 위치!",
+    invertedPerfectReplay: ({ mode }) => `완벽합니다. 다시 하려면 ${mode}를 누르세요.`,
+    invertedMissOne: ({ placed, target }) => `1 차이였습니다. ${placed}에 놓았고 목표는 ${target}였습니다.`,
+    invertedOneAwayReplay: ({ mode }) => `하나 차이였습니다. 다시 하려면 ${mode}를 누르세요.`,
+    invertedMissSharp: ({ distance, placed, target }) => `아깝습니다. ${distance} 차이. ${placed}에 놓았고 목표는 ${target}였습니다.`,
+    invertedMissSolid: ({ distance, placed, target }) => `좋은 읽기였습니다. ${distance} 차이. ${placed}에 놓았고 목표는 ${target}였습니다.`,
+    invertedMissWide: ({ distance, placed, target }) => `${distance} 차이였습니다. ${placed}에 놓았고 목표는 ${target}였습니다.`,
+    invertedOneShotReplay: ({ mode }) => `기회는 한 번뿐입니다. 다시 하려면 ${mode}를 누르세요.`,
+    challengeClassic: "더 적은 추측으로 이길 수 있나요?",
+    challengeMillion: "Million을 더 빨리 풀 수 있나요?",
+    challengeMicro: "Micro를 한 번에 맞힐 수 있나요?",
+    challengeInverted: "오브를 정확히 놓을 수 있나요?",
+    shareSolvedIn: ({ guessCount }) => `${guessCount}에 해결.`,
+    shareClosestAway: ({ distance }) => `가장 근접: ${distance} 차이.`,
+    shareResultUnavailable: "결과를 사용할 수 없습니다.",
+    sharePerfectPlacement: "완벽한 위치.",
+    shareMissedBy: ({ distance }) => `${distance} 차이로 빗나감.`,
+    shareOneShotMissed: "단 한 번의 기회를 놓쳤습니다.",
+    shareRunCompleteIn: ({ guessCount }) => `${guessCount}에 라운드 완료.`,
+    shareBullseyeInOne: "한 번에 적중.",
+    shareRoundComplete: "라운드 완료.",
+    shareHintUsed: "힌트 사용.",
+    shareNoHintUsed: "힌트 사용 안 함.",
+    shareResultCopied: "결과를 복사했습니다.",
+    shareFallbackCopied: "공유할 수 없어 결과를 복사했습니다."
+  },
+  "zh-hans": {
+    shareGuessCount: ({ count }) => `${count}次`,
+    millionPrompt: "你能多快解出一百万？",
+    millionCounter: ({ count }) => `猜测：${count}`,
+    invertedSecretNumber: ({ value }) => `秘密数字是 ${value}`,
+    invertedInstruction: "只有一次机会。把球拖到准确的数字上。",
+    invertedPerfectPlacement: "🎯 放置完美！",
+    invertedPerfectReplay: ({ mode }) => `完美。点击${mode}再玩一次。`,
+    invertedMissOne: ({ placed, target }) => `差了1。你放在了${placed}。目标是${target}。`,
+    invertedOneAwayReplay: ({ mode }) => `只差1。点击${mode}再玩一次。`,
+    invertedMissSharp: ({ distance, placed, target }) => `很接近。差${distance}。你放在了${placed}。目标是${target}。`,
+    invertedMissSolid: ({ distance, placed, target }) => `判断不错。差${distance}。你放在了${placed}。目标是${target}。`,
+    invertedMissWide: ({ distance, placed, target }) => `差了${distance}。你放在了${placed}。目标是${target}。`,
+    invertedOneShotReplay: ({ mode }) => `只有一次机会。点击${mode}再玩一次。`,
+    challengeClassic: "你能用更少的猜测击败这局吗？",
+    challengeMillion: "你能更快解出Million吗？",
+    challengeMicro: "你能一发命中Micro吗？",
+    challengeInverted: "你能把球放得刚刚好吗？",
+    shareSolvedIn: ({ guessCount }) => `${guessCount}解出。`,
+    shareClosestAway: ({ distance }) => `最近距离：差${distance}。`,
+    shareResultUnavailable: "结果不可用。",
+    sharePerfectPlacement: "放置完美。",
+    shareMissedBy: ({ distance }) => `差了${distance}。`,
+    shareOneShotMissed: "错过了唯一一次机会。",
+    shareRunCompleteIn: ({ guessCount }) => `${guessCount}完成本局。`,
+    shareBullseyeInOne: "一发命中。",
+    shareRoundComplete: "本局完成。",
+    shareHintUsed: "已使用提示。",
+    shareNoHintUsed: "未使用提示。",
+    shareResultCopied: "结果已复制。",
+    shareFallbackCopied: "无法分享，结果已复制。"
+  },
+  "zh-hant": {
+    shareGuessCount: ({ count }) => `${count}次`,
+    millionPrompt: "你能多快解出一百萬？",
+    millionCounter: ({ count }) => `猜測：${count}`,
+    invertedSecretNumber: ({ value }) => `秘密數字是 ${value}`,
+    invertedInstruction: "只有一次機會。把球拖到正確的數字上。",
+    invertedPerfectPlacement: "🎯 放置完美！",
+    invertedPerfectReplay: ({ mode }) => `完美。點擊${mode}再玩一次。`,
+    invertedMissOne: ({ placed, target }) => `差了1。你放在了${placed}。目標是${target}。`,
+    invertedOneAwayReplay: ({ mode }) => `只差1。點擊${mode}再玩一次。`,
+    invertedMissSharp: ({ distance, placed, target }) => `很接近。差${distance}。你放在了${placed}。目標是${target}。`,
+    invertedMissSolid: ({ distance, placed, target }) => `判斷不錯。差${distance}。你放在了${placed}。目標是${target}。`,
+    invertedMissWide: ({ distance, placed, target }) => `差了${distance}。你放在了${placed}。目標是${target}。`,
+    invertedOneShotReplay: ({ mode }) => `只有一次機會。點擊${mode}再玩一次。`,
+    challengeClassic: "你能用更少的猜測贏過這局嗎？",
+    challengeMillion: "你能更快解出Million嗎？",
+    challengeMicro: "你能一發命中Micro嗎？",
+    challengeInverted: "你能把球放得剛剛好嗎？",
+    shareSolvedIn: ({ guessCount }) => `${guessCount}解出。`,
+    shareClosestAway: ({ distance }) => `最近距離：差${distance}。`,
+    shareResultUnavailable: "結果不可用。",
+    sharePerfectPlacement: "放置完美。",
+    shareMissedBy: ({ distance }) => `差了${distance}。`,
+    shareOneShotMissed: "錯過了唯一一次機會。",
+    shareRunCompleteIn: ({ guessCount }) => `${guessCount}完成本局。`,
+    shareBullseyeInOne: "一發命中。",
+    shareRoundComplete: "本局完成。",
+    shareHintUsed: "已使用提示。",
+    shareNoHintUsed: "未使用提示。",
+    shareResultCopied: "結果已複製。",
+    shareFallbackCopied: "無法分享，結果已複製。"
+  },
+  ar: {
+    shareGuessCount: ({ count }) => `${count} محاولة`,
+    millionPrompt: "ما مدى سرعتك في حل مليون؟",
+    millionCounter: ({ count }) => `التخمينات: ${count}`,
+    invertedSecretNumber: ({ value }) => `الرقم السري هو ${value}`,
+    invertedInstruction: "محاولة واحدة فقط. اسحب الكرة إلى الرقم الصحيح تماما.",
+    invertedPerfectPlacement: "🎯 تموضع مثالي!",
+    invertedPerfectReplay: ({ mode }) => `ممتاز. اضغط ${mode} للعب مرة اخرى.`,
+    invertedMissOne: ({ placed, target }) => `اخطأت بمقدار 1. وضعت ${placed}. كان الهدف ${target}.`,
+    invertedOneAwayReplay: ({ mode }) => `تفصلك واحدة. اضغط ${mode} للعب مرة اخرى.`,
+    invertedMissSharp: ({ distance, placed, target }) => `قريب جدا. بفارق ${distance}. وضعت ${placed}. كان الهدف ${target}.`,
+    invertedMissSolid: ({ distance, placed, target }) => `قراءة جيدة. بفارق ${distance}. وضعت ${placed}. كان الهدف ${target}.`,
+    invertedMissWide: ({ distance, placed, target }) => `اخطأت بفارق ${distance}. وضعت ${placed}. كان الهدف ${target}.`,
+    invertedOneShotReplay: ({ mode }) => `هناك محاولة واحدة فقط. اضغط ${mode} للعب مرة اخرى.`,
+    challengeClassic: "هل يمكنك التفوق على هذا بعدد تخمينات اقل؟",
+    challengeMillion: "هل يمكنك حل Million بشكل اسرع؟",
+    challengeMicro: "هل يمكنك اصابة Micro من محاولة واحدة؟",
+    challengeInverted: "هل يمكنك وضع الكرة بدقة تامة؟",
+    shareSolvedIn: ({ guessCount }) => `تم الحل خلال ${guessCount}.`,
+    shareClosestAway: ({ distance }) => `الاقرب: بفارق ${distance}.`,
+    shareResultUnavailable: "النتيجة غير متاحة.",
+    sharePerfectPlacement: "تموضع مثالي.",
+    shareMissedBy: ({ distance }) => `اخطأت بفارق ${distance}.`,
+    shareOneShotMissed: "ضاعت المحاولة الوحيدة.",
+    shareRunCompleteIn: ({ guessCount }) => `اكتملت الجولة خلال ${guessCount}.`,
+    shareBullseyeInOne: "اصابة مباشرة من المحاولة الاولى.",
+    shareRoundComplete: "اكتملت الجولة.",
+    shareHintUsed: "تم استخدام التلميح.",
+    shareNoHintUsed: "لم يتم استخدام تلميح.",
+    shareResultCopied: "تم نسخ النتيجة.",
+    shareFallbackCopied: "تعذر المشاركة، فتم نسخ النتيجة."
+  },
+  ru: {
+    shareGuessCount: ({ count }) => `${count} попыток`,
+    millionPrompt: "Как быстро вы решите миллион?",
+    millionCounter: ({ count }) => `Попытки: ${count}`,
+    invertedSecretNumber: ({ value }) => `Секретное число: ${value}`,
+    invertedInstruction: "Только одна попытка. Перетащите шар точно на число.",
+    invertedPerfectPlacement: "🎯 Идеальное попадание!",
+    invertedPerfectReplay: ({ mode }) => `Идеально. Нажмите ${mode}, чтобы сыграть снова.`,
+    invertedMissOne: ({ placed, target }) => `Промах на 1. Вы поставили ${placed}. Цель была ${target}.`,
+    invertedOneAwayReplay: ({ mode }) => `Всего один мимо. Нажмите ${mode}, чтобы сыграть снова.`,
+    invertedMissSharp: ({ distance, placed, target }) => `Очень близко. ${distance} разницы. Вы поставили ${placed}. Цель была ${target}.`,
+    invertedMissSolid: ({ distance, placed, target }) => `Хорошее чтение. ${distance} разницы. Вы поставили ${placed}. Цель была ${target}.`,
+    invertedMissWide: ({ distance, placed, target }) => `Промах на ${distance}. Вы поставили ${placed}. Цель была ${target}.`,
+    invertedOneShotReplay: ({ mode }) => `Только одна попытка. Нажмите ${mode}, чтобы сыграть снова.`,
+    challengeClassic: "Сможете пройти лучше с меньшим числом попыток?",
+    challengeMillion: "Сможете решить Million быстрее?",
+    challengeMicro: "Сможете попасть в Micro с одной попытки?",
+    challengeInverted: "Сможете поставить шар точно?",
+    shareSolvedIn: ({ guessCount }) => `Решено за ${guessCount}.`,
+    shareClosestAway: ({ distance }) => `Ближе всего: ${distance}.`,
+    shareResultUnavailable: "Результат недоступен.",
+    sharePerfectPlacement: "Идеальное попадание.",
+    shareMissedBy: ({ distance }) => `Промах на ${distance}.`,
+    shareOneShotMissed: "Единственная попытка мимо.",
+    shareRunCompleteIn: ({ guessCount }) => `Раунд завершен за ${guessCount}.`,
+    shareBullseyeInOne: "Точное попадание с первой попытки.",
+    shareRoundComplete: "Раунд завершен.",
+    shareHintUsed: "Подсказка использована.",
+    shareNoHintUsed: "Подсказка не использована.",
+    shareResultCopied: "Результат скопирован.",
+    shareFallbackCopied: "Поделиться не удалось, результат скопирован."
+  },
+  tr: {
+    shareGuessCount: ({ count }) => `${count} tahmin`,
+    millionPrompt: "Bir milyonu ne kadar hizli cozersin?",
+    millionCounter: ({ count }) => `Tahminler: ${count}`,
+    invertedSecretNumber: ({ value }) => `Gizli sayi ${value}`,
+    invertedInstruction: "Tek sans. Kureyi tam sayiya surukle.",
+    invertedPerfectPlacement: "🎯 Mukemmel yerlestirme!",
+    invertedPerfectReplay: ({ mode }) => `Mukemmel. Tekrar oynamak icin ${mode} dugmesine dokun.`,
+    invertedMissOne: ({ placed, target }) => `1 farkla kacirdi. ${placed} yerlestirdin. Hedef ${target} idi.`,
+    invertedOneAwayReplay: ({ mode }) => `Sadece bir fark. Tekrar oynamak icin ${mode} dugmesine dokun.`,
+    invertedMissSharp: ({ distance, placed, target }) => `Cok yakin. ${distance} farkla. ${placed} yerlestirdin. Hedef ${target} idi.`,
+    invertedMissSolid: ({ distance, placed, target }) => `Iyi okuma. ${distance} farkla. ${placed} yerlestirdin. Hedef ${target} idi.`,
+    invertedMissWide: ({ distance, placed, target }) => `${distance} farkla kacirdi. ${placed} yerlestirdin. Hedef ${target} idi.`,
+    invertedOneShotReplay: ({ mode }) => `Sadece tek sans var. Tekrar oynamak icin ${mode} dugmesine dokun.`,
+    challengeClassic: "Bunu daha az tahminle gecebilir misin?",
+    challengeMillion: "Million'u daha hizli cozer misin?",
+    challengeMicro: "Micro'yu tek atista vurabilir misin?",
+    challengeInverted: "Kureyi tam yerine koyabilir misin?",
+    shareSolvedIn: ({ guessCount }) => `${guessCount} icinde cozuldu.`,
+    shareClosestAway: ({ distance }) => `En yakin: ${distance} farkla.`,
+    shareResultUnavailable: "Sonuc kullanilamiyor.",
+    sharePerfectPlacement: "Mukemmel yerlestirme.",
+    shareMissedBy: ({ distance }) => `${distance} farkla kacirdi.`,
+    shareOneShotMissed: "Tek atis kacirildi.",
+    shareRunCompleteIn: ({ guessCount }) => `Kosu ${guessCount} icinde tamamlandi.`,
+    shareBullseyeInOne: "Tek atista tam isabet.",
+    shareRoundComplete: "Tur tamamlandi.",
+    shareHintUsed: "Ipucu kullanildi.",
+    shareNoHintUsed: "Ipucu kullanilmadi.",
+    shareResultCopied: "Sonuc kopyalandi.",
+    shareFallbackCopied: "Paylasma olmadi; sonuc kopyalandi."
+  },
+  id: {
+    shareGuessCount: ({ count }) => `${count} tebakan`,
+    millionPrompt: "Seberapa cepat kamu bisa menyelesaikan satu juta?",
+    millionCounter: ({ count }) => `Tebakan: ${count}`,
+    invertedSecretNumber: ({ value }) => `Angka rahasianya adalah ${value}`,
+    invertedInstruction: "Hanya satu kesempatan. Seret orb ke angka yang tepat.",
+    invertedPerfectPlacement: "🎯 Penempatan sempurna!",
+    invertedPerfectReplay: ({ mode }) => `Sempurna. Ketuk ${mode} untuk main lagi.`,
+    invertedMissOne: ({ placed, target }) => `Meleset 1. Kamu menaruh di ${placed}. Targetnya ${target}.`,
+    invertedOneAwayReplay: ({ mode }) => `Selisih satu. Ketuk ${mode} untuk main lagi.`,
+    invertedMissSharp: ({ distance, placed, target }) => `Hampir. Selisih ${distance}. Kamu menaruh di ${placed}. Targetnya ${target}.`,
+    invertedMissSolid: ({ distance, placed, target }) => `Bacaan bagus. Selisih ${distance}. Kamu menaruh di ${placed}. Targetnya ${target}.`,
+    invertedMissWide: ({ distance, placed, target }) => `Meleset ${distance}. Kamu menaruh di ${placed}. Targetnya ${target}.`,
+    invertedOneShotReplay: ({ mode }) => `Hanya satu kesempatan. Ketuk ${mode} untuk main lagi.`,
+    challengeClassic: "Bisakah kamu mengalahkan ini dengan tebakan lebih sedikit?",
+    challengeMillion: "Bisakah kamu menyelesaikan Million lebih cepat?",
+    challengeMicro: "Bisakah kamu kena Micro dalam satu tembakan?",
+    challengeInverted: "Bisakah kamu menempatkan orb dengan tepat?",
+    shareSolvedIn: ({ guessCount }) => `Selesai dalam ${guessCount}.`,
+    shareClosestAway: ({ distance }) => `Paling dekat: selisih ${distance}.`,
+    shareResultUnavailable: "Hasil tidak tersedia.",
+    sharePerfectPlacement: "Penempatan sempurna.",
+    shareMissedBy: ({ distance }) => `Meleset ${distance}.`,
+    shareOneShotMissed: "Kesempatan tunggal terlewat.",
+    shareRunCompleteIn: ({ guessCount }) => `Run selesai dalam ${guessCount}.`,
+    shareBullseyeInOne: "Tepat sasaran dalam sekali coba.",
+    shareRoundComplete: "Ronde selesai.",
+    shareHintUsed: "Petunjuk dipakai.",
+    shareNoHintUsed: "Tanpa petunjuk.",
+    shareResultCopied: "Hasil disalin.",
+    shareFallbackCopied: "Tidak bisa dibagikan; hasil disalin."
+  },
+  bn: {
+    shareGuessCount: ({ count }) => `${count}টি অনুমান`,
+    millionPrompt: "আপনি কত দ্রুত এক মিলিয়ন সমাধান করতে পারেন?",
+    millionCounter: ({ count }) => `অনুমান: ${count}`,
+    invertedSecretNumber: ({ value }) => `গোপন সংখ্যাটি ${value}`,
+    invertedInstruction: "একটাই সুযোগ। অরবটিকে ঠিক সংখ্যায় টেনে আনুন।",
+    invertedPerfectPlacement: "🎯 একদম নিখুঁত অবস্থান!",
+    invertedPerfectReplay: ({ mode }) => `দারুণ। আবার খেলতে ${mode} ট্যাপ করুন।`,
+    invertedMissOne: ({ placed, target }) => `১ এ মিস। আপনি ${placed} এ রেখেছিলেন। লক্ষ্য ছিল ${target}।`,
+    invertedOneAwayReplay: ({ mode }) => `মাত্র এক দূরে। আবার খেলতে ${mode} ট্যাপ করুন।`,
+    invertedMissSharp: ({ distance, placed, target }) => `খুব কাছাকাছি। ${distance} দূরে। আপনি ${placed} এ রেখেছিলেন। লক্ষ্য ছিল ${target}।`,
+    invertedMissSolid: ({ distance, placed, target }) => `ভালো পড়া। ${distance} দূরে। আপনি ${placed} এ রেখেছিলেন। লক্ষ্য ছিল ${target}।`,
+    invertedMissWide: ({ distance, placed, target }) => `${distance} দূরে মিস। আপনি ${placed} এ রেখেছিলেন। লক্ষ্য ছিল ${target}।`,
+    invertedOneShotReplay: ({ mode }) => `একটাই সুযোগ। আবার খেলতে ${mode} ট্যাপ করুন।`,
+    challengeClassic: "কম অনুমানে কি এটাকে হারাতে পারবেন?",
+    challengeMillion: "Million কি আরও দ্রুত সমাধান করতে পারবেন?",
+    challengeMicro: "Micro কি এক শটে মারতে পারবেন?",
+    challengeInverted: "অরবটি কি একদম ঠিক জায়গায় রাখতে পারবেন?",
+    shareSolvedIn: ({ guessCount }) => `${guessCount} এ সমাধান।`,
+    shareClosestAway: ({ distance }) => `সবচেয়ে কাছে: ${distance} দূরে।`,
+    shareResultUnavailable: "ফলাফল পাওয়া যায়নি।",
+    sharePerfectPlacement: "নিখুঁত অবস্থান।",
+    shareMissedBy: ({ distance }) => `${distance} দূরে মিস।`,
+    shareOneShotMissed: "একটাই সুযোগ মিস হয়েছে।",
+    shareRunCompleteIn: ({ guessCount }) => `${guessCount} এ রাউন্ড শেষ।`,
+    shareBullseyeInOne: "এক শটেই নিশানা।",
+    shareRoundComplete: "রাউন্ড শেষ।",
+    shareHintUsed: "ইঙ্গিত ব্যবহার করা হয়েছে।",
+    shareNoHintUsed: "কোনও ইঙ্গিত ব্যবহার হয়নি।",
+    shareResultCopied: "ফলাফল কপি করা হয়েছে।",
+    shareFallbackCopied: "শেয়ার করা যায়নি; ফলাফল কপি করা হয়েছে।"
+  }
+};
+
+for (const [language, gameplayPack] of Object.entries(GAMEPLAY_MESSAGES)) {
+  MESSAGES[language] = {
+    ...(MESSAGES[language] || EN_MESSAGES),
+    ...gameplayPack
+  };
+}
+
 function normalizeLanguageCode(rawValue) {
   return String(rawValue || "")
     .trim()
@@ -3010,6 +3846,7 @@ let cleanupInvertedDrag = null;
 let orbMovePulseTimer = null;
 let orbMoveRaf = null;
 let activeFeedbackMessage = null;
+let activeSentimentMessage = null;
 let activeTipMessage = null;
 let activeGuessCountMessage = null;
 
@@ -3024,12 +3861,20 @@ function getCurrentTheme() {
 }
 
 function setFeedbackMessage(key, vars = {}) {
+  clearTimeout(feedback._fadeT);
   activeFeedbackMessage = { key, vars };
+  activeSentimentMessage = null;
+  feedback.classList.remove("critical");
+  feedback.style.opacity = 1;
   feedback.textContent = getMessage(key, vars);
 }
 
 function clearFeedbackMessage() {
+  clearTimeout(feedback._fadeT);
   activeFeedbackMessage = null;
+  activeSentimentMessage = null;
+  feedback.classList.remove("critical");
+  feedback.style.opacity = 1;
   feedback.textContent = "";
 }
 
@@ -3361,6 +4206,7 @@ function applyLanguage(language, options = {}) {
   refreshStaticTranslations();
   updateThemeToggle(getCurrentTheme());
   updateShareButton();
+  updateMillionGuessDisplay();
   syncStreakDisplay();
 
   if (statsModal?.style.display === "flex") {
@@ -3382,6 +4228,12 @@ function applyLanguage(language, options = {}) {
   } else if (!renderDemoLanguageState()) {
     if (activeFeedbackMessage) {
       feedback.textContent = getMessage(activeFeedbackMessage.key, activeFeedbackMessage.vars);
+      feedback.classList.remove("critical");
+      feedback.style.opacity = 1;
+    } else if (activeSentimentMessage) {
+      feedback.textContent = getMessage(activeSentimentMessage.key);
+      feedback.classList.toggle("critical", activeSentimentMessage.isCritical);
+      feedback.style.opacity = 1;
     }
     if (activeTipMessage) {
       tipText.textContent = getMessage(activeTipMessage.key, activeTipMessage.vars);
@@ -4335,16 +5187,14 @@ function startFreePlay(mode) {
       btn.disabled = true;
 
       // Show secret number (static for the round)
-      activeFeedbackMessage = null;
-      feedback.textContent = `The secret number is ${secret}`;
+      setFeedbackMessage("invertedSecretNumber", { value: formatNumber(secret) });
       tipText.classList.remove("hint");
-      activeTipMessage = null;
-      tipText.textContent = "One shot. Drag the orb to the exact number.";
+      setTipMessage("invertedInstruction");
       tipText.style.display = "block";
       tipText.style.opacity = "1";
 
-      minLabel.textContent = min;
-      maxLabel.textContent = max;
+      minLabel.textContent = formatNumber(min);
+      maxLabel.textContent = formatNumber(max);
 
       // Start centered so it's easy to grab on mobile.
       barOrb.style.transition = "left 0.2s ease";
@@ -4415,33 +5265,40 @@ function startFreePlay(mode) {
 
           if (miss === 0) {
             gameResult = "win";
-            feedback.textContent = "🎯 Perfect placement!";
+            setFeedbackMessage("invertedPerfectPlacement");
             tipText.classList.remove("hint");
-            tipText.textContent = "Perfect. Tap Inverted to play again.";
+            setTipMessage("invertedPerfectReplay", { mode: getMessage("inverted") });
             bar.classList.add("win");
             barFill.classList.add("win");
             barOrb.classList.add("win-pulse");
             haptic([12, 40, 12]);
           } else if (miss === 1) {
             gameResult = "lose";
-            feedback.textContent = `Off by 1. You placed ${placedNumber}. Target was ${secret}.`;
+            setFeedbackMessage("invertedMissOne", {
+              placed: formatNumber(placedNumber),
+              target: formatNumber(secret)
+            });
             tipText.classList.remove("hint");
-            tipText.textContent = "One away. Tap Inverted to play again.";
+            setTipMessage("invertedOneAwayReplay", { mode: getMessage("inverted") });
             bar.classList.add("near");
             barFill.classList.add("near");
             haptic(10);
           } else {
             gameResult = "lose";
-            const quality =
+            const messageKey =
               miss <= 3
-                ? `Sharp miss. ${miss} away.`
+                ? "invertedMissSharp"
                 : miss <= 10
-                  ? `Solid read. ${miss} away.`
-                  : `Off by ${miss}.`;
+                  ? "invertedMissSolid"
+                  : "invertedMissWide";
 
-            feedback.textContent = `${quality} You placed ${placedNumber}. Target was ${secret}.`;
+            setFeedbackMessage(messageKey, {
+              distance: formatNumber(miss),
+              placed: formatNumber(placedNumber),
+              target: formatNumber(secret)
+            });
             tipText.classList.remove("hint");
-            tipText.textContent = "One shot only. Tap Inverted to play again.";
+            setTipMessage("invertedOneShotReplay", { mode: getMessage("inverted") });
             haptic(miss <= 3 ? [8, 24, 8] : 10);
           }
 
@@ -4528,7 +5385,13 @@ function resolveFreePlayGuess(g) {
   // MICRO: instant
   if (currentMode === MODES.MICRO) {
     if (g < 1 || g > 25) {
-      showToast("Stay in range: 1 to 25.", 2000);
+      showToast(
+        getMessage("stayInRange", {
+          min: formatNumber(1),
+          max: formatNumber(25)
+        }),
+        2000
+      );
       return; // stop here, don’t end the game
     }
 
@@ -4546,7 +5409,13 @@ function resolveFreePlayGuess(g) {
 
     // --- INVALID GUESS CHECK ---
     if (g < min || g > max) {
-      showToast(`Stay in range: ${min} to ${max}.`, 2000);
+      showToast(
+        getMessage("stayInRange", {
+          min: formatNumber(min),
+          max: formatNumber(max)
+        }),
+        2000
+      );
       return; // do NOT increment counter or modify range
     }
 
@@ -4647,8 +5516,10 @@ function updateMillionGuessDisplay() {
     prompt.style.display = "block";
     counter.style.display = "block";
 
-    prompt.textContent = "How fast can you solve one million?";
-    counter.textContent = `Guesses: ${millionGuessCounter}`;
+    prompt.textContent = getMessage("millionPrompt");
+    counter.textContent = getMessage("millionCounter", {
+      count: formatNumber(millionGuessCounter)
+    });
   } else {
     prompt.style.display = "none";
     counter.style.display = "none";
@@ -4725,13 +5596,16 @@ function suppressSentiment() {
   );
 }
 
-function emitSentiment(text, isCritical=false) {
+function emitSentiment(messageKey, isCritical = false) {
+  if (!messageKey) return;
   // Cancel any pending timeout
   clearTimeout(feedback._fadeT);
+  activeFeedbackMessage = null;
+  activeSentimentMessage = { key: messageKey, isCritical };
 
   feedback.style.opacity = 0;
   feedback._fadeT = setTimeout(() => {
-    feedback.textContent = text;
+    feedback.textContent = getMessage(messageKey);
     if (isCritical) feedback.classList.add("critical");
     else feedback.classList.remove("critical");
     feedback.style.opacity = 1;
@@ -4742,6 +5616,7 @@ function emitSentiment(text, isCritical=false) {
 
 function clearSentiment() {
   clearTimeout(feedback._fadeT);
+  activeSentimentMessage = null;
 
   feedback.style.opacity = 0;
   feedback._fadeT = setTimeout(() => {
@@ -4788,16 +5663,32 @@ function syncInputRange() {
 
 /* ---------- RANDOMIZED CONTEXTUAL FEEDBACK ---------- */
 const feedbackPhrases = {
-  earlyInefficiency: ["Small gain. Cut deeper.","Wide move. Tighten the range.","Good probe. Narrow harder."],
-  midCompression: ["Nice. The window is shrinking.","Good pace. Keep narrowing.","You're getting warm."],
-  efficientCut: ["Big cut. Great read.","Clean slice. Keep going.","Excellent narrowing."],
-  stakes: ["Final stretch. Stay sharp.","Pressure on. Make this one count.","Clutch guess coming up."],
-  superClose: ["You're right on it."]
+  earlyInefficiency: [
+    "feedbackEarlyInefficiency1",
+    "feedbackEarlyInefficiency2",
+    "feedbackEarlyInefficiency3"
+  ],
+  midCompression: [
+    "feedbackMidCompression1",
+    "feedbackMidCompression2",
+    "feedbackMidCompression3"
+  ],
+  efficientCut: [
+    "feedbackEfficientCut1",
+    "feedbackEfficientCut2",
+    "feedbackEfficientCut3"
+  ],
+  stakes: [
+    "feedbackStakes1",
+    "feedbackStakes2",
+    "feedbackStakes3"
+  ],
+  superClose: ["feedbackSuperClose1"]
 };
 
 function pickPhrase(category) {
   const arr = feedbackPhrases[category] || [];
-  return arr[Math.floor(Math.random() * arr.length)];
+  return arr[Math.floor(Math.random() * arr.length)] || "";
 }
 
 /* ---------- BAR ---------- */
@@ -4840,11 +5731,16 @@ function updateBar() {
   minLabel.style.display = "inline";
   maxLabel.style.display = "inline";
 
-  minLabel.textContent = min.toLocaleString();
-  maxLabel.textContent = max.toLocaleString();
+  const formattedMin = formatNumber(min);
+  const formattedMax = formatNumber(max);
+  minLabel.textContent = formattedMin;
+  maxLabel.textContent = formattedMax;
   bar.setAttribute(
     "aria-label",
-    `Remaining possible range: ${min.toLocaleString()} to ${max.toLocaleString()}`
+    getMessage("remainingRangeAria", {
+      min: formattedMin,
+      max: formattedMax
+    })
   );
 
   const centerLabel = bar.querySelector(".center-range-label");
@@ -4868,7 +5764,12 @@ function updateBar() {
 function resolveGuess(g, skipPush = false) {
   // --- 0. Reject guesses outside the current visible range ---
   if (g < min || g > max) {
-    showToast(`Stay in range: ${min} to ${max}.`);
+    showToast(
+      getMessage("stayInRange", {
+        min: formatNumber(min),
+        max: formatNumber(max)
+      })
+    );
     haptic(5);
     return; // exit early — no state changes
   }
@@ -4972,8 +5873,8 @@ function updateGuessUI() {
     clearGuessCountMessage();
     bar.classList.remove("hint-ready");
     tipText.classList.remove("hint");
-    activeTipMessage = null;
-    tipText.textContent = "One shot. Drag the orb to the exact number.";
+    setFeedbackMessage("invertedSecretNumber", { value: formatNumber(secret) });
+    setTipMessage("invertedInstruction");
     tipText.style.display = "block";
     tipText.style.opacity = "1";
     return;
@@ -5046,7 +5947,7 @@ function submitCurrentGuess() {
   const g = Number(input.value);
 
   if (Number.isNaN(g) || g < min || g > max) {
-    showToast("Enter a number in the current range.");
+    showToast(getMessage("enterCurrentRange"));
     return;
   }
 
@@ -5145,7 +6046,7 @@ bar.onclick = () => {
 
   const hintApplied = applyWindowSnapHint();
   if (!hintApplied) {
-    showToast("Hint unavailable at this range.", 1800);
+    showToast(getMessage("hintUnavailableRange"), 1800);
     haptic(6);
     return;
   }
@@ -5526,15 +6427,15 @@ document.addEventListener("keydown", (e) => {
 function getFreePlayModeLabel() {
   switch (currentMode) {
     case MODES.CLASSIC:
-      return "Classic";
+      return getMessage("classic");
     case MODES.MILLION:
-      return "Million";
+      return getMessage("million");
     case MODES.MICRO:
-      return "Micro";
+      return getMessage("micro");
     case MODES.INVERTED:
-      return "Inverted";
+      return getMessage("inverted");
     default:
-      return "Run";
+      return getMessage("freePlay");
   }
 }
 
@@ -5546,22 +6447,29 @@ function getShareGuessSeries() {
 }
 
 function formatGuessCount(n) {
-  return `${n} guess${n === 1 ? "" : "es"}`;
+  return getMessage("shareGuessCount", {
+    count: formatNumber(n),
+    rawCount: n
+  });
 }
 
 function getFreePlayChallengeLine() {
   switch (currentMode) {
     case MODES.CLASSIC:
-      return "Can you beat this in fewer guesses?";
+      return getMessage("challengeClassic");
     case MODES.MILLION:
-      return "Can you solve Million faster?";
+      return getMessage("challengeMillion");
     case MODES.MICRO:
-      return "Can you hit Micro in one shot?";
+      return getMessage("challengeMicro");
     case MODES.INVERTED:
-      return "Can you place the orb exactly?";
+      return getMessage("challengeInverted");
     default:
-      return "Can you beat this run?";
+      return getMessage("challengeClassic");
   }
+}
+
+function getFreePlayShareTitle() {
+  return `Narro ${getMessage("freePlay")} · ${getFreePlayModeLabel()}`;
 }
 
 function buildShareTiles(shareGuesses, result) {
@@ -5652,10 +6560,10 @@ function generateShareText() {
   if (currentMode === MODES.DAILY) {
     const solvedGuesses = guesses.length || shareGuesses.length;
     const infoLine = won
-      ? `Solved in ${formatGuessCount(solvedGuesses)}.`
+      ? getMessage("shareSolvedIn", { guessCount: formatGuessCount(solvedGuesses) })
       : lost && closestDistance != null
-        ? `Closest: ${closestDistance} away.`
-        : "Result unavailable.";
+        ? getMessage("shareClosestAway", { distance: formatNumber(closestDistance) })
+        : getMessage("shareResultUnavailable");
 
     return (
       `Narro · ${todayKey}\n\n` +
@@ -5668,41 +6576,41 @@ function generateShareText() {
   let infoLine;
   if (currentMode === MODES.INVERTED) {
     if (won) {
-      infoLine = "Perfect placement.";
+      infoLine = getMessage("sharePerfectPlacement");
     } else if (Number.isFinite(lastInvertedMiss)) {
-      infoLine = `Missed by ${lastInvertedMiss}.`;
+      infoLine = getMessage("shareMissedBy", { distance: formatNumber(lastInvertedMiss) });
     } else {
-      infoLine = "One shot missed.";
+      infoLine = getMessage("shareOneShotMissed");
     }
   } else if (currentMode === MODES.MILLION) {
     infoLine = won
-      ? `Solved Million in ${formatGuessCount(millionGuessCounter)}.`
-      : `Run complete in ${formatGuessCount(millionGuessCounter)}.`;
+      ? getMessage("shareSolvedIn", { guessCount: formatGuessCount(millionGuessCounter) })
+      : getMessage("shareRunCompleteIn", { guessCount: formatGuessCount(millionGuessCounter) });
   } else if (currentMode === MODES.MICRO) {
     infoLine = won
-      ? "Bullseye in one."
+      ? getMessage("shareBullseyeInOne")
       : lost && closestDistance != null
-        ? `Missed by ${closestDistance}.`
-        : "Round complete.";
+        ? getMessage("shareMissedBy", { distance: formatNumber(closestDistance) })
+        : getMessage("shareRoundComplete");
   } else {
     infoLine = won
-      ? `Solved in ${formatGuessCount(shareGuesses.length)}.`
+      ? getMessage("shareSolvedIn", { guessCount: formatGuessCount(shareGuesses.length) })
       : lost && closestDistance != null
-        ? `Closest: ${closestDistance} away.`
-        : "Round complete.";
+        ? getMessage("shareClosestAway", { distance: formatNumber(closestDistance) })
+        : getMessage("shareRoundComplete");
   }
 
   const lifelineLine =
     currentMode === MODES.CLASSIC
-      ? (lifelineUsed ? "Hint used." : "No hint used.")
+      ? (lifelineUsed ? getMessage("shareHintUsed") : getMessage("shareNoHintUsed"))
       : null;
   const challengeLine = getFreePlayChallengeLine();
 
   return (
-    `Narro Free Play · ${getFreePlayModeLabel()}\n\n` +
-    `${tileLine}\n` +
-    `${infoLine}\n` +
-    `${lifelineLine ? `${lifelineLine}\n` : ""}` +
+    `${getFreePlayShareTitle()}\n\n` +
+      `${tileLine}\n` +
+      `${infoLine}\n` +
+      `${lifelineLine ? `${lifelineLine}\n` : ""}` +
     `${challengeLine}\n\n` +
     `${CANONICAL_URL}`
   );
@@ -5712,7 +6620,7 @@ shareBtn.onclick = async () => {
   const text = generateShareText();
   const shareTitle = currentMode === MODES.DAILY
     ? "Narro"
-    : `Narro Free Play · ${getFreePlayModeLabel()}`;
+    : getFreePlayShareTitle();
 
   try {
     if (navigator.share) {
@@ -5722,10 +6630,10 @@ shareBtn.onclick = async () => {
       });
     } else {
       await navigator.clipboard.writeText(text);
-      showToast("Result copied.");
+      showToast(getMessage("shareResultCopied"));
     }
   } catch {
-    showToast("Couldn't share, result copied.");
+    showToast(getMessage("shareFallbackCopied"));
     try {
       await navigator.clipboard.writeText(text);
     } catch {}
