@@ -4940,10 +4940,7 @@ async function recordGameSession() {
   try {
     await supabaseClient.from("game_sessions").insert({
       user_id: anonUserId,
-      mode:
-        currentMode === MODES.MICRO
-          ? "classic"
-          : currentMode,
+      mode: currentMode,
       won: gameResult === "win",
       guesses: totalGuesses,
       time_ms: Math.max(0, Date.now() - gameStartTime),
