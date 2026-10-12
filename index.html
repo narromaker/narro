@@ -19,7 +19,8 @@
   });
   const dailyStateKeyGA = `narroState-${todayKeyGA}`;
 
-  if (!localStorage.getItem(dailyStateKeyGA)) {
+  if (!localStorage.getItem(dailyStateKeyGA) && !localStorage.getItem(`narroStarted-${todayKeyGA}`)) {
+    localStorage.setItem(`narroStarted-${todayKeyGA}`, "true");
     gtag("event", "game_start", {
       game_version: "v1.0"
     });
@@ -1417,6 +1418,57 @@
   }
 }
 
+
+  /* Compact controls retain the existing palette and card. */
+  [hidden] { display: none !important; }
+  #streak:empty { display: none; }
+  .top-actions { margin-inline-start: auto; }
+  @media (max-width: 480px) {
+    .top-row { flex-wrap: wrap; }
+    #streak:not(:empty) { order: 3; flex-basis: 100%; margin: 0; font-size: .8rem; text-align: start; }
+  }
+  .mode-heading { margin: 0; font-size: 1.05rem; font-weight: 650; }
+  .mode-rules { margin: 6px 0 16px; font-size: .8rem; line-height: 1.5; color: var(--muted); }
+  .feedback:empty, .tip:empty, .guess-count:empty { display: none; }
+  .result-card:focus { outline: none; }
+  .direction-feedback { margin-top: 14px; font-weight: 600; }
+  .validation-error { margin-top: 8px; color: var(--danger); font-size: .85rem; }
+  .guess-history { margin-top: 16px; text-align: start; font-size: .78rem; color: var(--muted); }
+  .guess-history h3 { margin: 0 0 7px; font-size: inherit; font-weight: 500; }
+  .guess-history ol { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; max-height: 116px; overflow-y: auto; }
+  .guess-history li { border: 1px solid color-mix(in srgb, var(--muted) 30%, transparent); border-radius: 7px; padding: 5px 7px; }
+  .guess-history li[data-result="correct"] { color: var(--text); border-color: var(--accent); }
+  .bar-labels, #helpDemoLabels { direction: ltr; }
+  .bar-actions { display: flex; align-items: center; justify-content: flex-end; min-height: 28px; margin-bottom: 4px; }
+  button.text-action, button.secondary-action { width: auto; margin: 0; background: transparent; color: var(--muted); box-shadow: none; transform: none; font-size: .8rem; }
+  button.text-action { padding: 10px 6px; border: 0; text-decoration: underline; text-underline-offset: 3px; }
+  button.secondary-action { padding: 10px 14px; border: 1px solid color-mix(in srgb, var(--muted) 35%, transparent); }
+  button.text-action:hover:not(:disabled), button.secondary-action:hover:not(:disabled) { color: var(--text); box-shadow: none; transform: none; }
+  #hintBtn { color: var(--text); padding: 7px 10px; }
+  #hintUsed { font-size: .78rem; color: var(--hinted); }
+  .hint-status { margin-top: 8px; font-size: .8rem; color: var(--muted); }
+  .result-card h2 { margin: 0 0 8px; font-size: 1.25rem; }
+  .result-answer { font-size: 1rem; margin: 8px 0; }
+  .result-count, .result-hint { color: var(--muted); font-size: .85rem; margin: 6px 0; }
+  .result-actions { display: grid; gap: 8px; margin-top: 18px; }
+  .result-actions button { margin: 0; width: 100%; }
+  .result-actions .text-action { width: auto; justify-self: center; }
+  .utility-actions { display: flex; justify-content: center; gap: 14px; margin-top: 10px; }
+  #freePlayPanel { margin-top: 12px; text-align: center; }
+  #freePlayModes { display: none; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 8px; }
+  #freePlayModes button { width: auto; margin: 0; padding: 9px 12px; font-size: .8rem; }
+  .inverted-controls { margin: 12px 0 0; }
+  #invertedTarget { font-size: 1.3rem; font-weight: 600; }
+  #invertedCommitBtn { margin: 14px auto 0; }
+  #invertedHelp { font-size: .8rem; line-height: 1.5; color: var(--muted); }
+  .bar-orb[role="slider"]:focus-visible { outline: 3px solid var(--text); outline-offset: 5px; }
+  #helpModal .modal-card { max-width: 380px; text-align: start; }
+  #helpCopy, #helpRangeCopy { font-size: .9rem; line-height: 1.5; }
+  #helpDemoBar { position: relative; height: 18px; border-radius: 9px; background: var(--hinted); margin: 12px 0 20px; }
+  #helpDemoOrb { position: absolute; top: 50%; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); transform: translate(-50%, -50%); }
+  #helpDemoLabels { display: flex; justify-content: space-between; font-size: .8rem; color: var(--muted); }
+  #helpCloseBtn { margin-top: 10px; }
+  #confetti { visibility: hidden; }
 </style>
 </head>
 
@@ -1471,11 +1523,32 @@
     <div id="gameShell" class="game-shell">
       <!-- Main game card -->
       <div class="card">
+        <h2 id="modeName" class="mode-heading"></h2>
+        <p id="modeRules" class="mode-rules"></p>
+        <div id="guessControls">
         <label id="guessInputLabel" for="guessInput" class="sr-only">Enter your guess</label>
-        <input id="guessInput" type="number" inputmode="numeric" placeholder="Enter a number" autocomplete="off" />
+        <input id="guessInput" type="number" inputmode="numeric" step="1" placeholder="Enter a number" autocomplete="off" aria-describedby="modeRules validationError" />
         <button id="guessBtn">Guess</button>
+        </div>
+        <div id="validationError" class="validation-error" role="alert" hidden></div>
+        <div id="directionFeedback" class="direction-feedback" role="status" aria-live="polite" hidden></div>
+        <section id="resultCard" class="result-card" aria-labelledby="resultTitle" tabindex="-1" hidden>
+          <h2 id="resultTitle"></h2>
+          <p id="resultAnswer" class="result-answer"></p>
+          <p id="resultCount" class="result-count"></p>
+          <p id="resultHint" class="result-hint" hidden></p>
+          <div class="result-actions">
+            <button id="shareBtn" type="button" disabled>Share result</button>
+            <button id="resultReplayBtn" class="secondary-action" type="button"></button>
+            <button id="resultModesBtn" class="text-action" type="button"></button>
+          </div>
+        </section>
+        <div id="invertedControls" class="inverted-controls" hidden>
+          <div id="invertedTarget"></div>
+          <p id="invertedHelp"></p>
+        </div>
         <div class="feedback" id="feedback" aria-live="polite"></div>
-        <div class="toast" id="toast" role="status" aria-live="assertive"></div>
+        <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
         <div class="guess-count" id="guessCount">6 guesses left</div>
         <div id="millionPrompt" class="million-prompt"></div>
         <div id="millionGuessCounter" class="million-counter"></div>
@@ -1486,6 +1559,10 @@
         </div>
 
         <div class="bar-wrap">
+          <div class="bar-actions">
+            <button id="hintBtn" class="secondary-action" type="button" hidden>Use hint</button>
+            <span id="hintUsed" hidden>Hint used</span>
+          </div>
           <div class="bar-labels">
             <span id="minLabel">1</span>
             <span id="maxLabel">10,000</span>
@@ -1494,51 +1571,33 @@
             <div class="bar-fill" id="barFill"></div>
             <div class="bar-orb" id="barOrb"></div>
           </div>
+          <div id="hintStatus" class="hint-status" role="status" aria-live="polite" hidden></div>
+          <button id="invertedCommitBtn" class="secondary-action" type="button" hidden></button>
         </div>
+        <section id="guessHistory" class="guess-history" aria-labelledby="historyTitle" hidden>
+          <h3 id="historyTitle"></h3>
+          <ol id="historyList"></ol>
+        </section>
       </div> <!-- end main card -->
 
-      <div class="share">
-        <button id="shareBtn" disabled>Share Result</button>
-        <button id="feedbackBtn" class="feedback-btn" type="button">Send Feedback</button>
+      <div id="freePlayPanel">
+        <button id="freePlayMainBtn" class="text-action" type="button">More modes</button>
+        <button id="dailyModeBtn" class="text-action" type="button" hidden>Daily Narro</button>
+        <div id="freePlayModes">
+          <button class="freePlayModeBtn secondary-action" data-mode="classic">Classic</button>
+          <button class="freePlayModeBtn secondary-action" data-mode="million">Million</button>
+          <button class="freePlayModeBtn secondary-action" data-mode="micro">Micro</button>
+          <button class="freePlayModeBtn secondary-action" data-mode="inverted">Inverted</button>
+        </div>
+      </div>
+      <div class="utility-actions">
+        <button id="howToPlayBtn" class="text-action" type="button">How to play</button>
+        <button id="feedbackBtn" class="text-action" type="button">Send feedback</button>
       </div>
 
       <div class="countdown" id="countdown"></div>
     </div>
   </div> <!-- end .app -->
-
-  <!-- Persistent Free Play Panel -->
-  <div id="freePlayPanel" style="
-      display:none;
-      position:fixed;
-      bottom:16px;
-      right:16px;
-      z-index:1000;
-      text-align:right;
-      font-family:inherit;
-  ">
-    <button id="freePlayMainBtn" style="
-        padding:12px 18px;
-        border-radius:12px;
-        background:var(--accent);
-        color:#000;
-        font-weight:600;
-        cursor:pointer;
-        box-shadow:0 4px 12px rgba(0,0,0,0.4);
-        transition:0.2s;
-    ">Free Play</button>
-
-    <div id="freePlayModes" style="
-        display:none;
-        margin-top:8px;
-        flex-direction:column;
-        gap:6px;
-    ">
-      <button class="freePlayModeBtn" data-mode="classic">Classic</button>
-      <button class="freePlayModeBtn" data-mode="million">Million</button>
-      <button class="freePlayModeBtn" data-mode="micro">Micro</button>
-      <button class="freePlayModeBtn" data-mode="inverted">Inverted</button>
-    </div>
-  </div>
 
   <!-- Modals, canvas, etc. -->
   <div class="modal" id="statsModal" role="dialog" aria-modal="true" aria-labelledby="statsHeading">
@@ -1552,7 +1611,20 @@
     </div>
   </div>
 
-  <canvas id="confetti"></canvas>
+  <div id="helpModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+    <div class="modal-card">
+      <h2 id="helpTitle"></h2>
+      <p id="helpCopy"></p>
+      <div id="helpDemo">
+        <div id="helpDemoLabels"><span id="helpDemoMin"></span><span id="helpDemoMax"></span></div>
+        <div id="helpDemoBar" role="img"><span id="helpDemoOrb"></span></div>
+        <p id="helpRangeCopy" role="status" aria-live="polite"></p>
+        <button id="helpDemoBtn" class="secondary-action" type="button"></button>
+      </div>
+      <button id="helpCloseBtn" type="button"></button>
+    </div>
+  </div>
+  <canvas id="confetti" aria-hidden="true"></canvas>
   <script>
     const freePlayPanel = document.getElementById("freePlayPanel");
 const freePlayMainBtn = document.getElementById("freePlayMainBtn");
@@ -1569,6 +1641,7 @@ freePlayMainBtn.setAttribute("aria-expanded", "false");
 function setFreePlayModesOpen(isOpen) {
   freePlayModes.style.display = isOpen ? "flex" : "none";
   freePlayMainBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  document.getElementById("resultModesBtn").setAttribute("aria-expanded", isOpen ? "true" : "false");
 }
 
 // --- RESTORE UNLOCKED STATE ON LOAD ---
@@ -1604,7 +1677,7 @@ freePlayModeBtns.forEach(btn => {
 });
 
 document.addEventListener("click", (e) => {
-  if (!freePlayPanel.contains(e.target)) {
+  if (!freePlayPanel.contains(e.target) && !e.target.closest("#resultModesBtn")) {
     setFreePlayModesOpen(false);
   }
 });
@@ -1695,6 +1768,7 @@ const todayKey = `${year}-${month}-${day}`;
 const dailyStateKey = `narroState-${todayKey}`;
 
 const MAX_GUESSES = 6;
+const HINT_GUESSES_REMAINING = 2;
 const MIN_RANGE = 1;
 const MAX_RANGE = 10000;
 const INVERTED_MAX_RANGE = 100;
@@ -3727,6 +3801,692 @@ for (const [language, gameplayPack] of Object.entries(GAMEPLAY_MESSAGES)) {
   };
 }
 
+/* New UI copy follows the existing per-language message packs. */
+const ROUND_MESSAGE_KEYS = ["dailyMode", "dailyComplete", "roundComplete", "solvedOf", "solvedUnlimited", "guessesUsed", "hintUsed", "useHint", "shareResult", "playClassic", "playAgain", "changeMode", "moreModes", "howToPlay", "guessHistory", "guessHigh", "guessLow", "allowedWhole", "rangeRule", "guessAllowance", "oneGuess", "unlimitedGuesses", "hintRule", "invertedRule", "invertedCommit", "placeOrb", "orbPlacement", "placementPercent", "targetNumber", "placedAway", "placementHistory", "orbRelative", "endpointsChanged", "resetDemo", "hintRangeChanged", "shareCopyFailed", "nextPuzzleIn", "historyHigh", "historyLow", "historyCorrect"];
+const ROUND_MESSAGE_TEXT = {
+  "en": [
+    "Daily Narro",
+    "Daily Narro complete",
+    "Round complete",
+    "Solved in {count} of {limit} guesses",
+    "Solved in {count} guesses",
+    "{count} guesses used",
+    "Hint used",
+    "Use hint",
+    "Share result",
+    "Play Classic",
+    "Play again",
+    "Change mode",
+    "More modes",
+    "How to play",
+    "Guess history",
+    "{value} is too high ↓",
+    "{value} is too low ↑",
+    "Enter a whole number from {min} to {max}.",
+    "{min}–{max}.",
+    "{count} guesses.",
+    "One guess.",
+    "Unlimited guesses.",
+    "One hint with {count} guesses left.",
+    "One shot. Drag the orb to the target number.",
+    "Release the orb to commit. With a keyboard, use arrow keys to move, then Enter or Place orb to commit. You get one placement.",
+    "Place orb",
+    "Orb placement",
+    "{percent}% along the bar",
+    "Target: {value}",
+    "Placed {value} · {distance} away",
+    "Placement",
+    "The orb shows where the hidden number sits between the two endpoints. Near the left means near the lower number.",
+    "The endpoints changed. Read the orb against the new range.",
+    "Reset demo",
+    "Hint used. Range changed to {min}–{max}.",
+    "Could not copy. Try Share result again.",
+    "Next daily puzzle in {time} (midnight ET)",
+    "High ↓",
+    "Low ↑",
+    "Correct ✓"
+  ],
+  "es": [
+    "Narro diario",
+    "Narro diario completado",
+    "Ronda completada",
+    "Resuelto en {count} de {limit} intentos",
+    "Resuelto en {count} intentos",
+    "{count} intentos usados",
+    "Pista usada",
+    "Usar pista",
+    "Compartir resultado",
+    "Jugar Clásico",
+    "Jugar de nuevo",
+    "Cambiar modo",
+    "Más modos",
+    "Cómo jugar",
+    "Historial",
+    "{value} es demasiado alto ↓",
+    "{value} es demasiado bajo ↑",
+    "Ingresa un número entero entre {min} y {max}.",
+    "{min}–{max}.",
+    "{count} intentos.",
+    "Un intento.",
+    "Intentos ilimitados.",
+    "Una pista cuando queden {count} intentos.",
+    "Una oportunidad. Arrastra el orbe al número objetivo.",
+    "Suelta el orbe para confirmar. Con el teclado, usa las flechas y luego Intro o Colocar orbe. Solo tienes una colocación.",
+    "Colocar orbe",
+    "Posición del orbe",
+    "{percent}% de la barra",
+    "Objetivo: {value}",
+    "Colocaste {value} · a {distance}",
+    "Colocación",
+    "El orbe muestra dónde está el número oculto entre los dos extremos. Cerca de la izquierda significa cerca del número menor.",
+    "Los extremos cambiaron. Lee el orbe según el nuevo rango.",
+    "Reiniciar demo",
+    "Pista usada. El rango cambió a {min}–{max}.",
+    "No se pudo copiar. Intenta compartir de nuevo.",
+    "Siguiente puzzle diario en {time} (medianoche ET)",
+    "Alto ↓",
+    "Bajo ↑",
+    "Correcto ✓"
+  ],
+  "fr": [
+    "Narro quotidien",
+    "Narro quotidien terminé",
+    "Manche terminée",
+    "Résolu en {count} essais sur {limit}",
+    "Résolu en {count} essais",
+    "{count} essais utilisés",
+    "Indice utilisé",
+    "Utiliser l’indice",
+    "Partager le résultat",
+    "Jouer en Classique",
+    "Rejouer",
+    "Changer de mode",
+    "Plus de modes",
+    "Comment jouer",
+    "Historique",
+    "{value} est trop élevé ↓",
+    "{value} est trop bas ↑",
+    "Entrez un nombre entier entre {min} et {max}.",
+    "{min}–{max}.",
+    "{count} essais.",
+    "Un essai.",
+    "Essais illimités.",
+    "Un indice quand il reste {count} essais.",
+    "Une chance. Faites glisser l’orbe vers le nombre cible.",
+    "Relâchez l’orbe pour valider. Au clavier, utilisez les flèches puis Entrée ou Placer l’orbe. Un seul placement.",
+    "Placer l’orbe",
+    "Position de l’orbe",
+    "{percent}% de la barre",
+    "Cible : {value}",
+    "Placé à {value} · écart de {distance}",
+    "Placement",
+    "L’orbe montre la position du nombre caché entre les deux extrémités. Près de la gauche signifie près du nombre inférieur.",
+    "Les extrémités ont changé. Lisez l’orbe selon la nouvelle plage.",
+    "Recommencer la démo",
+    "Indice utilisé. La plage est maintenant {min}–{max}.",
+    "Copie impossible. Réessayez de partager.",
+    "Prochain puzzle quotidien dans {time} (minuit ET)",
+    "Trop haut ↓",
+    "Trop bas ↑",
+    "Correct ✓"
+  ],
+  "de": [
+    "Tägliches Narro",
+    "Tägliches Narro abgeschlossen",
+    "Runde abgeschlossen",
+    "In {count} von {limit} Versuchen gelöst",
+    "In {count} Versuchen gelöst",
+    "{count} Versuche verwendet",
+    "Hinweis verwendet",
+    "Hinweis nutzen",
+    "Ergebnis teilen",
+    "Klassisch spielen",
+    "Erneut spielen",
+    "Modus wechseln",
+    "Weitere Modi",
+    "Spielanleitung",
+    "Versuchsverlauf",
+    "{value} ist zu hoch ↓",
+    "{value} ist zu niedrig ↑",
+    "Gib eine ganze Zahl von {min} bis {max} ein.",
+    "{min}–{max}.",
+    "{count} Versuche.",
+    "Ein Versuch.",
+    "Unbegrenzte Versuche.",
+    "Ein Hinweis bei {count} verbleibenden Versuchen.",
+    "Ein Versuch. Ziehe die Kugel zur Zielzahl.",
+    "Loslassen bestätigt die Platzierung. Mit der Tastatur: Pfeiltasten, dann Enter oder Kugel platzieren. Nur eine Platzierung.",
+    "Kugel platzieren",
+    "Kugelposition",
+    "{percent}% entlang des Balkens",
+    "Ziel: {value}",
+    "Platziert bei {value} · Abstand {distance}",
+    "Platzierung",
+    "Die Kugel zeigt die Position der versteckten Zahl zwischen den Endpunkten. Links bedeutet näher an der unteren Zahl.",
+    "Die Endpunkte haben sich geändert. Lies die Kugel im neuen Bereich.",
+    "Demo zurücksetzen",
+    "Hinweis verwendet. Neuer Bereich: {min}–{max}.",
+    "Kopieren fehlgeschlagen. Teile das Ergebnis erneut.",
+    "Nächstes tägliches Puzzle in {time} (Mitternacht ET)",
+    "Zu hoch ↓",
+    "Zu niedrig ↑",
+    "Richtig ✓"
+  ],
+  "pt": [
+    "Narro diário",
+    "Narro diário concluído",
+    "Rodada concluída",
+    "Resolvido em {count} de {limit} palpites",
+    "Resolvido em {count} palpites",
+    "{count} palpites usados",
+    "Dica usada",
+    "Usar dica",
+    "Compartilhar resultado",
+    "Jogar Clássico",
+    "Jogar novamente",
+    "Mudar modo",
+    "Mais modos",
+    "Como jogar",
+    "Histórico",
+    "{value} é muito alto ↓",
+    "{value} é muito baixo ↑",
+    "Digite um número inteiro de {min} a {max}.",
+    "{min}–{max}.",
+    "{count} palpites.",
+    "Um palpite.",
+    "Palpites ilimitados.",
+    "Uma dica com {count} palpites restantes.",
+    "Uma chance. Arraste o orbe até o número alvo.",
+    "Solte o orbe para confirmar. No teclado, use as setas e depois Enter ou Posicionar orbe. Apenas um posicionamento.",
+    "Posicionar orbe",
+    "Posição do orbe",
+    "{percent}% da barra",
+    "Alvo: {value}",
+    "Posicionado em {value} · distância {distance}",
+    "Posicionamento",
+    "O orbe mostra onde o número oculto está entre os extremos. Perto da esquerda significa perto do número menor.",
+    "Os extremos mudaram. Leia o orbe com o novo intervalo.",
+    "Reiniciar demo",
+    "Dica usada. Intervalo alterado para {min}–{max}.",
+    "Não foi possível copiar. Tente compartilhar novamente.",
+    "Próximo puzzle diário em {time} (meia-noite ET)",
+    "Alto ↓",
+    "Baixo ↑",
+    "Correto ✓"
+  ],
+  "it": [
+    "Narro giornaliero",
+    "Narro giornaliero completato",
+    "Round completato",
+    "Risolto in {count} tentativi su {limit}",
+    "Risolto in {count} tentativi",
+    "{count} tentativi usati",
+    "Aiuto usato",
+    "Usa aiuto",
+    "Condividi risultato",
+    "Gioca Classico",
+    "Gioca ancora",
+    "Cambia modalità",
+    "Altre modalità",
+    "Come giocare",
+    "Cronologia",
+    "{value} è troppo alto ↓",
+    "{value} è troppo basso ↑",
+    "Inserisci un numero intero da {min} a {max}.",
+    "{min}–{max}.",
+    "{count} tentativi.",
+    "Un tentativo.",
+    "Tentativi illimitati.",
+    "Un aiuto con {count} tentativi rimasti.",
+    "Un solo colpo. Trascina la sfera sul numero obiettivo.",
+    "Rilascia la sfera per confermare. Con la tastiera, usa le frecce e poi Invio o Posiziona sfera. Un solo posizionamento.",
+    "Posiziona sfera",
+    "Posizione della sfera",
+    "{percent}% della barra",
+    "Obiettivo: {value}",
+    "Posizionato a {value} · distanza {distance}",
+    "Posizionamento",
+    "La sfera mostra dove si trova il numero nascosto tra i due estremi. Vicino a sinistra significa vicino al numero più basso.",
+    "Gli estremi sono cambiati. Leggi la sfera rispetto al nuovo intervallo.",
+    "Riavvia demo",
+    "Aiuto usato. Intervallo cambiato in {min}–{max}.",
+    "Impossibile copiare. Prova a condividere di nuovo.",
+    "Prossimo puzzle giornaliero tra {time} (mezzanotte ET)",
+    "Alto ↓",
+    "Basso ↑",
+    "Corretto ✓"
+  ],
+  "ja": [
+    "デイリー Narro",
+    "デイリー Narro 完了",
+    "ラウンド完了",
+    "{limit}回中{count}回で正解",
+    "{count}回で正解",
+    "{count}回使用",
+    "ヒント使用済み",
+    "ヒントを使う",
+    "結果を共有",
+    "クラシックで遊ぶ",
+    "もう一度遊ぶ",
+    "モードを変更",
+    "ほかのモード",
+    "遊び方",
+    "予想の履歴",
+    "{value} は高すぎます ↓",
+    "{value} は低すぎます ↑",
+    "{min} から {max} までの整数を入力してください。",
+    "{min}–{max}。",
+    "{count}回まで。",
+    "1回だけ。",
+    "回数制限なし。",
+    "残り{count}回でヒントを1回使えます。",
+    "一発勝負。オーブを目標の数にドラッグします。",
+    "オーブを離すと確定します。キーボードでは矢印で動かし、Enter または「位置を確定」で確定します。配置は1回だけです。",
+    "位置を確定",
+    "オーブの位置",
+    "バーの{percent}%の位置",
+    "目標：{value}",
+    "配置：{value} · 差：{distance}",
+    "配置",
+    "オーブは両端の間で隠された数がある位置を示します。左に近いほど小さい端の数に近くなります。",
+    "両端が変わりました。新しい範囲に対してオーブを読んでください。",
+    "デモをリセット",
+    "ヒント使用済み。範囲は{min}–{max}に変わりました。",
+    "コピーできませんでした。結果の共有を再試行してください。",
+    "次のデイリーまで {time}（米国東部時間の午前0時）",
+    "高い ↓",
+    "低い ↑",
+    "正解 ✓"
+  ],
+  "ko": [
+    "일일 Narro",
+    "일일 Narro 완료",
+    "라운드 완료",
+    "{limit}회 중 {count}회로 해결",
+    "{count}회로 해결",
+    "{count}회 사용",
+    "힌트 사용됨",
+    "힌트 사용",
+    "결과 공유",
+    "클래식 플레이",
+    "다시 플레이",
+    "모드 변경",
+    "다른 모드",
+    "플레이 방법",
+    "추측 기록",
+    "{value}은 너무 높습니다 ↓",
+    "{value}은 너무 낮습니다 ↑",
+    "{min}부터 {max}까지의 정수를 입력하세요.",
+    "{min}–{max}.",
+    "{count}회 추측.",
+    "한 번 추측.",
+    "추측 횟수 무제한.",
+    "{count}회 남았을 때 힌트 한 번.",
+    "한 번의 기회. 오브를 목표 숫자로 드래그하세요.",
+    "오브를 놓으면 확정됩니다. 키보드에서는 화살표로 이동한 뒤 Enter 또는 오브 배치를 누르세요. 배치는 한 번뿐입니다.",
+    "오브 배치",
+    "오브 위치",
+    "막대의 {percent}% 위치",
+    "목표: {value}",
+    "배치: {value} · 차이: {distance}",
+    "배치",
+    "오브는 두 끝점 사이에서 숨겨진 숫자의 위치를 보여 줍니다. 왼쪽에 가까우면 낮은 숫자에 가깝습니다.",
+    "끝점이 바뀌었습니다. 새 범위를 기준으로 오브를 읽으세요.",
+    "데모 초기화",
+    "힌트 사용됨. 범위가 {min}–{max}로 바뀌었습니다.",
+    "복사하지 못했습니다. 결과 공유를 다시 시도하세요.",
+    "다음 일일 퍼즐까지 {time} (미국 동부 시간 자정)",
+    "높음 ↓",
+    "낮음 ↑",
+    "정답 ✓"
+  ],
+  "zh-hans": [
+    "每日 Narro",
+    "每日 Narro 已完成",
+    "本轮结束",
+    "{limit}次机会中用了{count}次解出",
+    "用了{count}次解出",
+    "已用{count}次猜测",
+    "已用提示",
+    "使用提示",
+    "分享结果",
+    "玩经典模式",
+    "再玩一次",
+    "切换模式",
+    "更多模式",
+    "玩法说明",
+    "猜测记录",
+    "{value} 太高了 ↓",
+    "{value} 太低了 ↑",
+    "请输入 {min} 到 {max} 之间的整数。",
+    "{min}–{max}。",
+    "{count}次猜测。",
+    "一次猜测。",
+    "不限猜测次数。",
+    "剩余{count}次时可用一次提示。",
+    "一次机会。将球拖到目标数字。",
+    "松开球即可确认。使用键盘时，用方向键移动，再按 Enter 或放置球确认。只能放置一次。",
+    "放置球",
+    "球的位置",
+    "进度条的{percent}%处",
+    "目标：{value}",
+    "放置：{value} · 相差{distance}",
+    "放置记录",
+    "球显示隐藏数字在两个端点之间的位置。靠近左侧表示接近较小的数字。",
+    "端点变了。请根据新的范围判断球的位置。",
+    "重置演示",
+    "已用提示。范围变为 {min}–{max}。",
+    "复制失败。请再次分享结果。",
+    "距下个每日谜题 {time}（美国东部时间午夜）",
+    "偏高 ↓",
+    "偏低 ↑",
+    "正确 ✓"
+  ],
+  "zh-hant": [
+    "每日 Narro",
+    "每日 Narro 已完成",
+    "本輪結束",
+    "{limit}次機會中用了{count}次解出",
+    "用了{count}次解出",
+    "已用{count}次猜測",
+    "已用提示",
+    "使用提示",
+    "分享結果",
+    "玩經典模式",
+    "再玩一次",
+    "切換模式",
+    "更多模式",
+    "玩法說明",
+    "猜測記錄",
+    "{value} 太高了 ↓",
+    "{value} 太低了 ↑",
+    "請輸入 {min} 到 {max} 之間的整數。",
+    "{min}–{max}。",
+    "{count}次猜測。",
+    "一次猜測。",
+    "不限猜測次數。",
+    "剩餘{count}次時可用一次提示。",
+    "一次機會。將球拖到目標數字。",
+    "放開球即可確認。使用鍵盤時，用方向鍵移動，再按 Enter 或放置球確認。只能放置一次。",
+    "放置球",
+    "球的位置",
+    "進度條的{percent}%處",
+    "目標：{value}",
+    "放置：{value} · 相差{distance}",
+    "放置記錄",
+    "球顯示隱藏數字在兩個端點之間的位置。靠近左側表示接近較小的數字。",
+    "端點變了。請依新的範圍判斷球的位置。",
+    "重設示範",
+    "已用提示。範圍變為 {min}–{max}。",
+    "複製失敗。請再次分享結果。",
+    "距下個每日謎題 {time}（美國東部時間午夜）",
+    "偏高 ↓",
+    "偏低 ↑",
+    "正確 ✓"
+  ],
+  "ru": [
+    "Ежедневный Narro",
+    "Ежедневный Narro завершён",
+    "Раунд завершён",
+    "Решено за {count} из {limit} попыток",
+    "Решено за {count} попыток",
+    "Использовано попыток: {count}",
+    "Подсказка использована",
+    "Использовать подсказку",
+    "Поделиться результатом",
+    "Играть в Классику",
+    "Играть снова",
+    "Сменить режим",
+    "Другие режимы",
+    "Как играть",
+    "История попыток",
+    "{value} слишком много ↓",
+    "{value} слишком мало ↑",
+    "Введите целое число от {min} до {max}.",
+    "{min}–{max}.",
+    "Попыток: {count}.",
+    "Одна попытка.",
+    "Без ограничения попыток.",
+    "Одна подсказка при {count} оставшихся попытках.",
+    "Один шанс. Перетащите шар к нужному числу.",
+    "Отпустите шар, чтобы подтвердить. На клавиатуре используйте стрелки, затем Enter или Разместить шар. Только одно размещение.",
+    "Разместить шар",
+    "Положение шара",
+    "{percent}% длины полосы",
+    "Цель: {value}",
+    "Размещено: {value} · разница: {distance}",
+    "Размещение",
+    "Шар показывает положение скрытого числа между концами полосы. Ближе к левому краю значит ближе к меньшему числу.",
+    "Границы изменились. Оценивайте шар по новому диапазону.",
+    "Сбросить демо",
+    "Подсказка использована. Диапазон изменён на {min}–{max}.",
+    "Не удалось скопировать. Попробуйте поделиться снова.",
+    "Следующая ежедневная головоломка через {time} (полночь ET)",
+    "Выше ↓",
+    "Ниже ↑",
+    "Верно ✓"
+  ],
+  "hi": [
+    "दैनिक Narro",
+    "दैनिक Narro पूरा हुआ",
+    "राउंड पूरा हुआ",
+    "{limit} में से {count} अनुमानों में हल",
+    "{count} अनुमानों में हल",
+    "{count} अनुमान इस्तेमाल हुए",
+    "हिंट इस्तेमाल हुई",
+    "हिंट इस्तेमाल करें",
+    "परिणाम साझा करें",
+    "क्लासिक खेलें",
+    "फिर खेलें",
+    "मोड बदलें",
+    "और मोड",
+    "कैसे खेलें",
+    "अनुमान इतिहास",
+    "{value} बहुत अधिक है ↓",
+    "{value} बहुत कम है ↑",
+    "{min} से {max} तक की पूर्ण संख्या दर्ज करें।",
+    "{min}–{max}।",
+    "{count} अनुमान।",
+    "एक अनुमान।",
+    "असीमित अनुमान।",
+    "{count} अनुमान बचे हों तो एक हिंट।",
+    "एक मौका। ऑर्ब को लक्ष्य संख्या पर खींचें।",
+    "ऑर्ब छोड़ते ही स्थान तय होगा। कीबोर्ड पर तीरों से हिलाएँ, फिर Enter या ऑर्ब रखें दबाएँ। केवल एक बार रख सकते हैं।",
+    "ऑर्ब रखें",
+    "ऑर्ब की स्थिति",
+    "बार पर {percent}%",
+    "लक्ष्य: {value}",
+    "रखा: {value} · अंतर: {distance}",
+    "स्थान",
+    "ऑर्ब दिखाता है कि छिपी संख्या दोनों सिरों के बीच कहाँ है। बाईं ओर का मतलब छोटी संख्या के पास है।",
+    "सिरे बदल गए। ऑर्ब को नई सीमा के अनुसार पढ़ें।",
+    "डेमो रीसेट करें",
+    "हिंट इस्तेमाल हुई। सीमा {min}–{max} हो गई।",
+    "कॉपी नहीं हुआ। परिणाम फिर साझा करें।",
+    "अगली दैनिक पहेली {time} में (मध्यरात्रि ET)",
+    "अधिक ↓",
+    "कम ↑",
+    "सही ✓"
+  ],
+  "ar": [
+    "Narro اليومي",
+    "اكتمل Narro اليومي",
+    "اكتملت الجولة",
+    "تم الحل في {count} من {limit} محاولات",
+    "تم الحل في {count} محاولات",
+    "المحاولات المستخدمة: {count}",
+    "تم استخدام التلميح",
+    "استخدم التلميح",
+    "شارك النتيجة",
+    "العب الكلاسيكي",
+    "العب مرة أخرى",
+    "غيّر الوضع",
+    "المزيد من الأوضاع",
+    "كيفية اللعب",
+    "سجل المحاولات",
+    "{value} مرتفع جدًا ↓",
+    "{value} منخفض جدًا ↑",
+    "أدخل عددًا صحيحًا من {min} إلى {max}.",
+    "{min}–{max}.",
+    "{count} محاولات.",
+    "محاولة واحدة.",
+    "محاولات غير محدودة.",
+    "تلميح واحد عند بقاء {count} محاولات.",
+    "فرصة واحدة. اسحب الكرة إلى الرقم المستهدف.",
+    "أفلت الكرة لتأكيد الموضع. بلوحة المفاتيح، استخدم الأسهم ثم Enter أو ضع الكرة. موضع واحد فقط.",
+    "ضع الكرة",
+    "موضع الكرة",
+    "{percent}% من الشريط",
+    "الهدف: {value}",
+    "الموضع: {value} · الفرق: {distance}",
+    "الموضع",
+    "توضح الكرة مكان الرقم المخفي بين طرفي الشريط. قربها من اليسار يعني قربها من الرقم الأصغر.",
+    "تغير الطرفان. اقرأ الكرة بالنسبة إلى النطاق الجديد.",
+    "أعد العرض",
+    "تم استخدام التلميح. تغير النطاق إلى {min}–{max}.",
+    "تعذر النسخ. حاول مشاركة النتيجة مرة أخرى.",
+    "اللغز اليومي التالي خلال {time} (منتصف الليل ET)",
+    "مرتفع ↓",
+    "منخفض ↑",
+    "صحيح ✓"
+  ],
+  "bn": [
+    "দৈনিক Narro",
+    "দৈনিক Narro সম্পূর্ণ",
+    "রাউন্ড সম্পূর্ণ",
+    "{limit}টির মধ্যে {count}টি অনুমানে সমাধান",
+    "{count}টি অনুমানে সমাধান",
+    "{count}টি অনুমান ব্যবহৃত",
+    "ইঙ্গিত ব্যবহৃত",
+    "ইঙ্গিত ব্যবহার করুন",
+    "ফলাফল শেয়ার করুন",
+    "ক্লাসিক খেলুন",
+    "আবার খেলুন",
+    "মোড বদলান",
+    "আরও মোড",
+    "খেলার নিয়ম",
+    "অনুমানের ইতিহাস",
+    "{value} অনেক বেশি ↓",
+    "{value} অনেক কম ↑",
+    "{min} থেকে {max} পর্যন্ত একটি পূর্ণসংখ্যা লিখুন।",
+    "{min}–{max}।",
+    "{count}টি অনুমান।",
+    "একটি অনুমান।",
+    "সীমাহীন অনুমান।",
+    "{count}টি অনুমান বাকি থাকলে একটি ইঙ্গিত।",
+    "একটি সুযোগ। অর্বকে লক্ষ্য সংখ্যায় টানুন।",
+    "অর্ব ছাড়লেই অবস্থান নিশ্চিত হবে। কিবোর্ডে তীর দিয়ে সরান, তারপর Enter বা অর্ব রাখুন চাপুন। মাত্র একবার রাখা যাবে।",
+    "অর্ব রাখুন",
+    "অর্বের অবস্থান",
+    "বারের {percent}% অবস্থানে",
+    "লক্ষ্য: {value}",
+    "রাখা হয়েছে {value} · পার্থক্য {distance}",
+    "অবস্থান",
+    "অর্ব দেখায় গোপন সংখ্যাটি দুই প্রান্তের মাঝে কোথায় আছে। বাঁ দিকে মানে ছোট সংখ্যার কাছে।",
+    "প্রান্ত বদলেছে। নতুন সীমা অনুযায়ী অর্ব পড়ুন।",
+    "ডেমো রিসেট",
+    "ইঙ্গিত ব্যবহৃত। সীমা এখন {min}–{max}।",
+    "কপি করা যায়নি। আবার ফলাফল শেয়ার করুন।",
+    "পরবর্তী দৈনিক ধাঁধা {time} পরে (মধ্যরাত ET)",
+    "বেশি ↓",
+    "কম ↑",
+    "সঠিক ✓"
+  ],
+  "tr": [
+    "Günlük Narro",
+    "Günlük Narro tamamlandı",
+    "Tur tamamlandı",
+    "{limit} tahminden {count} tanesinde çözüldü",
+    "{count} tahminde çözüldü",
+    "{count} tahmin kullanıldı",
+    "İpucu kullanıldı",
+    "İpucu kullan",
+    "Sonucu paylaş",
+    "Klasik oyna",
+    "Tekrar oyna",
+    "Mod değiştir",
+    "Diğer modlar",
+    "Nasıl oynanır",
+    "Tahmin geçmişi",
+    "{value} çok yüksek ↓",
+    "{value} çok düşük ↑",
+    "{min} ile {max} arasında bir tam sayı girin.",
+    "{min}–{max}.",
+    "{count} tahmin.",
+    "Tek tahmin.",
+    "Sınırsız tahmin.",
+    "{count} tahmin kaldığında tek ipucu.",
+    "Tek şans. Küreyi hedef sayıya sürükleyin.",
+    "Küreyi bırakınca yerleşim onaylanır. Klavyede oklarla hareket edip Enter veya Küreyi yerleştir ile onaylayın. Tek yerleşim hakkı.",
+    "Küreyi yerleştir",
+    "Küre konumu",
+    "Çubuğun %{percent} konumu",
+    "Hedef: {value}",
+    "Yerleşim: {value} · fark: {distance}",
+    "Yerleşim",
+    "Küre, gizli sayının iki uç arasında nerede olduğunu gösterir. Sola yakın olması küçük sayıya yakın olması demektir.",
+    "Uçlar değişti. Küreyi yeni aralığa göre okuyun.",
+    "Demoyu sıfırla",
+    "İpucu kullanıldı. Aralık {min}–{max} oldu.",
+    "Kopyalanamadı. Sonucu tekrar paylaşmayı deneyin.",
+    "Sonraki günlük bulmaca {time} sonra (gece yarısı ET)",
+    "Yüksek ↓",
+    "Düşük ↑",
+    "Doğru ✓"
+  ],
+  "id": [
+    "Narro harian",
+    "Narro harian selesai",
+    "Ronde selesai",
+    "Terpecahkan dalam {count} dari {limit} tebakan",
+    "Terpecahkan dalam {count} tebakan",
+    "{count} tebakan digunakan",
+    "Petunjuk digunakan",
+    "Gunakan petunjuk",
+    "Bagikan hasil",
+    "Main Klasik",
+    "Main lagi",
+    "Ganti mode",
+    "Mode lainnya",
+    "Cara bermain",
+    "Riwayat tebakan",
+    "{value} terlalu tinggi ↓",
+    "{value} terlalu rendah ↑",
+    "Masukkan bilangan bulat dari {min} sampai {max}.",
+    "{min}–{max}.",
+    "{count} tebakan.",
+    "Satu tebakan.",
+    "Tebakan tak terbatas.",
+    "Satu petunjuk saat tersisa {count} tebakan.",
+    "Satu kesempatan. Seret orb ke angka target.",
+    "Lepaskan orb untuk mengonfirmasi. Dengan keyboard, gunakan panah lalu Enter atau Tempatkan orb. Hanya satu penempatan.",
+    "Tempatkan orb",
+    "Posisi orb",
+    "{percent}% sepanjang bilah",
+    "Target: {value}",
+    "Ditempatkan di {value} · selisih {distance}",
+    "Penempatan",
+    "Orb menunjukkan letak angka tersembunyi di antara kedua ujung. Dekat kiri berarti dekat angka yang lebih kecil.",
+    "Ujungnya berubah. Baca orb sesuai rentang baru.",
+    "Ulang demo",
+    "Petunjuk digunakan. Rentang berubah ke {min}–{max}.",
+    "Gagal menyalin. Coba bagikan hasil lagi.",
+    "Puzzle harian berikutnya dalam {time} (tengah malam ET)",
+    "Tinggi ↓",
+    "Rendah ↑",
+    "Benar ✓"
+  ]
+};
+for (const [language, texts] of Object.entries(ROUND_MESSAGE_TEXT)) {
+  const pack = {};
+  ROUND_MESSAGE_KEYS.forEach((key, index) => {
+    pack[key] = vars => texts[index].replace(/\{(\w+)\}/g, (_, name) => vars[name] ?? "");
+  });
+  MESSAGES[language] = { ...MESSAGES[language], ...pack };
+}
+
+MESSAGES.en.guessesUsed = ({ count }) => `${count} guess${Number(count) === 1 ? "" : "es"} used`;
+
 function normalizeLanguageCode(rawValue) {
   return String(rawValue || "")
     .trim()
@@ -3801,6 +4561,14 @@ let gameStartTime = Date.now();
 let roundGuessHistory = [];
 let lastInvertedMiss = null;
 let gameOverDisplaySource = "live";
+let lastDirectionalGuess = null;
+let sessionRecorded = false;
+let roundContextVersion = 0;
+let demoFinishTimer = null;
+let confettiFrame = null;
+let celebrationTimer = null;
+let helpStep = 0;
+let helpReturnFocus = null;
 
 /* ---------- ELEMENTS ---------- */
 const input = document.getElementById("guessInput");
@@ -3842,6 +4610,17 @@ const minLabel = document.getElementById("minLabel");
 const maxLabel = document.getElementById("maxLabel");
 const guessCount = document.getElementById("guessCount");
 const countdown = document.getElementById("countdown");
+const guessControls = document.getElementById("guessControls");
+const directionFeedback = document.getElementById("directionFeedback");
+const validationError = document.getElementById("validationError");
+const resultCard = document.getElementById("resultCard");
+const hintBtn = document.getElementById("hintBtn");
+const hintUsed = document.getElementById("hintUsed");
+const hintStatus = document.getElementById("hintStatus");
+const dailyModeBtn = document.getElementById("dailyModeBtn");
+const invertedControls = document.getElementById("invertedControls");
+const invertedCommitBtn = document.getElementById("invertedCommitBtn");
+const helpModal = document.getElementById("helpModal");
 let cleanupInvertedDrag = null;
 let orbMovePulseTimer = null;
 let orbMoveRaf = null;
@@ -3853,6 +4632,337 @@ let activeGuessCountMessage = null;
 const THEME_STORAGE_KEY = "narroTheme";
 const THEME_DARK = "dark";
 const THEME_LIGHT = "light";
+
+/* ---------- ROUND UI AND CONTEXT ---------- */
+function canOfferHint() {
+  return !demoMode && !demoRunning && !gameOver && hintAllowed && !lifelineUsed &&
+    (currentMode === MODES.DAILY || currentMode === MODES.CLASSIC) &&
+    guesses.length === maxGuessesForMode() - HINT_GUESSES_REMAINING;
+}
+
+function clearValidation() {
+  validationError.textContent = "";
+  validationError.hidden = true;
+  input.removeAttribute("aria-invalid");
+}
+
+function showValidation() {
+  validationError.textContent = getMessage("allowedWhole", { min: formatNumber(min), max: formatNumber(max) });
+  validationError.hidden = false;
+  input.setAttribute("aria-invalid", "true");
+}
+
+function cancelDemo() {
+  clearTimeout(demoFinishTimer);
+  demoFinishTimer = null;
+  if (demoRunning && demoTutorialState) secret = demoTutorialState.originalSecret;
+  demoRunning = false;
+  demoTutorialState = null;
+  if (demoMode) markDemoSeen();
+  setOnboardingVisible(false);
+  setDemoNextVisible(false);
+  setDemoSkipVisible(false);
+  btn.classList.remove("demo-pulse");
+  input.classList.remove("demo-highlight");
+}
+
+function clearContextMessages() {
+  roundContextVersion++;
+  clearToast();
+  clearValidation();
+  clearFeedbackMessage();
+  clearTipMessage();
+  clearGuessCountMessage();
+  lastDirectionalGuess = null;
+  directionFeedback.textContent = "";
+  directionFeedback.hidden = true;
+  hintStatus.textContent = "";
+  hintStatus.hidden = true;
+  tipText.style.opacity = "1";
+  tipText.style.transition = "";
+  tipText.classList.remove("hint", "confirmation");
+  input.value = "";
+  feedback.style.fontSize = "";
+  feedback.style.fontWeight = "";
+  guessCount.style.fontWeight = "400";
+  for (const id of ["resultTitle", "resultAnswer", "resultCount", "resultHint", "invertedTarget", "invertedHelp", "historyList"]) document.getElementById(id).textContent = "";
+  resultCard.hidden = true;
+  closeHelp(false);
+}
+
+function stopCelebration() {
+  clearTimeout(celebrationTimer);
+  if (confettiFrame != null) cancelAnimationFrame(confettiFrame);
+  confettiFrame = null;
+  const canvas = document.getElementById("confetti");
+  canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+  canvas.style.visibility = "hidden";
+  clearTimeout(orbMovePulseTimer);
+  if (orbMoveRaf != null) cancelAnimationFrame(orbMoveRaf);
+  orbMoveRaf = null;
+  barOrb.classList.remove("win-pulse", "hint-shine", "reward-flash", "orb-moving");
+}
+
+function focusActiveControl() {
+  const target = gameOver ? resultCard : currentMode === MODES.INVERTED ? barOrb : input;
+  target.focus({ preventScroll: true });
+}
+
+function getModeRules() {
+  if (currentMode === MODES.INVERTED) return getMessage("invertedRule");
+  const range = getModeRange();
+  const limit = maxGuessesForMode();
+  const allowance = !Number.isFinite(limit) ? getMessage("unlimitedGuesses") : limit === 1 ? getMessage("oneGuess") : getMessage("guessAllowance", { count: formatNumber(limit) });
+  const hintRule = hintAllowed && (currentMode === MODES.DAILY || currentMode === MODES.CLASSIC)
+    ? ` ${getMessage("hintRule", { count: formatNumber(HINT_GUESSES_REMAINING) })}` : "";
+  return `${getMessage("rangeRule", { min: formatNumber(range.min), max: formatNumber(range.max) })} ${allowance}${hintRule}`;
+}
+
+function renderGuessHistory() {
+  const history = getShareGuessSeries();
+  const section = document.getElementById("guessHistory");
+  section.hidden = !history.length || demoRunning;
+  document.getElementById("historyTitle").textContent = getMessage(currentMode === MODES.INVERTED ? "placementHistory" : "guessHistory");
+  const list = document.getElementById("historyList");
+  const wasAtBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 8;
+  const items = history.map(g => {
+    const item = document.createElement("li");
+    const result = g === secret ? "correct" : g > secret ? "high" : "low";
+    item.dataset.result = result;
+    item.textContent = currentMode === MODES.INVERTED
+      ? getMessage("placedAway", { value: formatNumber(g), distance: formatNumber(Math.abs(g - secret)) })
+      : `${formatNumber(g)} · ${getMessage(result === "correct" ? "historyCorrect" : result === "high" ? "historyHigh" : "historyLow")}`;
+    return item;
+  });
+  list.replaceChildren(...items);
+  if (wasAtBottom) list.scrollTop = list.scrollHeight;
+  const showDirection = lastDirectionalGuess != null && !gameOver && !demoRunning && currentMode !== MODES.INVERTED;
+  directionFeedback.hidden = !showDirection;
+  directionFeedback.textContent = showDirection
+    ? getMessage(lastDirectionalGuess > secret ? "guessHigh" : "guessLow", { value: formatNumber(lastDirectionalGuess) }) : "";
+}
+
+function refreshRoundUI() {
+  const daily = currentMode === MODES.DAILY;
+  const inverted = currentMode === MODES.INVERTED;
+  document.getElementById("modeName").textContent = getMessage(daily ? "dailyMode" : currentMode);
+  document.getElementById("modeRules").textContent = getModeRules();
+  guessControls.hidden = gameOver || inverted;
+  resultCard.hidden = !gameOver;
+  invertedControls.hidden = !inverted || gameOver;
+  invertedCommitBtn.hidden = !inverted || gameOver;
+  feedback.hidden = gameOver || inverted;
+  guessCount.hidden = gameOver || inverted;
+  tipText.hidden = gameOver || inverted;
+  bar.setAttribute("role", inverted ? "group" : "img");
+  // The existing completed-round orb uses the full mode scale. Match its labels.
+  const displayRange = gameOver ? getModeRange() : { min, max };
+  minLabel.textContent = formatNumber(displayRange.min);
+  maxLabel.textContent = formatNumber(displayRange.max);
+  bar.setAttribute("aria-label", getMessage("remainingRangeAria", { min: formatNumber(displayRange.min), max: formatNumber(displayRange.max) }));
+  if (inverted && !gameOver) {
+    document.getElementById("invertedTarget").textContent = getMessage("targetNumber", { value: formatNumber(secret) });
+    document.getElementById("invertedHelp").textContent = getMessage("invertedCommit");
+    invertedCommitBtn.textContent = getMessage("placeOrb");
+    barOrb.setAttribute("aria-label", getMessage("orbPlacement"));
+    barOrb.setAttribute("aria-describedby", "invertedHelp");
+    const percent = Number.parseFloat(barOrb.style.left);
+    setInvertedPosition(Number.isFinite(percent) ? percent : 50);
+  }
+  hintBtn.hidden = !canOfferHint();
+  hintBtn.textContent = getMessage("useHint");
+  hintUsed.hidden = !lifelineUsed || gameOver;
+  hintUsed.textContent = getMessage("hintUsed");
+  hintBtn.parentElement.hidden = hintBtn.hidden && hintUsed.hidden;
+  if (!hintStatus.hidden) hintStatus.textContent = getMessage("hintRangeChanged", { min: formatNumber(min), max: formatNumber(max) });
+  if (gameOver) {
+    document.getElementById("resultTitle").textContent = getMessage(inverted && gameResult === "win" ? "invertedPerfectPlacement" : daily && gameResult === "win" ? "dailyComplete" : "roundComplete");
+    document.getElementById("resultAnswer").textContent = getMessage(inverted ? "targetNumber" : "numberWas", { value: formatNumber(secret) });
+    const count = getShareGuessSeries().length;
+    document.getElementById("resultCount").textContent = inverted
+      ? getMessage("placedAway", { value: formatNumber(roundGuessHistory[0]), distance: formatNumber(lastInvertedMiss ?? 0) })
+      : gameResult === "win" && (!Number.isFinite(maxGuessesForMode()) || maxGuessesForMode() === 1)
+        ? getMessage("shareSolvedIn", { guessCount: formatGuessCount(count) })
+        : getMessage(gameResult === "win" ? "solvedOf" : "guessesUsed", { count: formatNumber(count), limit: formatNumber(maxGuessesForMode()) });
+    document.getElementById("resultHint").hidden = !lifelineUsed;
+    document.getElementById("resultHint").textContent = lifelineUsed ? getMessage("hintUsed") : "";
+    document.getElementById("resultReplayBtn").textContent = getMessage(daily ? "playClassic" : "playAgain");
+    document.getElementById("resultModesBtn").textContent = getMessage(daily ? "moreModes" : "changeMode");
+    barOrb.setAttribute("aria-disabled", "true");
+    barOrb.removeAttribute("tabindex");
+  }
+  freePlayMainBtn.textContent = getMessage(daily ? "moreModes" : "changeMode");
+  freePlayMainBtn.hidden = gameOver;
+  dailyModeBtn.hidden = daily;
+  dailyModeBtn.textContent = getMessage("dailyMode");
+  document.getElementById("howToPlayBtn").textContent = getMessage("howToPlay");
+  document.getElementById("feedbackBtn").textContent = getMessage("sendFeedback");
+  countdown.hidden = !daily;
+  updateShareButton();
+  renderGuessHistory();
+  if (!validationError.hidden) showValidation();
+}
+
+/* Inverted exposes position along the bar, never a pre-commit number readout. */
+function setInvertedPosition(percent) {
+  percent = Math.max(0, Math.min(100, percent));
+  barOrb.style.left = `${percent}%`;
+  barOrb.setAttribute("aria-valuenow", String(Math.round(percent)));
+  barOrb.setAttribute("aria-valuetext", getMessage("placementPercent", { percent: formatNumber(Math.round(percent)) }));
+}
+
+function commitInvertedPlacement() {
+  if (currentMode !== MODES.INVERTED || gameOver) return;
+  const percent = Number.parseFloat(barOrb.style.left) || 0;
+  const placedNumber = Math.max(min, Math.min(max, Math.round(min + percent / 100 * (max - min))));
+  if (cleanupInvertedDrag) cleanupInvertedDrag();
+  roundGuessHistory = [placedNumber];
+  const miss = Math.abs(placedNumber - secret);
+  lastInvertedMiss = miss;
+  gameOver = true;
+  gameResult = miss === 0 ? "win" : "lose";
+  barOrb.style.transition = "left 0.16s cubic-bezier(0.22, 1, 0.36, 1)";
+  setInvertedPosition((placedNumber - min) / (max - min) * 100);
+  barOrb.classList.remove("inverted-active");
+  barOrb.style.cursor = "default";
+  if (miss === 0) {
+    bar.classList.add("win");
+    barFill.classList.add("win");
+    barOrb.classList.add("win-pulse");
+    celebrationTimer = setTimeout(stopCelebration, 2800);
+    haptic([12, 40, 12]);
+  } else {
+    if (miss === 1) {
+      bar.classList.add("near");
+      barFill.classList.add("near");
+    }
+    haptic(miss <= 3 ? [8, 24, 8] : 10);
+  }
+  renderGameOverState();
+  recordGameSession();
+}
+
+function setupInvertedInteraction() {
+  barOrb.setAttribute("role", "slider");
+  barOrb.setAttribute("tabindex", "0");
+  barOrb.setAttribute("aria-valuemin", "0");
+  barOrb.setAttribute("aria-valuemax", "100");
+  setInvertedPosition(50);
+  barOrb.onkeydown = event => {
+    if (gameOver) return;
+    const step = event.shiftKey ? 10 : 1;
+    const position = Number.parseFloat(barOrb.style.left) || 0;
+    const positions = { ArrowLeft: position - step, ArrowDown: position - step, ArrowRight: position + step, ArrowUp: position + step, Home: 0, End: 100, PageDown: position - 10, PageUp: position + 10 };
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      commitInvertedPlacement();
+    } else if (event.key in positions) {
+      event.preventDefault();
+      setInvertedPosition(positions[event.key]);
+    }
+  };
+  invertedCommitBtn.onclick = commitInvertedPlacement;
+  barOrb.onpointerdown = event => {
+    if (gameOver) return;
+    event.preventDefault();
+    const rect = bar.getBoundingClientRect();
+    if (!rect.width) return;
+    const pointerId = event.pointerId;
+    barOrb.style.transition = "none";
+    const move = e => setInvertedPosition((e.clientX - rect.left) / rect.width * 100);
+    const cleanup = () => {
+      window.removeEventListener("pointermove", drag);
+      window.removeEventListener("pointerup", drop);
+      window.removeEventListener("pointercancel", cancel);
+      if (barOrb.hasPointerCapture?.(pointerId)) {
+        try { barOrb.releasePointerCapture(pointerId); } catch {}
+      }
+      cleanupInvertedDrag = null;
+    };
+    const drag = e => { if (!gameOver && e.pointerId === pointerId) move(e); };
+    const drop = e => {
+      if (e.pointerId !== pointerId) return;
+      cleanup();
+      if (gameOver) return;
+      move(e);
+      commitInvertedPlacement();
+    };
+    const cancel = e => {
+      if (e.pointerId !== pointerId) return;
+      cleanup();
+      barOrb.style.transition = "left 0.2s ease";
+    };
+    try { barOrb.setPointerCapture(pointerId); } catch {}
+    window.addEventListener("pointermove", drag);
+    window.addEventListener("pointerup", drop);
+    window.addEventListener("pointercancel", cancel);
+    cleanupInvertedDrag = cleanup;
+  };
+}
+
+function refreshHelp() {
+  if (helpModal.hidden) return;
+  document.getElementById("helpTitle").textContent = getMessage("howToPlay");
+  document.getElementById("helpCopy").textContent = getMessage(currentMode === MODES.INVERTED ? "invertedCommit" : "orbRelative");
+  document.getElementById("helpDemo").hidden = currentMode === MODES.INVERTED;
+  const demoMax = helpStep ? DEMO_FIRST_GUESS - 1 : MAX_RANGE;
+  document.getElementById("helpDemoMin").textContent = formatNumber(MIN_RANGE);
+  document.getElementById("helpDemoMax").textContent = formatNumber(demoMax);
+  document.getElementById("helpDemoOrb").style.left = `${(DEMO_SECRET_EXAMPLE - MIN_RANGE) / (demoMax - MIN_RANGE) * 100}%`;
+  document.getElementById("helpRangeCopy").textContent = getMessage(helpStep ? "endpointsChanged" : "demoWatchHalf");
+  document.getElementById("helpDemoBar").setAttribute("aria-label", `${getMessage("remainingRangeAria", { min: formatNumber(MIN_RANGE), max: formatNumber(demoMax) })}. ${getMessage("placementPercent", { percent: formatNumber(Math.round((DEMO_SECRET_EXAMPLE - MIN_RANGE) / (demoMax - MIN_RANGE) * 100)) })}`);
+  document.getElementById("helpDemoBtn").textContent = helpStep ? getMessage("resetDemo") : getMessage("tryValue", { value: formatNumber(DEMO_FIRST_GUESS) });
+  document.getElementById("helpCloseBtn").textContent = getMessage("close");
+}
+
+function openHelp() {
+  helpReturnFocus = document.activeElement;
+  helpStep = 0;
+  helpModal.hidden = false;
+  helpModal.style.display = "flex";
+  gameShell.inert = true;
+  refreshHelp();
+  document.getElementById("helpCloseBtn").focus();
+}
+
+function closeHelp(restoreFocus = true) {
+  if (helpModal.hidden) return;
+  helpModal.hidden = true;
+  helpModal.style.display = "none";
+  gameShell.inert = false;
+  if (restoreFocus && helpReturnFocus?.isConnected) helpReturnFocus.focus();
+  helpReturnFocus = null;
+}
+
+document.getElementById("howToPlayBtn").onclick = openHelp;
+document.getElementById("helpCloseBtn").onclick = () => closeHelp();
+document.getElementById("helpDemoBtn").onclick = () => { helpStep = helpStep ? 0 : 1; refreshHelp(); };
+helpModal.onclick = event => { if (event.target === helpModal) closeHelp(); };
+document.getElementById("resultReplayBtn").onclick = () => startFreePlay(currentMode === MODES.DAILY ? MODES.CLASSIC : currentMode);
+document.getElementById("resultModesBtn").setAttribute("aria-controls", "freePlayModes");
+document.getElementById("resultModesBtn").onclick = () => {
+  setFreePlayModesOpen(freePlayModes.style.display !== "flex");
+  if (freePlayModes.style.display === "flex") freePlayModeBtns[0]?.focus();
+};
+dailyModeBtn.onclick = startDailyMode;
+input.addEventListener("input", clearValidation);
+// Keep the keyboard from moving a mobile button between pointerdown and click.
+// The action itself decides where focus goes next.
+document.addEventListener("pointerdown", event => {
+  if (isMobile() && document.activeElement === input && event.target.closest("button") && !event.target.closest("#guessBtn")) {
+    event.preventDefault();
+  }
+}, true);
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && !helpModal.hidden) { event.preventDefault(); closeHelp(); return; }
+  if (event.key !== "Tab") return;
+  const modal = !helpModal.hidden ? helpModal : statsModal.style.display === "flex" ? statsModal : null;
+  if (!modal) return;
+  const focusable = [...modal.querySelectorAll("button, [tabindex='0']")].filter(el => !el.disabled && el.getClientRects().length);
+  const first = focusable[0], last = focusable.at(-1);
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+});
 
 function getCurrentTheme() {
   return document.documentElement.getAttribute("data-theme") === THEME_LIGHT
@@ -3975,14 +5085,14 @@ function refreshStaticTranslations() {
   input.placeholder = getMessage("inputPlaceholder");
   if (onboardingEyebrow) onboardingEyebrow.textContent = getMessage("quickStart");
   if (onboardingTitle) onboardingTitle.textContent = getMessage("onboardingTitle");
-  if (onboardingCopy) onboardingCopy.textContent = getMessage("onboardingCopy");
+  if (onboardingCopy) onboardingCopy.textContent = getMessage("orbRelative");
   if (onboardingDemoBtn) onboardingDemoBtn.textContent = getMessage("playDemo");
   if (onboardingPlayBtn) onboardingPlayBtn.textContent = getMessage("skipAhead");
   if (demoNextBtn && demoNextBtn.hidden) demoNextBtn.textContent = getMessage("demoTry15");
   if (demoSkipBtn && demoSkipBtn.hidden) demoSkipBtn.textContent = getMessage("hideTutorial");
   if (feedbackBtn) feedbackBtn.textContent = getMessage("sendFeedback");
   if (statsBtn) statsBtn.setAttribute("aria-label", getMessage("viewStats"));
-  if (freePlayMainBtn) freePlayMainBtn.textContent = getMessage("freePlay");
+  if (freePlayMainBtn) freePlayMainBtn.textContent = getMessage(currentMode === MODES.DAILY ? "moreModes" : "changeMode");
   if (statsHeading) statsHeading.innerHTML = `<strong>${getMessage("statsHeading")}</strong>`;
   if (statsCloseBtn) statsCloseBtn.textContent = getMessage("close");
   if (Array.isArray(freePlayModeBtns) || typeof freePlayModeBtns?.forEach === "function") {
@@ -4008,82 +5118,16 @@ function refreshStatsModalContent() {
 
 function renderGameOverState() {
   if (!gameOver) return;
-
-  const isDailyGame = currentMode === MODES.DAILY;
-  const formattedSecret = formatNumber(secret);
-  feedback.classList.remove("critical");
-  feedback.style.opacity = "1";
-  feedback.innerHTML = "";
+  const wasHidden = resultCard.hidden;
+  clearFeedbackMessage();
+  clearTipMessage();
   clearGuessCountMessage();
-  activeFeedbackMessage = null;
-  activeTipMessage = null;
-
-  if (gameResult === "win") {
-    feedback.style.fontSize = "1.25rem";
-    feedback.style.fontWeight = "600";
-    setFeedbackMessage("bullseye");
-    tipText.classList.remove("hint");
-    tipText.style.display = "block";
-    tipText.style.opacity = "1";
-    tipText.style.transition = "none";
-    setTipMessage(isDailyGame ? "wantMoreNarro" : "roundCompletePlayAgain");
-    return;
-  }
-
-  feedback.style.fontSize = gameOverDisplaySource === "restored" ? "" : "1.15rem";
-  feedback.style.fontWeight = gameOverDisplaySource === "restored" ? "" : "500";
-  setFeedbackMessage(
-    isDailyGame && gameOverDisplaySource === "restored"
-      ? "tryAgainTomorrow"
-      : isDailyGame
-        ? "wantMoreNarro"
-        : "roundOver"
-  );
-
-  const closure = document.createElement("div");
-  closure.style.color = "#9aa0c3";
-  closure.style.fontSize = "0.95rem";
-  closure.style.marginTop = "6px";
-  closure.textContent = getMessage(
-    isDailyGame
-      ? gameOverDisplaySource === "restored"
-        ? "todaysNarroWas"
-        : "todaysNumberWas"
-      : "numberWas",
-    { value: formattedSecret }
-  );
-  feedback.appendChild(closure);
-
-  if (gameOverDisplaySource !== "restored") {
-    const closest = getClosestDistance();
-    if (Number.isFinite(closest)) {
-      const detail = document.createElement("div");
-      detail.style.fontSize = "0.9rem";
-      detail.style.marginTop = "4px";
-
-      if (closest === 1) {
-        detail.textContent = getMessage("soCloseOneAway");
-        detail.classList.add("closest-one");
-      } else {
-        detail.textContent = getMessage("closestGuessAway", { count: closest });
-        detail.style.color = "#9aa0c3";
-      }
-
-      feedback.appendChild(detail);
-    }
-  }
-
-  tipText.classList.remove("hint");
-  tipText.style.display = "block";
-  tipText.style.opacity = "1";
-  tipText.style.transition = "none";
-  setTipMessage(
-    isDailyGame
-      ? gameOverDisplaySource === "restored"
-        ? "wantMoreNarro"
-        : "newNarroAtMidnight"
-      : "roundCompletePlayAgain"
-  );
+  clearToast();
+  clearValidation();
+  tipText.hidden = true;
+  lastDirectionalGuess = null;
+  refreshRoundUI();
+  if (wasHidden && gameOverDisplaySource === "live") resultCard.focus({ preventScroll: true });
 }
 
 function renderDemoLanguageState() {
@@ -4099,7 +5143,7 @@ function renderDemoLanguageState() {
     if (demoTutorialState.step === 0) {
       setGuessCountMessage("practiceGuess", { current: 1, total: 2 });
       setFeedbackMessage("demoWatchHalf");
-      setTipMessage("demoBelowMidpoint", { value: formatNumber(DEMO_FIRST_GUESS) });
+      setTipMessage("orbRelative");
       setDemoSkipVisible(true, getMessage("exitDemo"));
       setGuessButtonLabel(getMessage("tryValue", { value: formatNumber(DEMO_FIRST_GUESS) }));
       return true;
@@ -4108,7 +5152,7 @@ function renderDemoLanguageState() {
     if (demoTutorialState.step === 1) {
       setGuessCountMessage("practiceGuess", { current: 2, total: 2 });
       setFeedbackMessage("demoGuessHigh", { value: formatNumber(DEMO_FIRST_GUESS) });
-      setTipMessage("demoGuessFromBelow", { value: formatNumber(DEMO_SECOND_GUESS) });
+      setTipMessage("endpointsChanged");
       setDemoSkipVisible(true, getMessage("exitDemo"));
       setGuessButtonLabel(getMessage("tryValue", { value: formatNumber(DEMO_SECOND_GUESS) }));
       return true;
@@ -4152,7 +5196,7 @@ function updateCountdownText() {
     `${formatCountdownUnit(h)}<span class="colon-blink">:</span>` +
     `${formatCountdownUnit(m)}<span class="colon-blink">:</span>` +
     `${formatCountdownUnit(s)}`;
-  countdown.innerHTML = getMessage("nextNarroIn", { time: timeText });
+  countdown.innerHTML = getMessage("nextPuzzleIn", { time: timeText });
 }
 
 function updateThemeToggle(theme) {
@@ -4223,7 +5267,7 @@ function applyLanguage(language, options = {}) {
     activeTipMessage = null;
     activeGuessCountMessage = null;
     updateGuessUI();
-  } else if (gameOver && (currentMode === MODES.DAILY || currentMode === MODES.CLASSIC)) {
+  } else if (gameOver) {
     renderGameOverState();
   } else if (!renderDemoLanguageState()) {
     if (activeFeedbackMessage) {
@@ -4245,6 +5289,8 @@ function applyLanguage(language, options = {}) {
     }
   }
 
+  refreshRoundUI();
+  refreshHelp();
   updateCountdownText();
 }
 
@@ -4350,9 +5396,12 @@ function requestDemoSkip() {
 }
 
 function finishFirstTimeDemo(wasSkipped, originalSecret) {
-  const handoffMessage = wasSkipped
-    ? getMessage("todaysPuzzleLive")
-    : getMessage("practiceCompleteLive");
+  const handoffMessage = getMessage("todaysPuzzleLive");
+  clearTimeout(demoFinishTimer);
+  demoRunning = false;
+  demoTutorialState = null;
+  markDemoSeen();
+  clearContextMessages();
 
   secret = originalSecret;
   min = MIN_RANGE;
@@ -4443,7 +5492,7 @@ function startFirstTimeDemoPractice() {
   tipText.classList.remove("hint");
   tipText.style.display = "block";
   tipText.style.opacity = "1";
-  setTipMessage("demoBelowMidpoint", { value: formatNumber(DEMO_FIRST_GUESS) });
+  setTipMessage("orbRelative");
   tipShown = true;
 
   setDemoNextVisible(false);
@@ -4477,7 +5526,7 @@ function handleDemoGuess(g) {
 
     setGuessCountMessage("practiceGuess", { current: 2, total: 2 });
     setFeedbackMessage("demoGuessHigh", { value: formatNumber(expectedGuess) });
-    setTipMessage("demoGuessFromBelow", { value: formatNumber(DEMO_SECOND_GUESS) });
+    setTipMessage("endpointsChanged");
     setDemoPracticePrompt(1);
     focusGuessInputForDemo();
     return true;
@@ -4497,8 +5546,10 @@ function handleDemoGuess(g) {
   setGuessButtonLabel(getMessage("starting"));
   setDemoSkipVisible(false);
 
-  window.setTimeout(() => {
-    finishFirstTimeDemo(false, state.originalSecret);
+  demoFinishTimer = window.setTimeout(() => {
+    if (demoRunning && demoTutorialState === state && currentMode === MODES.DAILY) {
+      finishFirstTimeDemo(false, state.originalSecret);
+    }
   }, 900);
 
   return true;
@@ -4562,6 +5613,9 @@ function teardownInvertedInteraction() {
   cleanupInvertedDrag = null;
 
   barOrb.onpointerdown = null;
+  barOrb.onkeydown = null;
+  for (const attribute of ["role", "tabindex", "aria-label", "aria-valuemin", "aria-valuemax", "aria-valuenow", "aria-valuetext", "aria-describedby", "aria-disabled"]) barOrb.removeAttribute(attribute);
+  invertedCommitBtn.onclick = null;
   barOrb.classList.remove("inverted-active");
   barOrb.classList.remove("orb-moving");
   bar.classList.remove("inverted-mode");
@@ -4606,9 +5660,7 @@ function updateShareButton() {
     hasShareableResult;
 
   shareBtn.disabled = !(canShareDaily || canShareFreePlay);
-  shareBtn.textContent = currentMode === MODES.DAILY
-    ? getMessage("shareDaily")
-    : getMessage("shareRun");
+  shareBtn.textContent = getMessage("shareResult");
 }
 
 window.addEventListener("load", () => {
@@ -4697,7 +5749,7 @@ function shouldRetainKeyboardOnBlur() {
   // non-interactive taps on the app surface.
   if (
     tapTarget.closest(
-      "#guessBtn, #guessInput, #demoControls button, .bar, .stats-btn, #themeToggleBtn, #languageMenuBtn, #languageMenu, #shareBtn, #feedbackBtn, #statsModal, #freePlayPanel button"
+      "button, input, select, .bar, .stats-btn, #languageMenu, #statsModal"
     )
   ) {
     return false;
@@ -4811,85 +5863,44 @@ if (savedState) {
   }
 }
 
-if (parsedSavedState && typeof parsedSavedState === "object") {
-  const state = parsedSavedState;
-  const hasFinishedResult = state.result === "win" || state.result === "lose";
+if (parsedSavedState) restoreDailyState(parsedSavedState);
 
-  if (hasFinishedResult) {
-    demoMode = false;
-    unlockFreePlay();
-
-    if (currentMode === MODES.DAILY) {
-      MAX_GUESSES_OVERRIDE = null;
-    }
-
-    gameOver = true;
-    gameResult = state.result;
-    gameOverDisplaySource = "restored";
-    guesses = state.guesses;
-    roundGuessHistory = state.guesses.slice();
-    lifelineUsed = state.lifelineUsed;
-    lifelineGuessIndex = state.lifelineGuessIndex;
-
-    // After rebuild
-    if (min > max || secret < min || secret > max) {
-      min = MIN_RANGE;
-      max = MAX_RANGE;
-      guesses = [];
-    }
-
-    updateBar();
-    updateOrb();
-    syncInputRange();
-
-    // Lock gameplay for finished daily state.
-    input.disabled = true;
-    btn.disabled = true;
-    updateShareButton();
-    renderGameOverState();
-    if (state.result === "win") {
-      bar.classList.add("win");
-      barFill.classList.add("win");
-    }
-    tipShown = true;
-  } else {
-    // Resume in-progress Daily exactly where the player left off.
-    demoMode = false;
-    currentMode = MODES.DAILY;
-    MAX_GUESSES_OVERRIDE = null;
-    gameOver = false;
-    gameResult = null;
-    dailyResult = null;
-    guesses = state.guesses;
-    roundGuessHistory = state.guesses.slice();
-    lifelineUsed = state.lifelineUsed;
-    lifelineGuessIndex = state.lifelineGuessIndex;
-    min = state.min;
-    max = state.max;
-    hintAnimating = false;
-    hintVisible = false;
-    hintAllowed = true;
-
-    bar.className = "bar";
-    bar.classList.toggle("hinted", lifelineUsed);
-    barFill.className = "bar-fill";
-    clearFeedbackMessage();
-    tipText.classList.remove("hint");
-    tipText.style.display = "none";
-    clearTipMessage();
-    clearGuessCountMessage();
-    input.disabled = false;
-    btn.disabled = false;
-    updateShareButton();
-
-    // Ensure stale share result key never blocks progress restore.
-    localStorage.removeItem(dailyStateKey + "-result");
-
-    updateBar();
-    updateOrb();
-    syncInputRange();
-    updateGuessUI();
-  }
+function restoreDailyState(state) {
+  demoMode = false;
+  demoRunning = false;
+  currentMode = MODES.DAILY;
+  MAX_GUESSES_OVERRIDE = null;
+  secret = seededNumber(todayKey);
+  gameOver = state.result === "win" || state.result === "lose";
+  gameResult = state.result;
+  dailyResult = state.result;
+  gameOverDisplaySource = "restored";
+  sessionRecorded = gameOver;
+  guesses = state.guesses.slice();
+  roundGuessHistory = state.guesses.slice();
+  lifelineUsed = state.lifelineUsed;
+  lifelineGuessIndex = state.lifelineGuessIndex;
+  min = gameOver ? MIN_RANGE : state.min;
+  max = gameOver ? MAX_RANGE : state.max;
+  hintAnimating = false;
+  hintVisible = false;
+  hintAllowed = true;
+  lastDirectionalGuess = !gameOver && guesses.length ? guesses.at(-1) : null;
+  bar.className = "bar";
+  bar.classList.toggle("hinted", lifelineUsed && !gameOver);
+  bar.classList.toggle("win", gameResult === "win");
+  barFill.className = "bar-fill";
+  barFill.classList.toggle("win", gameResult === "win");
+  input.disabled = gameOver;
+  btn.disabled = gameOver;
+  if (gameOver) unlockFreePlay();
+  else localStorage.removeItem(dailyStateKey + "-result");
+  updateBar();
+  syncInputRange();
+  updateShareButton();
+  if (gameOver) renderGameOverState();
+  else updateGuessUI();
+  refreshRoundUI();
 }
 
 // Show orb tip for returning players if the game is not over and hint not used
@@ -4927,8 +5938,8 @@ function haptic(pattern) {
 }
 
 async function recordGameSession() {
-  if (!supabaseClient) return;
-  if (!gameStartTime) return;
+  if (sessionRecorded || !gameOver || !supabaseClient || !gameStartTime) return;
+  sessionRecorded = true;
 
   const totalGuesses =
     currentMode === MODES.MILLION
@@ -5101,9 +6112,14 @@ function maybeShowOrbTip() {
 
 /* ---------- FREE PLAY ---------- */
 function startFreePlay(mode) {
+  if (![MODES.CLASSIC, MODES.MILLION, MODES.MICRO, MODES.INVERTED].includes(mode)) return;
+  cancelDemo();
+  clearContextMessages();
+  stopCelebration();
   Object.keys(sentimentState).forEach(k => sentimentState[k] = false);
   sentimentState.lastGuessHadSentiment = false;
   teardownInvertedInteraction();
+  setFreePlayModesOpen(false);
   setGuessButtonLabel();
   setOnboardingVisible(false);
 
@@ -5119,6 +6135,10 @@ function startFreePlay(mode) {
   hintVisible = false;
   bar.classList.remove("hinted", "hint-ready");
   gameStartTime = Date.now();
+  sessionRecorded = false;
+  lastDirectionalGuess = null;
+  gameOverDisplaySource = "live";
+  tipText.hidden = false;
 
   // Hard reset visuals
   bar.className = "bar";
@@ -5132,7 +6152,6 @@ function startFreePlay(mode) {
   updateShareButton();
 
    // Hide “Want more Narro? Try Free Play!” once a free play game starts
-  const tipText = document.getElementById("tipText");
   if (tipText) {
     tipText.style.display = "none";
     clearTipMessage();
@@ -5142,27 +6161,24 @@ function startFreePlay(mode) {
   // Mode-specific setup
   switch (mode) {
     case MODES.CLASSIC:
-      min = 1;
-      max = 10000;
-      MAX_GUESSES_OVERRIDE = 6;
-      secret = Math.floor(Math.random() * 10000) + 1;
+      ({ min, max } = getModeRange());
+      MAX_GUESSES_OVERRIDE = MAX_GUESSES;
+      secret = Math.floor(Math.random() * (max - min + 1)) + min;
       hintAllowed = true;
       break;
 
     case MODES.MILLION:
-      min = 1;
-      max = 1_000_000;
+      ({ min, max } = getModeRange());
       MAX_GUESSES_OVERRIDE = Infinity;
-      secret = Math.floor(Math.random() * 1_000_000) + 1;
+      secret = Math.floor(Math.random() * (max - min + 1)) + min;
       hintAllowed = false;
       millionGuessCounter = 0;
       break;
 
     case MODES.MICRO:
-      min = 1;
-      max = 25;
+      ({ min, max } = getModeRange());
       MAX_GUESSES_OVERRIDE = 1;
-      secret = Math.floor(Math.random() * 25) + 1;
+      secret = Math.floor(Math.random() * (max - min + 1)) + min;
       hintAllowed = false;
       break;
 
@@ -5198,135 +6214,12 @@ function startFreePlay(mode) {
       barOrb.style.left = "50%";
       barOrb.style.cursor = "grab";
 
-      let placed = false; // enforce one guess
-
-      // One-shot drag interaction (mobile-first pointer flow).
-      barOrb.onpointerdown = (e) => {
-        if (placed) return;
-        e.preventDefault();
-
-        const rect = bar.getBoundingClientRect();
-        if (!rect.width) return;
-
-        let activePointerId = e.pointerId;
-        barOrb.style.transition = "none";
-
-        const clampX = (clientX) => {
-          const raw = clientX - rect.left;
-          return Math.max(0, Math.min(rect.width, raw));
-        };
-
-        const moveOrbToClientX = (clientX) => {
-          const clampedX = clampX(clientX);
-          const percent = (clampedX / rect.width) * 100;
-          barOrb.style.left = `${percent}%`;
-          return clampedX;
-        };
-
-        const cleanupListeners = () => {
-          window.removeEventListener("pointermove", onDrag);
-          window.removeEventListener("pointerup", onDrop);
-          window.removeEventListener("pointercancel", onCancel);
-
-          if (activePointerId != null && barOrb.hasPointerCapture?.(activePointerId)) {
-            try {
-              barOrb.releasePointerCapture(activePointerId);
-            } catch {}
-          }
-          activePointerId = null;
-          cleanupInvertedDrag = null;
-        };
-
-        const onDrag = (ev) => {
-          if (placed || ev.pointerId !== activePointerId) return;
-          moveOrbToClientX(ev.clientX);
-        };
-
-        const onDrop = (ev) => {
-          if (ev.pointerId !== activePointerId) return;
-          cleanupListeners();
-          if (placed) return;
-          placed = true;
-
-          const clampedX = moveOrbToClientX(ev.clientX);
-          const rawNumber = min + (clampedX / rect.width) * (max - min);
-          const placedNumber = Math.max(min, Math.min(max, Math.round(rawNumber)));
-          roundGuessHistory = [placedNumber];
-          const snappedPercent = ((placedNumber - min) / (max - min)) * 100;
-          barOrb.style.transition = "left 0.16s cubic-bezier(0.22, 1, 0.36, 1)";
-          barOrb.style.left = `${snappedPercent}%`;
-
-          gameOver = true;
-          const miss = Math.abs(placedNumber - secret);
-          lastInvertedMiss = miss;
-
-          if (miss === 0) {
-            gameResult = "win";
-            setFeedbackMessage("invertedPerfectPlacement");
-            tipText.classList.remove("hint");
-            setTipMessage("invertedPerfectReplay", { mode: getMessage("inverted") });
-            bar.classList.add("win");
-            barFill.classList.add("win");
-            barOrb.classList.add("win-pulse");
-            haptic([12, 40, 12]);
-          } else if (miss === 1) {
-            gameResult = "lose";
-            setFeedbackMessage("invertedMissOne", {
-              placed: formatNumber(placedNumber),
-              target: formatNumber(secret)
-            });
-            tipText.classList.remove("hint");
-            setTipMessage("invertedOneAwayReplay", { mode: getMessage("inverted") });
-            bar.classList.add("near");
-            barFill.classList.add("near");
-            haptic(10);
-          } else {
-            gameResult = "lose";
-            const messageKey =
-              miss <= 3
-                ? "invertedMissSharp"
-                : miss <= 10
-                  ? "invertedMissSolid"
-                  : "invertedMissWide";
-
-            setFeedbackMessage(messageKey, {
-              distance: formatNumber(miss),
-              placed: formatNumber(placedNumber),
-              target: formatNumber(secret)
-            });
-            tipText.classList.remove("hint");
-            setTipMessage("invertedOneShotReplay", { mode: getMessage("inverted") });
-            haptic(miss <= 3 ? [8, 24, 8] : 10);
-          }
-
-          // End-round lock
-          barOrb.classList.remove("inverted-active");
-          barOrb.style.cursor = "default";
-          updateShareButton();
-          recordGameSession();
-        };
-
-        const onCancel = (ev) => {
-          if (ev.pointerId !== activePointerId) return;
-          cleanupListeners();
-          if (!placed) {
-            barOrb.style.transition = "left 0.2s ease";
-          }
-        };
-
-        try {
-          barOrb.setPointerCapture(activePointerId);
-        } catch {}
-
-        window.addEventListener("pointermove", onDrag);
-        window.addEventListener("pointerup", onDrop);
-        window.addEventListener("pointercancel", onCancel);
-        cleanupInvertedDrag = cleanupListeners;
-      };
+      setupInvertedInteraction();
     break;
     }
 
   // Common post-switch updates
+  refreshRoundUI();
   syncInputRange();
   updateBar();
   updateOrb();
@@ -5337,45 +6230,56 @@ function startFreePlay(mode) {
     document.getElementById("millionPrompt").style.display = "none";
     document.getElementById("millionGuessCounter").style.display = "none";
   }
+  focusActiveControl();
 }
 
 function startDailyMode() {
-  // Reset game state, but do NOT touch free play sentimentState
+  cancelDemo();
+  clearContextMessages();
+  stopCelebration();
+  Object.keys(sentimentState).forEach(k => sentimentState[k] = false);
   teardownInvertedInteraction();
+  setFreePlayModesOpen(false);
   setGuessButtonLabel();
-  setOnboardingVisible(false);
   currentMode = MODES.DAILY;
-  gameOver = false;
+  MAX_GUESSES_OVERRIDE = null;
+  secret = seededNumber(todayKey);
+  min = MIN_RANGE;
+  max = MAX_RANGE;
   guesses = [];
   roundGuessHistory = [];
+  gameOver = false;
+  gameResult = null;
   lastInvertedMiss = null;
   lifelineUsed = false;
   lifelineGuessIndex = null;
   hintAnimating = false;
   hintVisible = false;
-  bar.classList.remove("hinted", "hint-ready");
-  gameStartTime = Date.now();
-
-  MAX_GUESSES_OVERRIDE = null;
-  secret = seededNumber(todayKey);
-  min = 1;
-  max = 10000;
   hintAllowed = true;
-
-  // Reset visuals
+  sessionRecorded = false;
+  lastDirectionalGuess = null;
+  gameStartTime = Date.now();
+  gameOverDisplaySource = "live";
   bar.className = "bar";
   barFill.className = "bar-fill";
-  clearFeedbackMessage();
-  tipText.classList.remove("hint");
-  clearGuessCountMessage();
+  input.value = "";
   input.disabled = false;
   btn.disabled = false;
-  updateShareButton();
-
-  updateBar();
-  updateOrb();
-  syncInputRange();
-  updateMillionGuessDisplay(); // hide counter in non-Million modes
+  tipText.hidden = false;
+  const rawState = localStorage.getItem(dailyStateKey);
+  let state = null;
+  try { state = rawState ? normalizeDailySavedState(JSON.parse(rawState)) : null; }
+  catch (error) { console.warn("Could not restore daily state", error); }
+  if (state) restoreDailyState(state);
+  else {
+    dailyResult = readDailyResult();
+    updateBar();
+    syncInputRange();
+    updateGuessUI();
+    refreshRoundUI();
+  }
+  updateMillionGuessDisplay();
+  focusActiveControl();
 }
 
 function resolveFreePlayGuess(g) {
@@ -5418,6 +6322,7 @@ function resolveFreePlayGuess(g) {
 
     // --- VALID GUESS ---
     roundGuessHistory.push(g);
+    lastDirectionalGuess = g;
     millionGuessCounter++;
     updateMillionGuessDisplay();
 
@@ -5433,6 +6338,7 @@ function resolveFreePlayGuess(g) {
       updateBar();
       updateOrb();
       syncInputRange();
+      refreshRoundUI();
     }
 
     return;
@@ -5443,6 +6349,8 @@ function resolveFreePlayGuess(g) {
 }
 
 function triggerWinVisuals() {
+  clearTimeout(celebrationTimer);
+  celebrationTimer = setTimeout(stopCelebration, 2800);
   bar.offsetWidth; // force reflow for consistency
   bar.classList.add("win");
   barFill.classList.add("win");
@@ -5451,6 +6359,7 @@ function triggerWinVisuals() {
 }
 
 function endFreePlayWin() {
+  if (gameOver) return;
   gameOver = true;
   gameResult = "win";
   gameOverDisplaySource = "live";
@@ -5460,10 +6369,12 @@ function endFreePlayWin() {
   btn.disabled = true;
 
   triggerWinVisuals();
+  renderGameOverState();
   recordGameSession();
 }
 
 function endFreePlayLoss() {
+  if (gameOver) return;
   gameOver = true;
   gameResult = "lose";
   gameOverDisplaySource = "live";
@@ -5478,6 +6389,7 @@ function endFreePlayLoss() {
     feedback.textContent = getMessage("roundOver");
   }
   gameResult = "lose";
+  renderGameOverState();
   recordGameSession();
 }
 
@@ -5650,8 +6562,8 @@ function isCriticalRange() {
 function syncInputRange() {
   if (!input) return;
   if (currentMode === MODES.MICRO) {
-    input.min = 1;
-    input.max = 25;
+    input.min = getModeRange().min;
+    input.max = getModeRange().max;
   } else {
     input.min = min ?? 1;
     input.max = max ?? MAX_RANGE;
@@ -5779,6 +6691,8 @@ function resolveGuess(g, skipPush = false) {
     guesses.push(g); // do not push in Million mode
     roundGuessHistory.push(g);
   }
+  lastDirectionalGuess = g;
+  refreshRoundUI();
   haptic(10);
 
   // --- 1. Check win/lose ---
@@ -5855,6 +6769,7 @@ function resolveGuess(g, skipPush = false) {
 }
 
 function updateGuessUI() {
+  refreshRoundUI();
   feedback.style.opacity = 1;
 
   if (gameOver) {
@@ -5870,10 +6785,9 @@ function updateGuessUI() {
     clearGuessCountMessage();
     bar.classList.remove("hint-ready");
     tipText.classList.remove("hint");
-    setFeedbackMessage("invertedSecretNumber", { value: formatNumber(secret) });
-    setTipMessage("invertedInstruction");
-    tipText.style.display = "block";
-    tipText.style.opacity = "1";
+    clearFeedbackMessage();
+    clearTipMessage();
+    tipText.hidden = true;
     return;
   }
 
@@ -5941,12 +6855,19 @@ function microReward(type) {
 function submitCurrentGuess() {
   if (gameOver) return;
 
-  const g = Number(input.value);
-
-  if (Number.isNaN(g) || g < min || g > max) {
-    showToast(getMessage("enterCurrentRange"));
+  if (currentMode === MODES.INVERTED) return;
+  const rawGuess = input.value.trim();
+  const g = Number(rawGuess);
+  if (!rawGuess || !Number.isInteger(g) || g < min || g > max) {
+    showValidation();
+    input.focus({ preventScroll: true });
     return;
   }
+  clearValidation();
+  clearToast();
+  hintStatus.textContent = "";
+  hintStatus.hidden = true;
+  clearSentiment();
 
   if (demoRunning) {
     handleDemoGuess(g);
@@ -5957,9 +6878,7 @@ function submitCurrentGuess() {
     dismissDemoPromptForLiveGame();
   }
 
-  if (!gameOver && guesses.length === maxGuessesForMode() - 2) {
-  tipText.style.opacity = 0;
-  }
+  if (!gameOver && guesses.length === maxGuessesForMode() - 2) clearTipMessage();
 
   input.value = "";
 
@@ -6033,38 +6952,33 @@ btn.addEventListener("click", (e) => {
 });
 
 /* ---------- SHRINK HINT ---------- */
-bar.onclick = () => {
-  if (lifelineUsed || gameOver) return;
-  if (guesses.length !== maxGuessesForMode() - 2) return;
-  if (
-  currentMode === MODES.MILLION ||
-  currentMode === MODES.MICRO
-) return;
-
+function useHint() {
+  if (!canOfferHint()) return;
   const hintApplied = applyWindowSnapHint();
   if (!hintApplied) {
     showToast(getMessage("hintUnavailableRange"), 1800);
     haptic(6);
     return;
   }
-
+  clearValidation();
+  clearToast();
+  clearFeedbackMessage();
+  clearTipMessage();
+  lastDirectionalGuess = null;
   lifelineUsed = true;
   lifelineGuessIndex = guesses.length;
   hintVisible = true;
-
-  tipText.classList.remove("hint");
-  setTipMessage("rangeTightened");
-  tipText.style.opacity = "1";
-
   bar.classList.remove("hint-ready");
   bar.classList.add("hinted");
-
-  if (currentMode === MODES.DAILY) {
-    persistDailyProgress();
-  }
-
+  hintStatus.textContent = getMessage("hintRangeChanged", { min: formatNumber(min), max: formatNumber(max) });
+  hintStatus.hidden = false;
+  if (currentMode === MODES.DAILY) persistDailyProgress();
+  refreshRoundUI();
+  input.focus({ preventScroll: true });
   haptic([6, 30, 6]);
-};
+}
+bar.onclick = useHint;
+hintBtn.onclick = useHint;
 
 function updateOrb() {
   if (!barOrb) return;
@@ -6085,8 +6999,9 @@ function updateOrb() {
     min = MIN_RANGE;
     max = MAX_RANGE;
 
-    minLabel.textContent = min;
-    maxLabel.textContent = max;
+    minLabel.textContent = formatNumber(min);
+    maxLabel.textContent = formatNumber(max);
+    bar.setAttribute("aria-label", getMessage("remainingRangeAria", { min: formatNumber(min), max: formatNumber(max) }));
   }
 
   let percent;
@@ -6152,7 +7067,7 @@ max = Math.max(min, Math.min(max, rangeMax));
       "radial-gradient(circle at 30% 30%, rgba(255, 223, 100, 0.95), rgba(255, 200, 50, 1))";
     barOrb.style.boxShadow =
       "0 0 14px rgba(255, 223, 100, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.4)";
-    barOrb.classList.add("win-pulse");
+    barOrb.classList.toggle("win-pulse", gameResult === "win" && gameOverDisplaySource === "live");
   } else {
     barOrb.style.background =
       "radial-gradient(circle at 30% 30%, rgba(108,242,194,0.95), rgba(72,210,160,1))";
@@ -6162,17 +7077,23 @@ max = Math.max(min, Math.min(max, rangeMax));
   }
 }
 
+function clearToast() {
+  clearTimeout(toast._t);
+  toast.textContent = "";
+  toast.style.opacity = 0;
+  toast.hidden = true;
+}
+
 function showToast(msg, duration = 1400) {
+  clearToast();
+  toast.hidden = false;
   toast.textContent = msg;
   toast.style.opacity = 1;
-
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => {
-    toast.style.opacity = 0;
-  }, duration);
+  toast._t = setTimeout(clearToast, duration);
 }
 
 /* ---------- END STATES ---------- */
+
 function win() {
   if (currentMode !== MODES.DAILY && currentMode !== MODES.CLASSIC) return;
   if (gameOver) return;
@@ -6312,7 +7233,10 @@ function getClosestDistance() {
 
 /* ---------- CONFETTI ---------- */
 function launchConfetti() {
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) return;
+  if (confettiFrame != null) cancelAnimationFrame(confettiFrame);
   const confetti = document.getElementById("confetti");  
+  confetti.style.visibility = "visible";
   const ctx = confetti.getContext("2d");
   confetti.width = innerWidth; confetti.height = innerHeight;
   const pieces = Array.from({ length: 120 }, () => ({
@@ -6332,7 +7256,12 @@ function launchConfetti() {
         ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size);
       }
     });
-    if (pieces.some(p => p.y < confetti.height)) requestAnimationFrame(frame);
+    if (pieces.some(p => p.y < confetti.height)) confettiFrame = requestAnimationFrame(frame);
+    else {
+      ctx.clearRect(0, 0, confetti.width, confetti.height);
+      confettiFrame = null;
+      confetti.style.visibility = "hidden";
+    }
   }
   frame();
 }
@@ -6614,6 +7543,7 @@ function generateShareText() {
 }
 
 shareBtn.onclick = async () => {
+  const shareContext = roundContextVersion;
   const text = generateShareText();
   const shareTitle = currentMode === MODES.DAILY
     ? "Narro"
@@ -6627,13 +7557,15 @@ shareBtn.onclick = async () => {
       });
     } else {
       await navigator.clipboard.writeText(text);
-      showToast(getMessage("shareResultCopied"));
+      if (shareContext === roundContextVersion) showToast(getMessage("shareResultCopied"));
     }
   } catch {
-    showToast(getMessage("shareFallbackCopied"));
     try {
       await navigator.clipboard.writeText(text);
-    } catch {}
+      if (shareContext === roundContextVersion) showToast(getMessage("shareFallbackCopied"));
+    } catch {
+      if (shareContext === roundContextVersion) showToast(getMessage("shareCopyFailed"), 2400);
+    }
   }
 };
 
@@ -6657,6 +7589,8 @@ if (!gameOver && !demoMode) {
 if (demoMode) {
   runFirstTimeDemo();
 }
+
+refreshRoundUI();
 
 document.getElementById("feedbackBtn")?.addEventListener("click", (e) => {
   e.preventDefault();
