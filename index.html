@@ -1461,8 +1461,22 @@
   .result-actions .text-action { width: auto; justify-self: center; }
   .utility-actions { display: flex; justify-content: center; gap: 14px; margin-top: 10px; }
   #freePlayPanel { margin-top: 12px; text-align: center; }
-  #freePlayModes { display: none; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 8px; }
-  #freePlayModes button { width: auto; margin: 0; padding: 9px 12px; font-size: .8rem; }
+  :root { --mode-surface: #27443d; --mode-border: #63cba5; --mode-text: #edfff8; --mode-hover: #30594d; --mode-shadow: rgba(0, 0, 0, .25); }
+  :root[data-theme="light"] { --mode-surface: #daf5e9; --mode-border: #397b66; --mode-text: #12352a; --mode-hover: #c5ebd9; --mode-shadow: rgba(39, 82, 68, .14); }
+  #freePlayModes { display: none; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 12px; }
+  #freePlayModes button {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    flex: 1 1 calc(50% - 5px); max-width: calc(50% - 5px); min-width: 0; min-height: 52px;
+    margin: 0; padding: 13px 15px; border: 1px solid var(--mode-border); border-radius: 12px;
+    background: var(--mode-surface); color: var(--mode-text); box-shadow: 0 3px 0 var(--mode-shadow);
+    font-size: .9rem; font-weight: 650; line-height: 1.35; text-align: start; white-space: normal; overflow-wrap: anywhere;
+    transition: background .15s ease, border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+  }
+  #freePlayModes button::after { content: ""; flex: 0 0 7px; width: 7px; height: 7px; border-inline-end: 2px solid currentColor; border-block-start: 2px solid currentColor; transform: rotate(45deg); }
+  :root[dir="rtl"] #freePlayModes button::after { transform: rotate(-45deg); }
+  #freePlayModes button:hover:not(:disabled) { background: var(--mode-hover); border-color: var(--mode-text); box-shadow: 0 4px 0 var(--mode-shadow); transform: translateY(-1px); }
+  #freePlayModes button:active:not(:disabled) { box-shadow: 0 1px 0 var(--mode-shadow); transform: translateY(1px); }
+  #freePlayModes button:focus-visible { outline: 3px solid var(--text); outline-offset: 3px; }
   .inverted-controls { margin: 12px 0 0; }
   #invertedTarget { font-size: 1.3rem; font-weight: 600; }
   #invertedCommitBtn { margin: 14px auto 0; }
@@ -1474,7 +1488,7 @@
   #helpDemoOrb { position: absolute; top: 50%; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); transform: translate(-50%, -50%); }
   #helpDemoLabels { display: flex; justify-content: space-between; font-size: .8rem; color: var(--muted); }
   #helpCloseBtn { margin-top: 10px; }
-  #confetti { visibility: hidden; }
+  #confetti { visibility: hidden; z-index: 2000; }
 
   /* Stage 1: one inset coordinate space for every puzzle control. */
   :root { --board-inset: 36px; --board-surface: #12182d; --board-line: #536282; --board-border: #3b4661; }
@@ -5934,11 +5948,7 @@ function commitInvertedPlacement() {
   barOrb.classList.remove("inverted-active");
   barOrb.style.cursor = "default";
   if (miss === 0) {
-    bar.classList.add("win");
-    barFill.classList.add("win");
-    barOrb.classList.add("win-pulse");
-    celebrationTimer = setTimeout(stopCelebration, 2800);
-    haptic([12, 40, 12]);
+    triggerWinVisuals([12, 40, 12]);
   } else {
     if (miss === 1) {
       bar.classList.add("near");
@@ -7340,14 +7350,15 @@ function resolveFreePlayGuess(g) {
   resolveGuess(g);
 }
 
-function triggerWinVisuals() {
+function triggerWinVisuals(hapticPattern = [20, 60, 20]) {
   clearTimeout(celebrationTimer);
   celebrationTimer = setTimeout(stopCelebration, 2800);
   bar.offsetWidth; // force reflow for consistency
   bar.classList.add("win");
   barFill.classList.add("win");
   updateOrb();
-  haptic([20, 60, 20]);
+  launchConfetti();
+  haptic(hapticPattern);
 }
 
 function endFreePlayWin() {
@@ -8116,10 +8127,7 @@ function win() {
   clearGuessCountMessage();
   bar.classList.remove("hinted", "hint-ready");
   renderGameOverState();
-
-  // --- Celebration ---
-  launchConfetti();
-  haptic([20, 60, 20]);
+  triggerWinVisuals();
 
   if (isDailyGame) {
     updateStats(true);
@@ -8142,8 +8150,6 @@ function win() {
     localStorage.setItem("narroLastPlayed", todayKey);
     setStreakText(streak);
   }
-
-  triggerWinVisuals();
 
   // --- Record session ---
   recordGameSession();
@@ -8213,7 +8219,8 @@ function getClosestDistance() {
 
 /* ---------- CONFETTI ---------- */
 function launchConfetti() {
-  if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) return;
+  const motionPreference = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+  if (motionPreference?.matches) return;
   if (confettiFrame != null) cancelAnimationFrame(confettiFrame);
   const confetti = document.getElementById("confetti");  
   confetti.style.visibility = "visible";
@@ -8229,6 +8236,7 @@ function launchConfetti() {
   }));
 
   function frame() {
+    if (motionPreference?.matches) { stopCelebration(); return; }
     ctx.clearRect(0,0,confetti.width,confetti.height);
     pieces.forEach(p => {
       p.x += p.vx; p.y += p.vy;
