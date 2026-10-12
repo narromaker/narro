@@ -11,7 +11,12 @@
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', 'G-FW2QE6BL6R');
+  // Challenge IDs stay out of analytics page locations and referrers.
+  const analyticsLocation = new URL(location.href);
+  analyticsLocation.searchParams.delete('challenge');
+  let analyticsReferrer = document.referrer;
+  try { const ref = new URL(analyticsReferrer); ref.searchParams.delete('challenge'); analyticsReferrer = ref.href; } catch {}
+  gtag('config', 'G-FW2QE6BL6R', { page_location: analyticsLocation.href, page_referrer: analyticsReferrer });
 
   // Compute daily key locally (no dependency on later script)
   const todayKeyGA = new Date().toLocaleDateString("en-CA", {
@@ -529,7 +534,7 @@
     border: 0;
   }
 
-  input[type="number"] {
+  input[type="number"], .challenge-composer input[type="text"] {
     width: 100%;
     font-size: 1.4rem;
     padding: 12px;
@@ -541,7 +546,7 @@
     transition: border-color 0.18s ease, background 0.18s ease;
   }
 
-  :root[data-theme="light"] input[type="number"] {
+  :root[data-theme="light"] input[type="number"], :root[data-theme="light"] .challenge-composer input[type="text"] {
     border-color: rgba(23,36,57,0.18);
     background: rgba(17,33,57,0.04);
   }
@@ -757,6 +762,7 @@
   }
 
   input[type="number"]:focus-visible,
+  .challenge-composer input[type="text"]:focus-visible,
   button:focus-visible,
   .stats-btn:focus-visible,
   .theme-btn:focus-visible {
@@ -1469,6 +1475,99 @@
   #helpDemoLabels { display: flex; justify-content: space-between; font-size: .8rem; color: var(--muted); }
   #helpCloseBtn { margin-top: 10px; }
   #confetti { visibility: hidden; }
+
+  /* Stage 1: one inset coordinate space for every puzzle control. */
+  :root { --board-inset: 36px; --board-surface: #12182d; --board-line: #536282; --board-border: #3b4661; }
+  :root[data-theme="light"] { --board-surface: #f5f8fb; --board-line: #a7b6ca; --board-border: #b4c1d0; }
+  body, body.onboarding-active { align-items: flex-start; }
+  .app { max-width: 520px; margin: 22px auto 0; }
+  .mode-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 28px; }
+  .mode-heading { text-align: start; }
+  .mode-date { display: block; text-align: start; margin-top: 4px; font-size: .8rem; color: var(--muted); }
+  .mode-rules { text-align: start; margin: 10px 0 0; font-size: .82rem; line-height: 1.5; }
+  .guess-count, .million-counter { margin: 0; font-size: .8rem; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .bar-wrap { position: relative; margin: 32px 0 24px; }
+  .bar-labels { height: 26px; display: block; margin: 0; font-size: 1rem; font-weight: 650; font-variant-numeric: tabular-nums; color: var(--text); }
+  .bar-labels span { position: absolute; }
+  #minLabel { left: var(--board-inset); transform: translateX(-50%); }
+  #maxLabel { right: var(--board-inset); transform: translateX(50%); }
+  .bar, :root[data-theme="light"] .bar, .bar.win, .bar.hint-ready { height: 72px; border: 1px solid var(--board-border); border-radius: 14px; overflow: visible; background: var(--board-surface); box-shadow: none; transform: none; margin-top: 6px; }
+  .bar::before, .bar::after { display: none; }
+  .board-travel { position: absolute; left: var(--board-inset); right: var(--board-inset); top: 0; bottom: 0; }
+  .board-travel::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 6px; transform: translateY(-50%); background: var(--board-line); border-radius: 3px; }
+  .bar.win .board-travel::before { background: var(--win); }
+  .bar-fill { height: 6px; top: 50%; transform: translateY(-50%); border-radius: 3px; box-shadow: none !important; animation: none !important; }
+  .bar-orb, :root[data-theme="light"] .bar-orb { width: 24px; height: 24px; background: var(--accent) !important; border: 2px solid var(--board-surface); box-shadow: 0 0 0 1px var(--board-border) !important; animation: none !important; filter: none !important; }
+  .bar-orb::after { content: ""; position: absolute; width: 5px; height: 5px; left: 50%; top: 50%; transform: translate(-50%, -50%); border-radius: 50%; background: #172439; }
+  .bar.win .bar-orb { background: var(--win) !important; }
+  .bar-actions { position: absolute; inset: auto 0 -20px auto; min-height: 0; margin: 0; z-index: 7; }
+  #hintBtn { padding: 5px 8px; font-size: .76rem; }
+  #guessInput, .bar-labels, .guess-history, .result-count { font-variant-numeric: tabular-nums; }
+  #guessInput { font-size: 1.25rem; height: 48px; }
+  #guessBtn { margin-top: 10px; box-shadow: none; }
+  button:hover:not(:disabled), button:active:not(:disabled) { box-shadow: none; }
+  .feedback-slot { min-height: 76px; padding-top: 14px; display: flex; flex-direction: column; justify-content: flex-start; gap: 4px; }
+  .feedback-slot > div { margin-top: 0; line-height: 1.4; }
+  .direction-feedback { font-size: 1rem; }
+  .feedback-slot .feedback { font-size: .85rem; color: var(--muted); }
+  .tip.hint { color: var(--muted); }
+  .guess-history { margin-top: 4px; }
+  #millionPrompt { display: none !important; }
+  #feedbackSlot:has(+ #millionPrompt + #demoControls + #resultCard:not([hidden])) { min-height: 0; padding: 0; }
+  @media (max-width: 480px) { .app { margin-top: 0; } .mode-summary { gap: 6px; } .mode-heading { font-size: 1rem; } .guess-count, .million-counter { font-size: .75rem; } .feedback-slot { min-height: 68px; } .bar-wrap { margin-top: 28px; } }
+
+
+  /* Stage 2: outcome hierarchy and a static pre-final-guess board. */
+  .result-score { margin: 8px 0; font-size: 3rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--accent); }
+  .result-subtitle { margin: 8px 0; color: var(--muted); font-size: .8rem; }
+  .result-final { margin: 14px 0; font-size: .9rem; line-height: 1.5; font-variant-numeric: tabular-nums; }
+  .result-board { margin: 24px 0 18px; padding-bottom: 86px; }
+  .result-board.combined { padding-bottom: 44px; }
+  #resultMin { left: var(--board-inset); transform: translateX(-50%); }
+  #resultMax { right: var(--board-inset); transform: translateX(50%); }
+  .result-marker { position: absolute; top: 50%; width: 18px; height: 18px; border: 2px solid var(--board-surface); border-radius: 50%; transform: translate(-50%, -50%); }
+  .answer-marker { background: var(--accent); box-shadow: 0 0 0 1px var(--text); }
+  .final-marker { background: var(--board-surface); box-shadow: 0 0 0 2px var(--muted); }
+  .result-board[data-outcome="win"] .answer-marker { background: var(--win); }
+  .result-board.near-markers .answer-marker { top: calc(50% - 12px); }
+  .result-board.near-markers .final-marker { top: calc(50% + 12px); }
+  .marker-callout { position: absolute; top: calc(100% + 10px); transform: translateX(-50%); padding: 4px 6px; background: var(--card); border: 1px solid var(--board-border); border-radius: 5px; font-size: .75rem; line-height: 1.35; max-width: 180px; width: max-content; text-align: center; font-variant-numeric: tabular-nums; }
+  .final-callout { top: calc(100% + 52px); color: var(--muted); }
+  .marker-callout.edge-left { transform: none; }
+  .marker-callout.edge-right { transform: translateX(-100%); }
+  .result-card { padding-top: 12px; }
+  .card:has(#resultCard:not([hidden])) #feedbackSlot { display: none; }
+  .result-endpoints { font-size: .9rem; }
+
+
+  #helpModal .modal-card { max-width: 420px; max-height: calc(100dvh - 32px); overflow-y: auto; }
+  #helpDemoLabels { position: relative; height: 28px; color: var(--text); font-weight: 650; font-size: 1rem; font-variant-numeric: tabular-nums; }
+  #helpDemoMin { position: absolute; left: var(--board-inset); transform: translateX(-50%); }
+  #helpDemoMax { position: absolute; right: var(--board-inset); transform: translateX(50%); }
+  #helpDemoBar { height: 72px; margin: 6px 0 18px; background: var(--board-surface); border-radius: 14px; }
+  #helpDemoOrb { width: 24px; height: 24px; }
+  #helpRangeCopy { min-height: 3em; line-height: 1.5; }
+  #practiceInputLabel { display: block; margin-bottom: 6px; font-size: .85rem; }
+  #practiceInput { height: 48px; font-size: 1.25rem; }
+  #practiceSubmitBtn, #helpDemoBtn { box-shadow: none; }
+  #practiceOutcome { margin: 12px 0 8px; font-size: 1.1rem; }
+  #practiceNumbers { line-height: 1.5; font-size: .9rem; }
+  #helpCloseBtn { background: transparent; color: var(--muted); border: 1px solid var(--board-border); box-shadow: none; }
+
+  .challenge-composer { border-top: 1px solid var(--board-border); margin-top: 18px; padding-top: 16px; }
+  .challenge-composer label { display: block; margin: 8px 0; font-size: .85rem; }
+  .challenge-composer input[type="text"] { width: 100%; min-width: 0; height: 48px; font-size: 1rem; text-align: start; }
+  #challengeLink { direction: ltr; }
+  .challenge-composer button { box-shadow: none; }
+  #challengeMessage { font-size: .85rem; line-height: 1.5; color: var(--muted); }
+  #challengeMessage[data-error="true"] { color: var(--danger); }
+  .challenge-panel { text-align: start; border: 1px solid var(--board-border); border-radius: 14px; padding: 16px; margin: 16px 0 0; background: var(--card); overflow-wrap: anywhere; }
+  .challenge-panel h2 { font-size: 1rem; margin: 0 0 8px; }
+  .challenge-panel p { font-size: .85rem; line-height: 1.5; }
+  .challenge-scores { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; font-variant-numeric: tabular-nums; }
+  .challenge-scores strong { font-size: .9rem; }
+  .challenge-verdict { color: var(--accent); font-weight: 650; }
+  .challenge-panel button { margin-top: 6px; }
 </style>
 </head>
 
@@ -1504,7 +1603,7 @@
           aria-label="Switch theme"
           title="Switch theme"
         >☀</button>
-        <div class="stats-btn" id="statsBtn" role="button" tabindex="0" aria-label="View stats">ⓘ</div>
+        <div class="stats-btn" id="statsBtn" role="button" tabindex="0" aria-label="View stats"><svg aria-hidden="true" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 3v17h17M8 16v-5m5 5V7m5 9V4"/></svg></div>
       </div>
     </div>
 
@@ -1523,41 +1622,17 @@
     <div id="gameShell" class="game-shell">
       <!-- Main game card -->
       <div class="card">
-        <h2 id="modeName" class="mode-heading"></h2>
-        <p id="modeRules" class="mode-rules"></p>
-        <div id="guessControls">
-        <label id="guessInputLabel" for="guessInput" class="sr-only">Enter your guess</label>
-        <input id="guessInput" type="number" inputmode="numeric" step="1" placeholder="Enter a number" autocomplete="off" aria-describedby="modeRules validationError" />
-        <button id="guessBtn">Guess</button>
+        <div class="mode-summary">
+          <h2 id="modeName" class="mode-heading"></h2>
+          <div class="guess-count" id="guessCount">6 guesses left</div>
+          <div id="millionGuessCounter" class="million-counter"></div>
         </div>
-        <div id="validationError" class="validation-error" role="alert" hidden></div>
-        <div id="directionFeedback" class="direction-feedback" role="status" aria-live="polite" hidden></div>
-        <section id="resultCard" class="result-card" aria-labelledby="resultTitle" tabindex="-1" hidden>
-          <h2 id="resultTitle"></h2>
-          <p id="resultAnswer" class="result-answer"></p>
-          <p id="resultCount" class="result-count"></p>
-          <p id="resultHint" class="result-hint" hidden></p>
-          <div class="result-actions">
-            <button id="shareBtn" type="button" disabled>Share result</button>
-            <button id="resultReplayBtn" class="secondary-action" type="button"></button>
-            <button id="resultModesBtn" class="text-action" type="button"></button>
-          </div>
-        </section>
+        <time id="modeDate" class="mode-date" hidden></time>
+        <p id="modeRules" class="mode-rules"></p>
         <div id="invertedControls" class="inverted-controls" hidden>
           <div id="invertedTarget"></div>
           <p id="invertedHelp"></p>
         </div>
-        <div class="feedback" id="feedback" aria-live="polite"></div>
-        <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
-        <div class="guess-count" id="guessCount">6 guesses left</div>
-        <div id="millionPrompt" class="million-prompt"></div>
-        <div id="millionGuessCounter" class="million-counter"></div>
-        <div class="tip" id="tipText" aria-live="polite"><div id="hintToast"></div></div>
-        <div id="demoControls" class="demo-controls" hidden>
-          <button id="demoNextBtn" class="demo-next-btn" type="button" hidden>Try the 15-second demo</button>
-          <button id="demoSkipBtn" class="demo-skip-btn" type="button" hidden>Hide tutorial</button>
-        </div>
-
         <div class="bar-wrap">
           <div class="bar-actions">
             <button id="hintBtn" class="secondary-action" type="button" hidden>Use hint</button>
@@ -1568,18 +1643,84 @@
             <span id="maxLabel">10,000</span>
           </div>
           <div class="bar" id="bar" role="img" aria-label="Remaining possible range">
-            <div class="bar-fill" id="barFill"></div>
-            <div class="bar-orb" id="barOrb"></div>
+            <div id="boardTravel" class="board-travel">
+              <div class="bar-fill" id="barFill"></div>
+              <div class="bar-orb" id="barOrb"></div>
+            </div>
           </div>
-          <div id="hintStatus" class="hint-status" role="status" aria-live="polite" hidden></div>
           <button id="invertedCommitBtn" class="secondary-action" type="button" hidden></button>
         </div>
+        <div id="guessControls">
+        <label id="guessInputLabel" for="guessInput" class="sr-only">Enter your guess</label>
+        <input id="guessInput" type="number" inputmode="numeric" step="1" placeholder="Enter a number" autocomplete="off" aria-describedby="modeRules validationError" />
+        <button id="guessBtn">Guess</button>
+        </div>
+        <div id="feedbackSlot" class="feedback-slot">
+          <div id="validationError" class="validation-error" role="alert" hidden></div>
+          <div id="directionFeedback" class="direction-feedback" role="status" aria-live="polite" hidden></div>
+          <div class="feedback" id="feedback" aria-live="polite"></div>
+          <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+          <div class="tip" id="tipText" aria-live="polite"></div>
+          <div id="hintStatus" class="hint-status" role="status" aria-live="polite" hidden></div>
+        </div>
+        <div id="millionPrompt" class="million-prompt" hidden></div>
+        <div id="demoControls" class="demo-controls" hidden>
+          <button id="demoNextBtn" class="demo-next-btn" type="button" hidden>Try the 15-second demo</button>
+          <button id="demoSkipBtn" class="demo-skip-btn" type="button" hidden>Hide tutorial</button>
+        </div>
+
+        <section id="resultCard" class="result-card" aria-labelledby="resultTitle" tabindex="-1" hidden>
+          <h2 id="resultTitle"></h2>
+          <div id="resultScore" class="result-score" hidden></div>
+          <p id="resultSubtitle" class="result-subtitle" hidden></p>
+          <p id="resultAnswer" class="result-answer"></p>
+          <p id="resultCount" class="result-count"></p>
+          <p id="resultHint" class="result-hint" hidden></p>
+          <p id="resultFinal" class="result-final" hidden></p>
+          <div id="resultBoard" class="result-board" role="img" hidden>
+            <div class="bar-labels result-endpoints"><span id="resultMin"></span><span id="resultMax"></span></div>
+            <div class="bar result-track"><div class="board-travel">
+              <span id="answerMarker" class="result-marker answer-marker"></span>
+              <span id="finalMarker" class="result-marker final-marker"></span>
+              <span id="answerCallout" class="marker-callout answer-callout"></span>
+              <span id="finalCallout" class="marker-callout final-callout"></span>
+            </div></div>
+          </div>
+          <div class="result-actions">
+            <button id="shareBtn" type="button" disabled>Share result</button>
+            <button id="challengeFriendBtn" class="secondary-action" type="button" hidden></button>
+            <button id="resultReplayBtn" class="secondary-action" type="button"></button>
+            <button id="resultModesBtn" class="text-action" type="button"></button>
+          </div>
+          <form id="challengeComposer" class="challenge-composer" novalidate hidden>
+            <label id="challengeNicknameLabel" for="challengeNickname"></label>
+            <input id="challengeNickname" type="text" maxlength="48" autocomplete="off" aria-describedby="challengeMessage" />
+            <button id="challengeCreateBtn" type="submit"></button>
+            <button id="challengeCancelBtn" class="text-action" type="button"></button>
+            <label id="challengeLinkLabel" for="challengeLink" hidden></label>
+            <input id="challengeLink" type="text" readonly hidden />
+            <button id="challengeCopyBtn" class="secondary-action" type="button" hidden></button>
+            <p id="challengeMessage" role="status" aria-live="polite" hidden></p>
+          </form>
+        </section>
         <section id="guessHistory" class="guess-history" aria-labelledby="historyTitle" hidden>
           <h3 id="historyTitle"></h3>
           <ol id="historyList"></ol>
         </section>
       </div> <!-- end main card -->
 
+      <section id="challengePanel" class="challenge-panel" aria-labelledby="challengeHeading" hidden>
+        <h2 id="challengeHeading"></h2>
+        <p id="challengeStatus" role="status" aria-live="polite"></p>
+        <div id="challengeScores" class="challenge-scores" hidden>
+          <div><strong id="challengerName"></strong><p id="challengerScore"></p></div>
+          <div id="recipientScoreColumn" hidden><strong id="recipientName"></strong><p id="recipientScore"></p></div>
+        </div>
+        <p id="challengeVerdict" class="challenge-verdict" role="status" aria-live="polite" hidden></p>
+        <button id="challengeCompareBtn" class="secondary-action" type="button" hidden></button>
+        <button id="challengeRetryBtn" class="text-action" type="button" hidden></button>
+        <button id="challengeTodayBtn" class="text-action" type="button" hidden></button>
+      </section>
       <div id="freePlayPanel">
         <button id="freePlayMainBtn" class="text-action" type="button">More modes</button>
         <button id="dailyModeBtn" class="text-action" type="button" hidden>Daily Narro</button>
@@ -1617,9 +1758,19 @@
       <p id="helpCopy"></p>
       <div id="helpDemo">
         <div id="helpDemoLabels"><span id="helpDemoMin"></span><span id="helpDemoMax"></span></div>
-        <div id="helpDemoBar" role="img"><span id="helpDemoOrb"></span></div>
+        <div id="helpDemoBar" class="bar" role="img"><div class="board-travel"><span id="helpDemoOrb" class="bar-orb"></span></div></div>
         <p id="helpRangeCopy" role="status" aria-live="polite"></p>
-        <button id="helpDemoBtn" class="secondary-action" type="button"></button>
+        <form id="practiceForm" novalidate hidden>
+          <label id="practiceInputLabel" for="practiceInput"></label>
+          <input id="practiceInput" type="number" inputmode="numeric" step="1" autocomplete="off" aria-describedby="helpRangeCopy practiceError" />
+          <button id="practiceSubmitBtn" type="submit"></button>
+          <p id="practiceError" class="validation-error" role="alert" hidden></p>
+        </form>
+        <div id="practiceResult" role="status" aria-live="polite" hidden>
+          <h3 id="practiceOutcome"></h3>
+          <p id="practiceNumbers"></p>
+        </div>
+        <button id="helpDemoBtn" type="button"></button>
       </div>
       <button id="helpCloseBtn" type="button"></button>
     </div>
@@ -1671,7 +1822,7 @@ freePlayMainBtn.addEventListener("click", () => {
 freePlayModeBtns.forEach(btn => {
   btn.addEventListener("click", () => {
     const mode = btn.dataset.mode;
-    startFreePlay(mode);
+    startFreePlay(mode, { restore: true });
     setFreePlayModesOpen(false);
   });
 });
@@ -1683,6 +1834,63 @@ document.addEventListener("click", (e) => {
 });
   </script>
   <script>
+
+/* CHALLENGE_RULES_START */
+// Shared protocol rules. Embedded into the single-file web build without dependencies.
+const CHALLENGE_RULES_VERSION = 'narro-daily-v1';
+const CHALLENGE_MAX_GUESSES = 6;
+const CHALLENGE_NICKNAME_LIMIT = 24;
+const CHALLENGE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function parseChallengeId(value) {
+  return typeof value === 'string' && CHALLENGE_ID_PATTERN.test(value) ? value.toLowerCase() : null;
+}
+function challengePuzzleDate(instant = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(instant);
+  const value = kind => parts.find(part => part.type === kind).value;
+  return `${value('year')}-${value('month')}-${value('day')}`;
+}
+function validChallengeDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T12:00:00Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+function normalizeChallengeMetadata(value, { today, historical = false } = {}) {
+  const fields = ['nickname', 'puzzleDate', 'result', 'guessCount', 'hintUsed', 'rulesVersion'];
+  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).some(key => !fields.includes(key))) throw new Error('invalid_challenge');
+  if (value.nickname != null && typeof value.nickname !== 'string') throw new Error('invalid_nickname');
+  if (/[\u0000-\u001f\u007f-\u009f\ud800-\udfff]/u.test(value.nickname || '')) throw new Error('invalid_nickname');
+  const nickname = (value.nickname || '').normalize('NFC').trim() || 'A friend';
+  if (Array.from(nickname).length > CHALLENGE_NICKNAME_LIMIT || /[\u0000-\u001f\u007f-\u009f\ud800-\udfff]/u.test(nickname)) throw new Error('invalid_nickname');
+  if (!validChallengeDate(value.puzzleDate)) throw new Error('invalid_date');
+  if (!['win', 'lose'].includes(value.result) || !Number.isInteger(value.guessCount) || value.guessCount < 1 || value.guessCount > CHALLENGE_MAX_GUESSES || value.result === 'lose' && value.guessCount !== CHALLENGE_MAX_GUESSES) throw new Error('invalid_score');
+  if (typeof value.hintUsed !== 'boolean' || value.hintUsed && value.guessCount < CHALLENGE_MAX_GUESSES - 1) throw new Error('invalid_hint');
+  if (typeof value.rulesVersion !== 'string' || !/^[a-z0-9-]{1,48}$/.test(value.rulesVersion)) throw new Error('incompatible_rules');
+  if (!historical) {
+    if (value.rulesVersion !== CHALLENGE_RULES_VERSION) throw new Error('incompatible_rules');
+    if (today && value.puzzleDate !== today) throw new Error(value.puzzleDate > today ? 'future_challenge' : 'expired_challenge');
+  }
+  return { nickname, puzzleDate: value.puzzleDate, result: value.result, guessCount: value.guessCount, hintUsed: value.hintUsed, rulesVersion: value.rulesVersion };
+}
+function normalizePublicChallenge(value) {
+  if (!value || !parseChallengeId(value.id)) throw new Error('invalid_challenge');
+  const { id, ...metadata } = value;
+  return { id: parseChallengeId(id), ...normalizeChallengeMetadata(metadata, { historical: true }) };
+}
+function classifyChallenge(challenge, today) {
+  if (challenge.rulesVersion !== CHALLENGE_RULES_VERSION) return 'incompatible_rules';
+  if (challenge.puzzleDate > today) return 'future_challenge';
+  if (challenge.puzzleDate < today) return 'expired_challenge';
+  return 'current';
+}
+function compareChallengeScores(challenger, recipient) {
+  if (challenger.puzzleDate !== recipient.puzzleDate || challenger.rulesVersion !== recipient.rulesVersion || challenger.rulesVersion !== CHALLENGE_RULES_VERSION) throw new Error('incompatible_comparison');
+  if (challenger.result !== recipient.result) return recipient.result === 'win' ? 'recipient' : 'challenger';
+  if (recipient.result === 'lose' || recipient.guessCount === challenger.guessCount) return 'draw';
+  return recipient.guessCount < challenger.guessCount ? 'recipient' : 'challenger';
+}
+
+/* CHALLENGE_RULES_END */
 
 /* ---------- SUPABASE ---------- */
 const SUPABASE_URL = "https://jxpkrhoizzhmugynocrs.supabase.co";
@@ -1836,6 +2044,16 @@ const MODES = {
 };
 
 let currentMode = MODES.DAILY;
+// Challenge context contains metadata only; real Daily state stays authoritative.
+let dailyChallenge = null;
+let challengeStatusKey = null;
+let challengeComposerOpen = false;
+let challengeBusy = false;
+let outgoingChallenge = null;
+let outgoingChallengeText = '';
+let challengeMessageKey = null;
+let challengeMessageError = false;
+let challengeLoadVersion = 0;
 
 /* ---------- DEMO STATE ---------- */
 let demoMode =
@@ -4487,6 +4705,386 @@ for (const [language, texts] of Object.entries(ROUND_MESSAGE_TEXT)) {
 
 MESSAGES.en.guessesUsed = ({ count }) => `${count} guess${Number(count) === 1 ? "" : "es"} used`;
 
+const RESULT_MESSAGES = {
+  "en": {
+    "solvedOutcome": "Solved!",
+    "lostOutcome": "Not this time",
+    "justAway": "Just {distance} away",
+    "finalAway": "Your final guess was {distance} away.",
+    "finalGuessLabel": "Final guess: {value}",
+    "answerLabel": "Answer: {value}",
+    "combinedMarker": "Answer & final guess: {value}",
+    "resultRangeAria": "Final range {min} to {max}. Answer {answer}. Final guess {guess}."
+  },
+  "es": {
+    "solvedOutcome": "¡Resuelto!",
+    "lostOutcome": "Esta vez no",
+    "justAway": "A solo {distance}",
+    "finalAway": "Tu último intento quedó a {distance}.",
+    "finalGuessLabel": "Último intento: {value}",
+    "answerLabel": "Respuesta: {value}",
+    "combinedMarker": "Respuesta e intento: {value}",
+    "resultRangeAria": "Rango final {min} a {max}. Respuesta {answer}. Último intento {guess}."
+  },
+  "fr": {
+    "solvedOutcome": "Résolu !",
+    "lostOutcome": "Pas cette fois",
+    "justAway": "À seulement {distance}",
+    "finalAway": "Votre dernier essai était à {distance}.",
+    "finalGuessLabel": "Dernier essai : {value}",
+    "answerLabel": "Réponse : {value}",
+    "combinedMarker": "Réponse et essai : {value}",
+    "resultRangeAria": "Plage finale de {min} à {max}. Réponse {answer}. Dernier essai {guess}."
+  },
+  "de": {
+    "solvedOutcome": "Gelöst!",
+    "lostOutcome": "Diesmal nicht",
+    "justAway": "Nur {distance} daneben",
+    "finalAway": "Dein letzter Tipp lag {distance} daneben.",
+    "finalGuessLabel": "Letzter Tipp: {value}",
+    "answerLabel": "Antwort: {value}",
+    "combinedMarker": "Antwort und Tipp: {value}",
+    "resultRangeAria": "Letzter Bereich {min} bis {max}. Antwort {answer}. Letzter Tipp {guess}."
+  },
+  "pt": {
+    "solvedOutcome": "Resolvido!",
+    "lostOutcome": "Não foi desta vez",
+    "justAway": "Só {distance} de diferença",
+    "finalAway": "Seu último palpite ficou a {distance}.",
+    "finalGuessLabel": "Último palpite: {value}",
+    "answerLabel": "Resposta: {value}",
+    "combinedMarker": "Resposta e palpite: {value}",
+    "resultRangeAria": "Intervalo final de {min} a {max}. Resposta {answer}. Último palpite {guess}."
+  },
+  "it": {
+    "solvedOutcome": "Risolto!",
+    "lostOutcome": "Non questa volta",
+    "justAway": "Solo {distance} di distanza",
+    "finalAway": "L’ultimo tentativo era a {distance}.",
+    "finalGuessLabel": "Ultimo tentativo: {value}",
+    "answerLabel": "Risposta: {value}",
+    "combinedMarker": "Risposta e tentativo: {value}",
+    "resultRangeAria": "Intervallo finale da {min} a {max}. Risposta {answer}. Ultimo tentativo {guess}."
+  },
+  "ja": {
+    "solvedOutcome": "正解！",
+    "lostOutcome": "今回は残念",
+    "justAway": "あと{distance}でした",
+    "finalAway": "最後の予想は{distance}離れていました。",
+    "finalGuessLabel": "最後の予想：{value}",
+    "answerLabel": "答え：{value}",
+    "combinedMarker": "答えと最後の予想：{value}",
+    "resultRangeAria": "最後の範囲は{min}から{max}。答えは{answer}。最後の予想は{guess}。"
+  },
+  "ko": {
+    "solvedOutcome": "해결!",
+    "lostOutcome": "이번에는 아쉽네요",
+    "justAway": "단 {distance} 차이",
+    "finalAway": "마지막 추측은 {distance} 차이였습니다.",
+    "finalGuessLabel": "마지막 추측: {value}",
+    "answerLabel": "정답: {value}",
+    "combinedMarker": "정답과 마지막 추측: {value}",
+    "resultRangeAria": "마지막 범위 {min}부터 {max}. 정답 {answer}. 마지막 추측 {guess}."
+  },
+  "zh-hans": {
+    "solvedOutcome": "解出了！",
+    "lostOutcome": "这次未能解出",
+    "justAway": "只差{distance}",
+    "finalAway": "最后一次猜测相差{distance}。",
+    "finalGuessLabel": "最后猜测：{value}",
+    "answerLabel": "答案：{value}",
+    "combinedMarker": "答案及最后猜测：{value}",
+    "resultRangeAria": "最后范围{min}到{max}。答案{answer}。最后猜测{guess}。"
+  },
+  "zh-hant": {
+    "solvedOutcome": "解出了！",
+    "lostOutcome": "這次未能解出",
+    "justAway": "只差{distance}",
+    "finalAway": "最後一次猜測相差{distance}。",
+    "finalGuessLabel": "最後猜測：{value}",
+    "answerLabel": "答案：{value}",
+    "combinedMarker": "答案及最後猜測：{value}",
+    "resultRangeAria": "最後範圍{min}到{max}。答案{answer}。最後猜測{guess}。"
+  },
+  "ru": {
+    "solvedOutcome": "Решено!",
+    "lostOutcome": "Не в этот раз",
+    "justAway": "Всего {distance} разницы",
+    "finalAway": "Последняя попытка отличалась на {distance}.",
+    "finalGuessLabel": "Последняя попытка: {value}",
+    "answerLabel": "Ответ: {value}",
+    "combinedMarker": "Ответ и попытка: {value}",
+    "resultRangeAria": "Последний диапазон от {min} до {max}. Ответ {answer}. Последняя попытка {guess}."
+  },
+  "hi": {
+    "solvedOutcome": "हल हो गया!",
+    "lostOutcome": "इस बार नहीं",
+    "justAway": "सिर्फ़ {distance} का अंतर",
+    "finalAway": "आखिरी अनुमान में {distance} का अंतर था।",
+    "finalGuessLabel": "आखिरी अनुमान: {value}",
+    "answerLabel": "उत्तर: {value}",
+    "combinedMarker": "उत्तर और आखिरी अनुमान: {value}",
+    "resultRangeAria": "आखिरी सीमा {min} से {max}। उत्तर {answer}। आखिरी अनुमान {guess}।"
+  },
+  "ar": {
+    "solvedOutcome": "تم الحل!",
+    "lostOutcome": "ليس هذه المرة",
+    "justAway": "بفارق {distance} فقط",
+    "finalAway": "كان تخمينك الأخير على بُعد {distance}.",
+    "finalGuessLabel": "التخمين الأخير: {value}",
+    "answerLabel": "الإجابة: {value}",
+    "combinedMarker": "الإجابة والتخمين الأخير: {value}",
+    "resultRangeAria": "النطاق الأخير من {min} إلى {max}. الإجابة {answer}. التخمين الأخير {guess}."
+  },
+  "bn": {
+    "solvedOutcome": "সমাধান হয়েছে!",
+    "lostOutcome": "এবার হলো না",
+    "justAway": "মাত্র {distance} দূরে",
+    "finalAway": "শেষ অনুমানে {distance} পার্থক্য ছিল।",
+    "finalGuessLabel": "শেষ অনুমান: {value}",
+    "answerLabel": "উত্তর: {value}",
+    "combinedMarker": "উত্তর ও শেষ অনুমান: {value}",
+    "resultRangeAria": "শেষ সীমা {min} থেকে {max}। উত্তর {answer}। শেষ অনুমান {guess}।"
+  },
+  "tr": {
+    "solvedOutcome": "Çözüldü!",
+    "lostOutcome": "Bu kez olmadı",
+    "justAway": "Yalnızca {distance} fark",
+    "finalAway": "Son tahminin {distance} uzaktaydı.",
+    "finalGuessLabel": "Son tahmin: {value}",
+    "answerLabel": "Yanıt: {value}",
+    "combinedMarker": "Yanıt ve son tahmin: {value}",
+    "resultRangeAria": "Son aralık {min} ile {max}. Yanıt {answer}. Son tahmin {guess}."
+  },
+  "id": {
+    "solvedOutcome": "Terpecahkan!",
+    "lostOutcome": "Belum kali ini",
+    "justAway": "Hanya selisih {distance}",
+    "finalAway": "Tebakan terakhirmu berselisih {distance}.",
+    "finalGuessLabel": "Tebakan terakhir: {value}",
+    "answerLabel": "Jawaban: {value}",
+    "combinedMarker": "Jawaban dan tebakan: {value}",
+    "resultRangeAria": "Rentang terakhir {min} sampai {max}. Jawaban {answer}. Tebakan terakhir {guess}."
+  }
+};
+for (const [language, pack] of Object.entries(RESULT_MESSAGES)) {
+  for (const [key, template] of Object.entries(pack)) MESSAGES[language][key] = vars => template.replace(/\{(\w+)\}/g, (_, name) => vars[name] ?? "");
+}
+
+const PRACTICE_MESSAGES = {
+  "en": {
+    "practiceTitle": "Narro practice",
+    "practicePrompt": "Your turn. Read the orb against the endpoints and enter your estimate.",
+    "yourTurnAction": "Your turn",
+    "estimateLabel": "Your estimate",
+    "estimateButton": "Submit estimate",
+    "exactlyRight": "Exactly right.",
+    "practiceAway": "Your estimate was {distance} away.",
+    "practiceNumbers": "Your estimate: {guess}. Practice answer: {answer}.",
+    "practicePosition": "The orb was about three-quarters of the way across.",
+    "playToday": "Play today’s Narro",
+    "skipPractice": "Skip practice"
+  },
+  "es": {
+    "practiceTitle": "Práctica de Narro",
+    "practicePrompt": "Tu turno. Lee el orbe según los extremos e ingresa tu estimación.",
+    "yourTurnAction": "Tu turno",
+    "estimateLabel": "Tu estimación",
+    "estimateButton": "Enviar estimación",
+    "exactlyRight": "Exactamente.",
+    "practiceAway": "Tu estimación quedó a {distance}.",
+    "practiceNumbers": "Tu estimación: {guess}. Respuesta de práctica: {answer}.",
+    "practicePosition": "El orbe estaba a unos tres cuartos de la barra.",
+    "playToday": "Jugar el Narro de hoy",
+    "skipPractice": "Saltar práctica"
+  },
+  "fr": {
+    "practiceTitle": "Entraînement Narro",
+    "practicePrompt": "À vous. Lisez l’orbe selon les extrémités et entrez votre estimation.",
+    "yourTurnAction": "À vous",
+    "estimateLabel": "Votre estimation",
+    "estimateButton": "Valider l’estimation",
+    "exactlyRight": "Exactement.",
+    "practiceAway": "Votre estimation était à {distance}.",
+    "practiceNumbers": "Votre estimation : {guess}. Réponse d’entraînement : {answer}.",
+    "practicePosition": "L’orbe était environ aux trois quarts de la barre.",
+    "playToday": "Jouer au Narro du jour",
+    "skipPractice": "Passer l’entraînement"
+  },
+  "de": {
+    "practiceTitle": "Narro üben",
+    "practicePrompt": "Du bist dran. Lies die Kugel anhand der Endpunkte und gib deine Schätzung ein.",
+    "yourTurnAction": "Du bist dran",
+    "estimateLabel": "Deine Schätzung",
+    "estimateButton": "Schätzung abgeben",
+    "exactlyRight": "Genau richtig.",
+    "practiceAway": "Deine Schätzung lag {distance} daneben.",
+    "practiceNumbers": "Deine Schätzung: {guess}. Übungsantwort: {answer}.",
+    "practicePosition": "Die Kugel lag etwa bei drei Vierteln des Balkens.",
+    "playToday": "Heutiges Narro spielen",
+    "skipPractice": "Übung überspringen"
+  },
+  "pt": {
+    "practiceTitle": "Prática Narro",
+    "practicePrompt": "Sua vez. Leia o orbe pelos extremos e digite sua estimativa.",
+    "yourTurnAction": "Sua vez",
+    "estimateLabel": "Sua estimativa",
+    "estimateButton": "Enviar estimativa",
+    "exactlyRight": "Exatamente.",
+    "practiceAway": "Sua estimativa ficou a {distance}.",
+    "practiceNumbers": "Sua estimativa: {guess}. Resposta da prática: {answer}.",
+    "practicePosition": "O orbe estava a cerca de três quartos da barra.",
+    "playToday": "Jogar o Narro de hoje",
+    "skipPractice": "Pular prática"
+  },
+  "it": {
+    "practiceTitle": "Pratica Narro",
+    "practicePrompt": "Tocca a te. Leggi la sfera rispetto agli estremi e inserisci la tua stima.",
+    "yourTurnAction": "Tocca a te",
+    "estimateLabel": "La tua stima",
+    "estimateButton": "Invia stima",
+    "exactlyRight": "Esattamente.",
+    "practiceAway": "La tua stima era a {distance}.",
+    "practiceNumbers": "La tua stima: {guess}. Risposta di pratica: {answer}.",
+    "practicePosition": "La sfera era a circa tre quarti della barra.",
+    "playToday": "Gioca al Narro di oggi",
+    "skipPractice": "Salta la pratica"
+  },
+  "ja": {
+    "practiceTitle": "Narro の練習",
+    "practicePrompt": "あなたの番です。両端を基準にオーブを読んで、予想を入力してください。",
+    "yourTurnAction": "あなたの番",
+    "estimateLabel": "あなたの予想",
+    "estimateButton": "予想を送信",
+    "exactlyRight": "ぴったり正解。",
+    "practiceAway": "予想は{distance}離れていました。",
+    "practiceNumbers": "あなたの予想：{guess}。練習の答え：{answer}。",
+    "practicePosition": "オーブはバーの約4分の3の位置でした。",
+    "playToday": "今日の Narro を遊ぶ",
+    "skipPractice": "練習をスキップ"
+  },
+  "ko": {
+    "practiceTitle": "Narro 연습",
+    "practicePrompt": "당신 차례입니다. 끝점을 기준으로 오브를 읽고 예상 숫자를 입력하세요.",
+    "yourTurnAction": "당신 차례",
+    "estimateLabel": "예상 숫자",
+    "estimateButton": "예상 제출",
+    "exactlyRight": "정확합니다.",
+    "practiceAway": "예상은 {distance} 차이였습니다.",
+    "practiceNumbers": "예상: {guess}. 연습 정답: {answer}.",
+    "practicePosition": "오브는 막대의 약 4분의 3 지점에 있었습니다.",
+    "playToday": "오늘의 Narro 플레이",
+    "skipPractice": "연습 건너뛰기"
+  },
+  "zh-hans": {
+    "practiceTitle": "Narro 练习",
+    "practicePrompt": "轮到你了。根据端点判断球的位置，输入你的估计。",
+    "yourTurnAction": "轮到你了",
+    "estimateLabel": "你的估计",
+    "estimateButton": "提交估计",
+    "exactlyRight": "完全正确。",
+    "practiceAway": "你的估计相差{distance}。",
+    "practiceNumbers": "你的估计：{guess}。练习答案：{answer}。",
+    "practicePosition": "球在进度条约四分之三的位置。",
+    "playToday": "玩今天的 Narro",
+    "skipPractice": "跳过练习"
+  },
+  "zh-hant": {
+    "practiceTitle": "Narro 練習",
+    "practicePrompt": "輪到你了。根據端點判斷球的位置，輸入你的估計。",
+    "yourTurnAction": "輪到你了",
+    "estimateLabel": "你的估計",
+    "estimateButton": "提交估計",
+    "exactlyRight": "完全正確。",
+    "practiceAway": "你的估計相差{distance}。",
+    "practiceNumbers": "你的估計：{guess}。練習答案：{answer}。",
+    "practicePosition": "球在進度條約四分之三的位置。",
+    "playToday": "玩今天的 Narro",
+    "skipPractice": "跳過練習"
+  },
+  "ru": {
+    "practiceTitle": "Практика Narro",
+    "practicePrompt": "Ваш ход. Оцените шар относительно концов и введите число.",
+    "yourTurnAction": "Ваш ход",
+    "estimateLabel": "Ваша оценка",
+    "estimateButton": "Отправить оценку",
+    "exactlyRight": "Точно верно.",
+    "practiceAway": "Ваша оценка отличалась на {distance}.",
+    "practiceNumbers": "Ваша оценка: {guess}. Учебный ответ: {answer}.",
+    "practicePosition": "Шар был примерно на трёх четвертях полосы.",
+    "playToday": "Играть в сегодняшний Narro",
+    "skipPractice": "Пропустить практику"
+  },
+  "hi": {
+    "practiceTitle": "Narro अभ्यास",
+    "practicePrompt": "आपकी बारी। सिरों के अनुसार ऑर्ब पढ़ें और अपना अनुमान लिखें।",
+    "yourTurnAction": "आपकी बारी",
+    "estimateLabel": "आपका अनुमान",
+    "estimateButton": "अनुमान भेजें",
+    "exactlyRight": "बिल्कुल सही।",
+    "practiceAway": "आपके अनुमान में {distance} का अंतर था।",
+    "practiceNumbers": "आपका अनुमान: {guess}। अभ्यास का उत्तर: {answer}।",
+    "practicePosition": "ऑर्ब बार के लगभग तीन-चौथाई हिस्से पर था।",
+    "playToday": "आज का Narro खेलें",
+    "skipPractice": "अभ्यास छोड़ें"
+  },
+  "ar": {
+    "practiceTitle": "تدريب Narro",
+    "practicePrompt": "دورك. اقرأ الكرة بالنسبة إلى الطرفين وأدخل تقديرك.",
+    "yourTurnAction": "دورك",
+    "estimateLabel": "تقديرك",
+    "estimateButton": "أرسل التقدير",
+    "exactlyRight": "صحيح تمامًا.",
+    "practiceAway": "كان تقديرك على بُعد {distance}.",
+    "practiceNumbers": "تقديرك: {guess}. إجابة التدريب: {answer}.",
+    "practicePosition": "كانت الكرة عند نحو ثلاثة أرباع الشريط.",
+    "playToday": "العب Narro اليوم",
+    "skipPractice": "تخطَّ التدريب"
+  },
+  "bn": {
+    "practiceTitle": "Narro অনুশীলন",
+    "practicePrompt": "আপনার পালা। প্রান্ত অনুযায়ী অর্ব পড়ুন ও অনুমান লিখুন।",
+    "yourTurnAction": "আপনার পালা",
+    "estimateLabel": "আপনার অনুমান",
+    "estimateButton": "অনুমান জমা দিন",
+    "exactlyRight": "একদম ঠিক।",
+    "practiceAway": "আপনার অনুমানে {distance} পার্থক্য ছিল।",
+    "practiceNumbers": "আপনার অনুমান: {guess}। অনুশীলনের উত্তর: {answer}।",
+    "practicePosition": "অর্ব বারটির প্রায় তিন-চতুর্থাংশে ছিল।",
+    "playToday": "আজকের Narro খেলুন",
+    "skipPractice": "অনুশীলন বাদ দিন"
+  },
+  "tr": {
+    "practiceTitle": "Narro alıştırması",
+    "practicePrompt": "Sıra sende. Küreyi uçlara göre okuyup tahminini gir.",
+    "yourTurnAction": "Sıra sende",
+    "estimateLabel": "Tahminin",
+    "estimateButton": "Tahmini gönder",
+    "exactlyRight": "Tam doğru.",
+    "practiceAway": "Tahminin {distance} uzaktaydı.",
+    "practiceNumbers": "Tahminin: {guess}. Alıştırma yanıtı: {answer}.",
+    "practicePosition": "Küre çubuğun yaklaşık dörtte üçündeydi.",
+    "playToday": "Bugünün Narro’sunu oyna",
+    "skipPractice": "Alıştırmayı atla"
+  },
+  "id": {
+    "practiceTitle": "Latihan Narro",
+    "practicePrompt": "Giliranmu. Baca orb sesuai kedua ujung dan masukkan perkiraanmu.",
+    "yourTurnAction": "Giliranmu",
+    "estimateLabel": "Perkiraanmu",
+    "estimateButton": "Kirim perkiraan",
+    "exactlyRight": "Tepat sekali.",
+    "practiceAway": "Perkiraanmu berselisih {distance}.",
+    "practiceNumbers": "Perkiraanmu: {guess}. Jawaban latihan: {answer}.",
+    "practicePosition": "Orb berada sekitar tiga perempat sepanjang bilah.",
+    "playToday": "Main Narro hari ini",
+    "skipPractice": "Lewati latihan"
+  }
+};
+for (const [language, pack] of Object.entries(PRACTICE_MESSAGES)) {
+  for (const [key, template] of Object.entries(pack)) MESSAGES[language][key] = vars => template.replace(/\{(\w+)\}/g, (_, name) => vars[name] ?? "");
+}
+
 function normalizeLanguageCode(rawValue) {
   return String(rawValue || "")
     .trim()
@@ -4527,6 +5125,412 @@ function detectPreferredLanguage() {
 let currentLanguage = resolveSupportedLanguage(localStorage.getItem(LANGUAGE_STORAGE_KEY)) ||
   detectPreferredLanguage();
 
+const CHALLENGE_MESSAGES = {
+  "en": {
+    "challengeFriend": "Challenge a friend",
+    "nickname": "Nickname (optional, up to 24 characters)",
+    "createChallenge": "Create and share link",
+    "challengeLink": "Challenge link",
+    "copyChallenge": "Copy invitation",
+    "challengeReady": "Link ready. Copy the invitation, or select the link to share it.",
+    "challengeUnavailable": "Challenges are unavailable. Try again; you can still play and share your ordinary result.",
+    "nicknameError": "Use a nickname of 24 characters or fewer, without control characters.",
+    "challengeLoading": "Loading challenge…",
+    "challengeFrom": "{name} challenged you",
+    "challengeExpired": "This challenge is for a previous daily. Play today’s Narro.",
+    "challengeFuture": "This challenge is for a future daily.",
+    "challengeIncompatible": "This challenge uses different rules. Play today’s Narro.",
+    "challengeInvalid": "This challenge link is invalid or unavailable. You can still play.",
+    "you": "You",
+    "friendWon": "Your friend won",
+    "youWon": "You won",
+    "draw": "Draw",
+    "shareComparison": "Share comparison",
+    "creating": "Creating…",
+    "cancelChallenge": "Close",
+    "retryChallenge": "Try again",
+    "challengeCopied": "Invitation copied."
+  },
+  "es": {
+    "challengeFriend": "Reta a un amigo",
+    "nickname": "Apodo (opcional, hasta 24 caracteres)",
+    "createChallenge": "Crear y compartir enlace",
+    "challengeLink": "Enlace del reto",
+    "copyChallenge": "Copiar invitación",
+    "challengeReady": "Enlace listo. Copia la invitación o selecciona el enlace para compartirlo.",
+    "challengeUnavailable": "Los retos no están disponibles. Inténtalo de nuevo; puedes jugar y compartir tu resultado normal.",
+    "nicknameError": "Usa un apodo de hasta 24 caracteres, sin caracteres de control.",
+    "challengeLoading": "Cargando reto…",
+    "challengeFrom": "{name} te retó",
+    "challengeExpired": "Este reto es de un día anterior. Juega al Narro de hoy.",
+    "challengeFuture": "Este reto es de un día futuro.",
+    "challengeIncompatible": "Este reto usa otras reglas. Juega al Narro de hoy.",
+    "challengeInvalid": "El enlace no es válido o no está disponible. Puedes seguir jugando.",
+    "you": "Tú",
+    "friendWon": "Tu amigo ganó",
+    "youWon": "Ganaste",
+    "draw": "Empate",
+    "shareComparison": "Compartir comparación",
+    "creating": "Creando…",
+    "cancelChallenge": "Cerrar",
+    "retryChallenge": "Reintentar",
+    "challengeCopied": "Invitación copiada."
+  },
+  "hi": {
+    "challengeFriend": "दोस्त को चुनौती दें",
+    "nickname": "उपनाम (वैकल्पिक, अधिकतम 24 अक्षर)",
+    "createChallenge": "लिंक बनाएँ और साझा करें",
+    "challengeLink": "चुनौती लिंक",
+    "copyChallenge": "निमंत्रण कॉपी करें",
+    "challengeReady": "लिंक तैयार है। निमंत्रण कॉपी करें या साझा करने के लिए लिंक चुनें।",
+    "challengeUnavailable": "चुनौतियाँ उपलब्ध नहीं हैं। फिर प्रयास करें; आप खेल और सामान्य परिणाम साझा कर सकते हैं।",
+    "nicknameError": "24 या कम अक्षरों का उपनाम दें, नियंत्रण अक्षरों के बिना।",
+    "challengeLoading": "चुनौती लोड हो रही है…",
+    "challengeFrom": "{name} ने आपको चुनौती दी",
+    "challengeExpired": "यह पिछले दिन की चुनौती है। आज का Narro खेलें।",
+    "challengeFuture": "यह भविष्य के दिन की चुनौती है।",
+    "challengeIncompatible": "इस चुनौती के नियम अलग हैं। आज का Narro खेलें।",
+    "challengeInvalid": "लिंक अमान्य या अनुपलब्ध है। आप खेल सकते हैं।",
+    "you": "आप",
+    "friendWon": "आपका दोस्त जीता",
+    "youWon": "आप जीते",
+    "draw": "बराबरी",
+    "shareComparison": "तुलना साझा करें",
+    "creating": "बन रहा है…",
+    "cancelChallenge": "बंद करें",
+    "retryChallenge": "फिर प्रयास करें",
+    "challengeCopied": "निमंत्रण कॉपी हुआ।"
+  },
+  "fr": {
+    "challengeFriend": "Défier un ami",
+    "nickname": "Pseudo (facultatif, 24 caractères maximum)",
+    "createChallenge": "Créer et partager le lien",
+    "challengeLink": "Lien du défi",
+    "copyChallenge": "Copier l’invitation",
+    "challengeReady": "Lien prêt. Copiez l’invitation ou sélectionnez le lien pour le partager.",
+    "challengeUnavailable": "Les défis sont indisponibles. Réessayez ; le jeu et le partage ordinaire restent disponibles.",
+    "nicknameError": "Utilisez un pseudo de 24 caractères maximum, sans caractères de contrôle.",
+    "challengeLoading": "Chargement du défi…",
+    "challengeFrom": "{name} vous défie",
+    "challengeExpired": "Ce défi concerne un jour précédent. Jouez au Narro d’aujourd’hui.",
+    "challengeFuture": "Ce défi concerne un jour futur.",
+    "challengeIncompatible": "Ce défi utilise d’autres règles. Jouez au Narro d’aujourd’hui.",
+    "challengeInvalid": "Ce lien est invalide ou indisponible. Vous pouvez jouer.",
+    "you": "Vous",
+    "friendWon": "Votre ami a gagné",
+    "youWon": "Vous avez gagné",
+    "draw": "Égalité",
+    "shareComparison": "Partager la comparaison",
+    "creating": "Création…",
+    "cancelChallenge": "Fermer",
+    "retryChallenge": "Réessayer",
+    "challengeCopied": "Invitation copiée."
+  },
+  "de": {
+    "challengeFriend": "Fordere einen Freund heraus",
+    "nickname": "Spitzname (optional, höchstens 24 Zeichen)",
+    "createChallenge": "Link erstellen und teilen",
+    "challengeLink": "Challenge-Link",
+    "copyChallenge": "Einladung kopieren",
+    "challengeReady": "Link bereit. Kopiere die Einladung oder wähle den Link zum Teilen aus.",
+    "challengeUnavailable": "Challenges sind nicht verfügbar. Versuche es erneut; Spielen und normales Teilen bleiben möglich.",
+    "nicknameError": "Verwende höchstens 24 Zeichen ohne Steuerzeichen.",
+    "challengeLoading": "Challenge wird geladen…",
+    "challengeFrom": "{name} fordert dich heraus",
+    "challengeExpired": "Diese Challenge gehört zu einem früheren Tag. Spiele das heutige Narro.",
+    "challengeFuture": "Diese Challenge gehört zu einem zukünftigen Tag.",
+    "challengeIncompatible": "Diese Challenge hat andere Regeln. Spiele das heutige Narro.",
+    "challengeInvalid": "Der Link ist ungültig oder nicht verfügbar. Du kannst weiterspielen.",
+    "you": "Du",
+    "friendWon": "Dein Freund hat gewonnen",
+    "youWon": "Du hast gewonnen",
+    "draw": "Unentschieden",
+    "shareComparison": "Vergleich teilen",
+    "creating": "Wird erstellt…",
+    "cancelChallenge": "Schließen",
+    "retryChallenge": "Erneut versuchen",
+    "challengeCopied": "Einladung kopiert."
+  },
+  "pt": {
+    "challengeFriend": "Desafiar um amigo",
+    "nickname": "Apelido (opcional, até 24 caracteres)",
+    "createChallenge": "Criar e compartilhar link",
+    "challengeLink": "Link do desafio",
+    "copyChallenge": "Copiar convite",
+    "challengeReady": "Link pronto. Copie o convite ou selecione o link para compartilhar.",
+    "challengeUnavailable": "Desafios indisponíveis. Tente novamente; você pode jogar e compartilhar seu resultado normal.",
+    "nicknameError": "Use um apelido de até 24 caracteres, sem caracteres de controle.",
+    "challengeLoading": "Carregando desafio…",
+    "challengeFrom": "{name} desafiou você",
+    "challengeExpired": "Este desafio é de um dia anterior. Jogue o Narro de hoje.",
+    "challengeFuture": "Este desafio é de um dia futuro.",
+    "challengeIncompatible": "Este desafio usa outras regras. Jogue o Narro de hoje.",
+    "challengeInvalid": "Link inválido ou indisponível. Você pode continuar jogando.",
+    "you": "Você",
+    "friendWon": "Seu amigo ganhou",
+    "youWon": "Você ganhou",
+    "draw": "Empate",
+    "shareComparison": "Compartilhar comparação",
+    "creating": "Criando…",
+    "cancelChallenge": "Fechar",
+    "retryChallenge": "Tentar novamente",
+    "challengeCopied": "Convite copiado."
+  },
+  "it": {
+    "challengeFriend": "Sfida un amico",
+    "nickname": "Soprannome (facoltativo, massimo 24 caratteri)",
+    "createChallenge": "Crea e condividi il link",
+    "challengeLink": "Link della sfida",
+    "copyChallenge": "Copia invito",
+    "challengeReady": "Link pronto. Copia l’invito o seleziona il link per condividerlo.",
+    "challengeUnavailable": "Sfide non disponibili. Riprova; puoi giocare e condividere il risultato normale.",
+    "nicknameError": "Usa un soprannome di massimo 24 caratteri, senza caratteri di controllo.",
+    "challengeLoading": "Caricamento sfida…",
+    "challengeFrom": "{name} ti ha sfidato",
+    "challengeExpired": "Questa sfida è di un giorno precedente. Gioca al Narro di oggi.",
+    "challengeFuture": "Questa sfida è di un giorno futuro.",
+    "challengeIncompatible": "Questa sfida usa regole diverse. Gioca al Narro di oggi.",
+    "challengeInvalid": "Link non valido o non disponibile. Puoi continuare a giocare.",
+    "you": "Tu",
+    "friendWon": "Il tuo amico ha vinto",
+    "youWon": "Hai vinto",
+    "draw": "Pareggio",
+    "shareComparison": "Condividi confronto",
+    "creating": "Creazione…",
+    "cancelChallenge": "Chiudi",
+    "retryChallenge": "Riprova",
+    "challengeCopied": "Invito copiato."
+  },
+  "ja": {
+    "challengeFriend": "友達に挑戦状を送る",
+    "nickname": "ニックネーム（任意、24文字まで）",
+    "createChallenge": "リンクを作成して共有",
+    "challengeLink": "挑戦リンク",
+    "copyChallenge": "招待をコピー",
+    "challengeReady": "リンクができました。招待をコピーするか、リンクを選択して共有してください。",
+    "challengeUnavailable": "挑戦を利用できません。再試行してください。ゲームと通常の結果共有は利用できます。",
+    "nicknameError": "制御文字を含まない24文字以内の名前を入力してください。",
+    "challengeLoading": "挑戦を読み込み中…",
+    "challengeFrom": "{name}からの挑戦",
+    "challengeExpired": "これは過去のデイリーです。今日のNarroを遊びましょう。",
+    "challengeFuture": "これは未来のデイリーの挑戦です。",
+    "challengeIncompatible": "この挑戦はルールが異なります。今日のNarroを遊びましょう。",
+    "challengeInvalid": "リンクが無効か利用できません。ゲームは続けられます。",
+    "you": "あなた",
+    "friendWon": "友達の勝ち",
+    "youWon": "あなたの勝ち",
+    "draw": "引き分け",
+    "shareComparison": "比較を共有",
+    "creating": "作成中…",
+    "cancelChallenge": "閉じる",
+    "retryChallenge": "再試行",
+    "challengeCopied": "招待をコピーしました。"
+  },
+  "ko": {
+    "challengeFriend": "친구에게 도전 보내기",
+    "nickname": "별명 (선택, 최대 24자)",
+    "createChallenge": "링크 만들고 공유",
+    "challengeLink": "도전 링크",
+    "copyChallenge": "초대 복사",
+    "challengeReady": "링크가 준비됐습니다. 초대를 복사하거나 링크를 선택해 공유하세요.",
+    "challengeUnavailable": "도전을 사용할 수 없습니다. 다시 시도하세요. 게임과 일반 결과 공유는 가능합니다.",
+    "nicknameError": "제어 문자를 제외한 24자 이내 별명을 입력하세요.",
+    "challengeLoading": "도전 불러오는 중…",
+    "challengeFrom": "{name}님이 도전했습니다",
+    "challengeExpired": "이전 날짜의 도전입니다. 오늘의 Narro를 플레이하세요.",
+    "challengeFuture": "미래 날짜의 도전입니다.",
+    "challengeIncompatible": "규칙이 다른 도전입니다. 오늘의 Narro를 플레이하세요.",
+    "challengeInvalid": "링크가 잘못되었거나 사용할 수 없습니다. 계속 플레이할 수 있습니다.",
+    "you": "나",
+    "friendWon": "친구가 이겼습니다",
+    "youWon": "내가 이겼습니다",
+    "draw": "무승부",
+    "shareComparison": "비교 공유",
+    "creating": "만드는 중…",
+    "cancelChallenge": "닫기",
+    "retryChallenge": "다시 시도",
+    "challengeCopied": "초대를 복사했습니다."
+  },
+  "zh-hans": {
+    "challengeFriend": "挑战朋友",
+    "nickname": "昵称（可选，最多24个字符）",
+    "createChallenge": "创建并分享链接",
+    "challengeLink": "挑战链接",
+    "copyChallenge": "复制邀请",
+    "challengeReady": "链接已生成。复制邀请或选中链接进行分享。",
+    "challengeUnavailable": "挑战暂不可用。请重试；仍可玩游戏并分享普通结果。",
+    "nicknameError": "请输入不含控制字符、最多24个字符的昵称。",
+    "challengeLoading": "正在加载挑战…",
+    "challengeFrom": "{name}向你发起挑战",
+    "challengeExpired": "这是往日的每日挑战。来玩今天的Narro。",
+    "challengeFuture": "这是未来日期的挑战。",
+    "challengeIncompatible": "此挑战使用不同规则。来玩今天的Narro。",
+    "challengeInvalid": "链接无效或不可用。你仍可继续游戏。",
+    "you": "你",
+    "friendWon": "朋友获胜",
+    "youWon": "你赢了",
+    "draw": "平局",
+    "shareComparison": "分享比较",
+    "creating": "正在创建…",
+    "cancelChallenge": "关闭",
+    "retryChallenge": "重试",
+    "challengeCopied": "邀请已复制。"
+  },
+  "zh-hant": {
+    "challengeFriend": "挑戰朋友",
+    "nickname": "暱稱（可選，最多24個字元）",
+    "createChallenge": "建立並分享連結",
+    "challengeLink": "挑戰連結",
+    "copyChallenge": "複製邀請",
+    "challengeReady": "連結已產生。複製邀請或選取連結分享。",
+    "challengeUnavailable": "挑戰暫時無法使用。請重試；仍可遊戲並分享一般結果。",
+    "nicknameError": "請輸入不含控制字元、最多24個字元的暱稱。",
+    "challengeLoading": "正在載入挑戰…",
+    "challengeFrom": "{name}向你發起挑戰",
+    "challengeExpired": "這是往日的每日挑戰。來玩今天的Narro。",
+    "challengeFuture": "這是未來日期的挑戰。",
+    "challengeIncompatible": "此挑戰使用不同規則。來玩今天的Narro。",
+    "challengeInvalid": "連結無效或無法使用。你仍可繼續遊戲。",
+    "you": "你",
+    "friendWon": "朋友獲勝",
+    "youWon": "你贏了",
+    "draw": "平手",
+    "shareComparison": "分享比較",
+    "creating": "正在建立…",
+    "cancelChallenge": "關閉",
+    "retryChallenge": "重試",
+    "challengeCopied": "邀請已複製。"
+  },
+  "ar": {
+    "challengeFriend": "تحدَّ صديقًا",
+    "nickname": "اسم مستعار (اختياري، حتى 24 حرفًا)",
+    "createChallenge": "إنشاء الرابط ومشاركته",
+    "challengeLink": "رابط التحدي",
+    "copyChallenge": "نسخ الدعوة",
+    "challengeReady": "الرابط جاهز. انسخ الدعوة أو حدد الرابط لمشاركته.",
+    "challengeUnavailable": "التحديات غير متاحة. حاول مجددًا؛ يمكنك اللعب ومشاركة نتيجتك المعتادة.",
+    "nicknameError": "استخدم اسمًا من 24 حرفًا أو أقل دون محارف تحكم.",
+    "challengeLoading": "جارٍ تحميل التحدي…",
+    "challengeFrom": "{name} تحداك",
+    "challengeExpired": "هذا التحدي ليوم سابق. العب Narro اليوم.",
+    "challengeFuture": "هذا التحدي ليوم مستقبلي.",
+    "challengeIncompatible": "هذا التحدي يستخدم قواعد مختلفة. العب Narro اليوم.",
+    "challengeInvalid": "الرابط غير صالح أو غير متاح. يمكنك متابعة اللعب.",
+    "you": "أنت",
+    "friendWon": "فاز صديقك",
+    "youWon": "فزت",
+    "draw": "تعادل",
+    "shareComparison": "مشاركة المقارنة",
+    "creating": "جارٍ الإنشاء…",
+    "cancelChallenge": "إغلاق",
+    "retryChallenge": "حاول مجددًا",
+    "challengeCopied": "تم نسخ الدعوة."
+  },
+  "ru": {
+    "challengeFriend": "Вызвать друга",
+    "nickname": "Имя (необязательно, до 24 символов)",
+    "createChallenge": "Создать ссылку и поделиться",
+    "challengeLink": "Ссылка на вызов",
+    "copyChallenge": "Копировать приглашение",
+    "challengeReady": "Ссылка готова. Скопируйте приглашение или выделите ссылку для отправки.",
+    "challengeUnavailable": "Вызовы недоступны. Повторите попытку; игра и обычная отправка результата доступны.",
+    "nicknameError": "Используйте имя до 24 символов без управляющих символов.",
+    "challengeLoading": "Загрузка вызова…",
+    "challengeFrom": "{name} вызывает вас",
+    "challengeExpired": "Этот вызов для предыдущего дня. Играйте в сегодняшний Narro.",
+    "challengeFuture": "Этот вызов для будущего дня.",
+    "challengeIncompatible": "У этого вызова другие правила. Играйте в сегодняшний Narro.",
+    "challengeInvalid": "Ссылка недействительна или недоступна. Вы можете играть дальше.",
+    "you": "Вы",
+    "friendWon": "Ваш друг победил",
+    "youWon": "Вы победили",
+    "draw": "Ничья",
+    "shareComparison": "Поделиться сравнением",
+    "creating": "Создание…",
+    "cancelChallenge": "Закрыть",
+    "retryChallenge": "Повторить",
+    "challengeCopied": "Приглашение скопировано."
+  },
+  "tr": {
+    "challengeFriend": "Bir arkadaşına meydan oku",
+    "nickname": "Takma ad (isteğe bağlı, en fazla 24 karakter)",
+    "createChallenge": "Bağlantı oluştur ve paylaş",
+    "challengeLink": "Meydan okuma bağlantısı",
+    "copyChallenge": "Daveti kopyala",
+    "challengeReady": "Bağlantı hazır. Daveti kopyala veya paylaşmak için bağlantıyı seç.",
+    "challengeUnavailable": "Meydan okumalar kullanılamıyor. Tekrar dene; oyun ve normal sonuç paylaşımı kullanılabilir.",
+    "nicknameError": "Kontrol karakterleri olmadan en fazla 24 karakterlik bir ad kullan.",
+    "challengeLoading": "Meydan okuma yükleniyor…",
+    "challengeFrom": "{name} sana meydan okudu",
+    "challengeExpired": "Bu önceki bir güne ait. Bugünün Narro oyununu oyna.",
+    "challengeFuture": "Bu gelecekteki bir güne ait.",
+    "challengeIncompatible": "Bu meydan okuma farklı kurallar kullanıyor. Bugünün Narro oyununu oyna.",
+    "challengeInvalid": "Bağlantı geçersiz veya kullanılamıyor. Oynamaya devam edebilirsin.",
+    "you": "Sen",
+    "friendWon": "Arkadaşın kazandı",
+    "youWon": "Sen kazandın",
+    "draw": "Berabere",
+    "shareComparison": "Karşılaştırmayı paylaş",
+    "creating": "Oluşturuluyor…",
+    "cancelChallenge": "Kapat",
+    "retryChallenge": "Tekrar dene",
+    "challengeCopied": "Davet kopyalandı."
+  },
+  "id": {
+    "challengeFriend": "Tantang teman",
+    "nickname": "Nama panggilan (opsional, maksimal 24 karakter)",
+    "createChallenge": "Buat dan bagikan tautan",
+    "challengeLink": "Tautan tantangan",
+    "copyChallenge": "Salin undangan",
+    "challengeReady": "Tautan siap. Salin undangan atau pilih tautan untuk dibagikan.",
+    "challengeUnavailable": "Tantangan tidak tersedia. Coba lagi; permainan dan berbagi hasil biasa tetap tersedia.",
+    "nicknameError": "Gunakan nama maksimal 24 karakter tanpa karakter kontrol.",
+    "challengeLoading": "Memuat tantangan…",
+    "challengeFrom": "{name} menantangmu",
+    "challengeExpired": "Tantangan ini untuk hari sebelumnya. Mainkan Narro hari ini.",
+    "challengeFuture": "Tantangan ini untuk hari mendatang.",
+    "challengeIncompatible": "Tantangan ini memakai aturan berbeda. Mainkan Narro hari ini.",
+    "challengeInvalid": "Tautan tidak valid atau tidak tersedia. Kamu tetap bisa bermain.",
+    "you": "Kamu",
+    "friendWon": "Temanmu menang",
+    "youWon": "Kamu menang",
+    "draw": "Seri",
+    "shareComparison": "Bagikan perbandingan",
+    "creating": "Membuat…",
+    "cancelChallenge": "Tutup",
+    "retryChallenge": "Coba lagi",
+    "challengeCopied": "Undangan disalin."
+  },
+  "bn": {
+    "challengeFriend": "বন্ধুকে চ্যালেঞ্জ করুন",
+    "nickname": "ডাকনাম (ঐচ্ছিক, সর্বোচ্চ 24 অক্ষর)",
+    "createChallenge": "লিংক তৈরি ও শেয়ার করুন",
+    "challengeLink": "চ্যালেঞ্জ লিংক",
+    "copyChallenge": "আমন্ত্রণ কপি করুন",
+    "challengeReady": "লিংক প্রস্তুত। আমন্ত্রণ কপি করুন বা শেয়ার করতে লিংক নির্বাচন করুন।",
+    "challengeUnavailable": "চ্যালেঞ্জ পাওয়া যাচ্ছে না। আবার চেষ্টা করুন; খেলা ও সাধারণ ফল শেয়ার করা যাবে।",
+    "nicknameError": "নিয়ন্ত্রণ অক্ষর ছাড়া সর্বোচ্চ 24 অক্ষরের ডাকনাম দিন।",
+    "challengeLoading": "চ্যালেঞ্জ লোড হচ্ছে…",
+    "challengeFrom": "{name} আপনাকে চ্যালেঞ্জ করেছেন",
+    "challengeExpired": "এটি আগের দিনের চ্যালেঞ্জ। আজকের Narro খেলুন।",
+    "challengeFuture": "এটি ভবিষ্যতের দিনের চ্যালেঞ্জ।",
+    "challengeIncompatible": "এই চ্যালেঞ্জের নিয়ম আলাদা। আজকের Narro খেলুন।",
+    "challengeInvalid": "লিংক অবৈধ বা অনুপলব্ধ। আপনি খেলতে পারেন।",
+    "you": "আপনি",
+    "friendWon": "আপনার বন্ধু জিতেছেন",
+    "youWon": "আপনি জিতেছেন",
+    "draw": "ড্র",
+    "shareComparison": "তুলনা শেয়ার করুন",
+    "creating": "তৈরি হচ্ছে…",
+    "cancelChallenge": "বন্ধ করুন",
+    "retryChallenge": "আবার চেষ্টা করুন",
+    "challengeCopied": "আমন্ত্রণ কপি হয়েছে।"
+  }
+};
+for (const [language, pack] of Object.entries(CHALLENGE_MESSAGES)) {
+  for (const [key, template] of Object.entries(pack)) MESSAGES[language][key] = vars => template.replace(/\{(\w+)\}/g, (_, name) => vars[name] ?? '');
+}
+
 function getMessage(key, vars = {}, language = currentLanguage) {
   const pack = MESSAGES[language] || MESSAGES[DEFAULT_LANGUAGE];
   const fallbackPack = MESSAGES[DEFAULT_LANGUAGE];
@@ -4561,6 +5565,7 @@ let gameStartTime = Date.now();
 let roundGuessHistory = [];
 let lastInvertedMiss = null;
 let gameOverDisplaySource = "live";
+let finalGuessContext = null;
 let lastDirectionalGuess = null;
 let sessionRecorded = false;
 let roundContextVersion = 0;
@@ -4569,6 +5574,9 @@ let confettiFrame = null;
 let celebrationTimer = null;
 let helpStep = 0;
 let helpReturnFocus = null;
+let practiceState = null;
+const PRACTICE_RANGE = { min: 1, max: 25 };
+const PRACTICE_SECRET = 19;
 
 /* ---------- ELEMENTS ---------- */
 const input = document.getElementById("guessInput");
@@ -4579,6 +5587,7 @@ const gameShell = document.getElementById("gameShell");
 const barFill = document.getElementById("barFill");
 const bar = document.getElementById("bar");
 const barOrb = document.getElementById("barOrb");
+const boardTravel = document.getElementById("boardTravel");
 const tipText = document.getElementById("tipText");
 const languageMenuBtn = document.getElementById("languageMenuBtn");
 const languageMenu = document.getElementById("languageMenu");
@@ -4658,6 +5667,7 @@ function cancelDemo() {
   if (demoRunning && demoTutorialState) secret = demoTutorialState.originalSecret;
   demoRunning = false;
   demoTutorialState = null;
+  practiceState = null;
   if (demoMode) markDemoSeen();
   setOnboardingVisible(false);
   setDemoNextVisible(false);
@@ -4668,6 +5678,13 @@ function cancelDemo() {
 
 function clearContextMessages() {
   roundContextVersion++;
+  challengeComposerOpen = false;
+  outgoingChallenge = null;
+  outgoingChallengeText = '';
+  challengeMessageKey = null;
+  document.getElementById('challengeNickname').value = '';
+  document.getElementById('challengeLink').value = '';
+  renderChallengeComposer();
   clearToast();
   clearValidation();
   clearFeedbackMessage();
@@ -4687,6 +5704,7 @@ function clearContextMessages() {
   guessCount.style.fontWeight = "400";
   for (const id of ["resultTitle", "resultAnswer", "resultCount", "resultHint", "invertedTarget", "invertedHelp", "historyList"]) document.getElementById(id).textContent = "";
   resultCard.hidden = true;
+  finalGuessContext = null;
   closeHelp(false);
 }
 
@@ -4742,11 +5760,77 @@ function renderGuessHistory() {
     ? getMessage(lastDirectionalGuess > secret ? "guessHigh" : "guessLow", { value: formatNumber(lastDirectionalGuess) }) : "";
 }
 
+function normalizeResultBoard(context, lastGuess, answer, range) {
+  if (!context || !Number.isInteger(context.min) || !Number.isInteger(context.max) || !Number.isInteger(context.guess)) return null;
+  if (context.min < range.min || context.max > range.max || context.min > context.max || context.guess !== lastGuess || context.guess < context.min || context.guess > context.max || answer < context.min || answer > context.max) return null;
+  return { min: context.min, max: context.max, guess: context.guess };
+}
+
+function renderResultBoard() {
+  const board = document.getElementById("resultBoard");
+  const context = finalGuessContext;
+  board.hidden = !gameOver || !context;
+  if (board.hidden) { board.removeAttribute("aria-label"); return; }
+  const percent = number => context.max === context.min ? 50 : (number - context.min) / (context.max - context.min) * 100;
+  const answerPercent = percent(secret), guessPercent = percent(context.guess);
+  const combined = context.guess === secret;
+  board.classList.toggle("combined", combined);
+  board.classList.toggle("near-markers", !combined && Math.abs(answerPercent - guessPercent) < 18);
+  board.dataset.outcome = gameResult;
+  document.getElementById("resultMin").textContent = formatNumber(context.min);
+  document.getElementById("resultMax").textContent = formatNumber(context.max);
+  board.setAttribute("aria-label", getMessage("resultRangeAria", { min: formatNumber(context.min), max: formatNumber(context.max), answer: formatNumber(secret), guess: formatNumber(context.guess) }));
+  for (const [markerId, labelId, position, value, key] of [["answerMarker", "answerCallout", answerPercent, secret, combined ? "combinedMarker" : "answerLabel"], ["finalMarker", "finalCallout", guessPercent, context.guess, "finalGuessLabel"]]) {
+    const marker = document.getElementById(markerId), label = document.getElementById(labelId);
+    marker.hidden = label.hidden = combined && markerId === "finalMarker";
+    marker.style.left = label.style.left = `${Math.max(0, Math.min(100, position))}%`;
+    label.classList.toggle("edge-left", position < 30);
+    label.classList.toggle("edge-right", position > 70);
+    label.textContent = getMessage(key, { value: formatNumber(value) });
+  }
+}
+
+function saveFreePlayResult() {
+  if (!gameOver || currentMode === MODES.DAILY) return;
+  const state = { mode: currentMode, result: gameResult, secret, guesses: guesses.slice(), history: roundGuessHistory.slice(), lifelineUsed, lifelineGuessIndex, resultBoard: finalGuessContext, millionGuessCounter, lastInvertedMiss };
+  try { localStorage.setItem(`narroFreePlayResult-${currentMode}`, JSON.stringify(state)); }
+  catch (_) { /* A storage limit must not prevent replay or sharing. */ }
+}
+
+function restoreFreePlayResult(mode) {
+  if (![MODES.CLASSIC, MODES.MILLION, MODES.MICRO, MODES.INVERTED].includes(mode)) return false;
+  let state;
+  try { state = JSON.parse(localStorage.getItem(`narroFreePlayResult-${mode}`) || "null"); } catch (_) { return false; }
+  const range = getModeRange(mode);
+  if (!state || state.mode !== mode || !["win", "lose"].includes(state.result) || !Number.isInteger(state.secret) || state.secret < range.min || state.secret > range.max || !Array.isArray(state.guesses) || !Array.isArray(state.history) || !state.history.length || state.history.some(g => !Number.isInteger(g) || g < range.min || g > range.max) || state.guesses.some(g => !Number.isInteger(g) || g < range.min || g > range.max)) return false;
+  const limit = mode === MODES.CLASSIC ? MAX_GUESSES : mode === MODES.MILLION ? Infinity : 1;
+  if (state.history.length > limit || mode === MODES.MILLION && state.millionGuessCounter !== state.history.length) return false;
+  cancelDemo(); clearContextMessages(); stopCelebration(); teardownInvertedInteraction();
+  currentMode = mode; gameOver = true; gameResult = state.result; secret = state.secret;
+  guesses = state.guesses.slice(); roundGuessHistory = state.history.slice();
+  lifelineUsed = !!state.lifelineUsed; lifelineGuessIndex = state.lifelineGuessIndex;
+  finalGuessContext = normalizeResultBoard(state.resultBoard, state.history.at(-1), secret, range);
+  min = finalGuessContext?.min ?? range.min; max = finalGuessContext?.max ?? range.max;
+  MAX_GUESSES_OVERRIDE = limit; hintAllowed = mode === MODES.CLASSIC;
+  millionGuessCounter = mode === MODES.MILLION ? state.history.length : 0;
+  lastInvertedMiss = mode === MODES.INVERTED ? Math.abs(state.history[0] - secret) : null;
+  gameOverDisplaySource = "restored"; sessionRecorded = true;
+  input.disabled = btn.disabled = true;
+  bar.className = "bar"; barFill.className = "bar-fill";
+  localStorage.setItem("narroLastMode", mode);
+  updateMillionGuessDisplay(); renderGameOverState(); focusActiveControl();
+  return true;
+}
+
 function refreshRoundUI() {
   const daily = currentMode === MODES.DAILY;
   const inverted = currentMode === MODES.INVERTED;
   document.getElementById("modeName").textContent = getMessage(daily ? "dailyMode" : currentMode);
   document.getElementById("modeRules").textContent = getModeRules();
+  const modeDate = document.getElementById("modeDate");
+  modeDate.hidden = !daily || demoRunning;
+  modeDate.dateTime = todayKey;
+  modeDate.textContent = daily ? new Intl.DateTimeFormat(LANGUAGE_META[currentLanguage]?.locale || "en-US", { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${todayKey}T12:00:00Z`)) : "";
   guessControls.hidden = gameOver || inverted;
   resultCard.hidden = !gameOver;
   invertedControls.hidden = !inverted || gameOver;
@@ -4756,7 +5840,8 @@ function refreshRoundUI() {
   tipText.hidden = gameOver || inverted;
   bar.setAttribute("role", inverted ? "group" : "img");
   // The existing completed-round orb uses the full mode scale. Match its labels.
-  const displayRange = gameOver ? getModeRange() : { min, max };
+  document.querySelector(".bar-wrap").hidden = gameOver;
+  const displayRange = gameOver && finalGuessContext ? { min: finalGuessContext.min, max: finalGuessContext.max } : { min, max };
   minLabel.textContent = formatNumber(displayRange.min);
   maxLabel.textContent = formatNumber(displayRange.max);
   bar.setAttribute("aria-label", getMessage("remainingRangeAria", { min: formatNumber(displayRange.min), max: formatNumber(displayRange.max) }));
@@ -4776,7 +5861,20 @@ function refreshRoundUI() {
   hintBtn.parentElement.hidden = hintBtn.hidden && hintUsed.hidden;
   if (!hintStatus.hidden) hintStatus.textContent = getMessage("hintRangeChanged", { min: formatNumber(min), max: formatNumber(max) });
   if (gameOver) {
-    document.getElementById("resultTitle").textContent = getMessage(inverted && gameResult === "win" ? "invertedPerfectPlacement" : daily && gameResult === "win" ? "dailyComplete" : "roundComplete");
+    document.getElementById("resultTitle").textContent = getMessage(gameResult === "win" ? inverted ? "invertedPerfectPlacement" : "solvedOutcome" : "lostOutcome");
+    const limitedWin = gameResult === "win" && !inverted && Number.isFinite(maxGuessesForMode());
+    const score = document.getElementById("resultScore");
+    score.hidden = !limitedWin;
+    score.textContent = limitedWin ? `${formatNumber(getShareGuessSeries().length)}/${formatNumber(maxGuessesForMode())}` : "";
+    const subtitle = document.getElementById("resultSubtitle");
+    subtitle.hidden = !(daily && gameResult === "win");
+    subtitle.textContent = !subtitle.hidden ? getMessage("dailyComplete") : "";
+    const final = getShareGuessSeries().at(-1);
+    const finalText = document.getElementById("resultFinal");
+    finalText.hidden = gameResult !== "lose" || !Number.isInteger(final);
+    const distance = Math.abs(final - secret);
+    finalText.textContent = finalText.hidden ? "" : `${getMessage("finalGuessLabel", { value: formatNumber(final) })}. ${getMessage(distance === 1 || distance === 2 ? "justAway" : "finalAway", { distance: formatNumber(distance) })}`;
+    renderResultBoard();
     document.getElementById("resultAnswer").textContent = getMessage(inverted ? "targetNumber" : "numberWas", { value: formatNumber(secret) });
     const count = getShareGuessSeries().length;
     document.getElementById("resultCount").textContent = inverted
@@ -4801,9 +5899,18 @@ function refreshRoundUI() {
   updateShareButton();
   renderGuessHistory();
   if (!validationError.hidden) showValidation();
+  renderDailyChallenge();
 }
 
 /* Inverted exposes position along the bar, never a pre-commit number readout. */
+function getBoardTravelRect() {
+  return boardTravel.getBoundingClientRect();
+}
+
+function boardPercentFromClientX(clientX, rect = getBoardTravelRect()) {
+  return Math.max(0, Math.min(100, (clientX - rect.left) / Math.max(1, rect.width) * 100));
+}
+
 function setInvertedPosition(percent) {
   percent = Math.max(0, Math.min(100, percent));
   barOrb.style.left = `${percent}%`;
@@ -4816,6 +5923,7 @@ function commitInvertedPlacement() {
   const percent = Number.parseFloat(barOrb.style.left) || 0;
   const placedNumber = Math.max(min, Math.min(max, Math.round(min + percent / 100 * (max - min))));
   if (cleanupInvertedDrag) cleanupInvertedDrag();
+  finalGuessContext = { min, max, guess: placedNumber };
   roundGuessHistory = [placedNumber];
   const miss = Math.abs(placedNumber - secret);
   lastInvertedMiss = miss;
@@ -4865,11 +5973,11 @@ function setupInvertedInteraction() {
   barOrb.onpointerdown = event => {
     if (gameOver) return;
     event.preventDefault();
-    const rect = bar.getBoundingClientRect();
+    const rect = getBoardTravelRect();
     if (!rect.width) return;
     const pointerId = event.pointerId;
     barOrb.style.transition = "none";
-    const move = e => setInvertedPosition((e.clientX - rect.left) / rect.width * 100);
+    const move = e => setInvertedPosition(boardPercentFromClientX(e.clientX, rect));
     const cleanup = () => {
       window.removeEventListener("pointermove", drag);
       window.removeEventListener("pointerup", drop);
@@ -4901,42 +6009,108 @@ function setupInvertedInteraction() {
 }
 
 function refreshHelp() {
-  if (helpModal.hidden) return;
-  document.getElementById("helpTitle").textContent = getMessage("howToPlay");
-  document.getElementById("helpCopy").textContent = getMessage(currentMode === MODES.INVERTED ? "invertedCommit" : "orbRelative");
-  document.getElementById("helpDemo").hidden = currentMode === MODES.INVERTED;
-  const demoMax = helpStep ? DEMO_FIRST_GUESS - 1 : MAX_RANGE;
-  document.getElementById("helpDemoMin").textContent = formatNumber(MIN_RANGE);
-  document.getElementById("helpDemoMax").textContent = formatNumber(demoMax);
-  document.getElementById("helpDemoOrb").style.left = `${(DEMO_SECRET_EXAMPLE - MIN_RANGE) / (demoMax - MIN_RANGE) * 100}%`;
-  document.getElementById("helpRangeCopy").textContent = getMessage(helpStep ? "endpointsChanged" : "demoWatchHalf");
-  document.getElementById("helpDemoBar").setAttribute("aria-label", `${getMessage("remainingRangeAria", { min: formatNumber(MIN_RANGE), max: formatNumber(demoMax) })}. ${getMessage("placementPercent", { percent: formatNumber(Math.round((DEMO_SECRET_EXAMPLE - MIN_RANGE) / (demoMax - MIN_RANGE) * 100)) })}`);
-  document.getElementById("helpDemoBtn").textContent = helpStep ? getMessage("resetDemo") : getMessage("tryValue", { value: formatNumber(DEMO_FIRST_GUESS) });
-  document.getElementById("helpCloseBtn").textContent = getMessage("close");
+  if (helpModal.hidden || !practiceState) return;
+  const phase = practiceState.phase;
+  const independent = phase === "estimate" || phase === "result";
+  const practiceMin = independent ? PRACTICE_RANGE.min : MIN_RANGE;
+  const practiceMax = independent ? PRACTICE_RANGE.max : phase === "narrowed" ? DEMO_FIRST_GUESS - 1 : MAX_RANGE;
+  const target = independent ? PRACTICE_SECRET : DEMO_SECRET_EXAMPLE;
+  const position = (target - practiceMin) / (practiceMax - practiceMin) * 100;
+  document.getElementById("helpTitle").textContent = getMessage("practiceTitle");
+  document.getElementById("helpCopy").hidden = true;
+  document.getElementById("helpDemo").hidden = false;
+  document.getElementById("helpDemoMin").textContent = formatNumber(practiceMin);
+  document.getElementById("helpDemoMax").textContent = formatNumber(practiceMax);
+  document.getElementById("helpDemoOrb").style.left = `${position}%`;
+  document.getElementById("helpRangeCopy").textContent = getMessage(phase === "demo" ? "orbRelative" : phase === "narrowed" ? "endpointsChanged" : phase === "estimate" ? "practicePrompt" : "practicePosition");
+  document.getElementById("helpDemoBar").setAttribute("aria-label", `${getMessage("remainingRangeAria", { min: formatNumber(practiceMin), max: formatNumber(practiceMax) })}. ${getMessage("placementPercent", { percent: formatNumber(Math.round(position)) })}`);
+  const form = document.getElementById("practiceForm");
+  form.hidden = phase !== "estimate";
+  const estimateInput = document.getElementById("practiceInput");
+  estimateInput.min = PRACTICE_RANGE.min; estimateInput.max = PRACTICE_RANGE.max;
+  estimateInput.placeholder = getMessage("estimateLabel");
+  document.getElementById("practiceInputLabel").textContent = getMessage("estimateLabel");
+  document.getElementById("practiceSubmitBtn").textContent = getMessage("estimateButton");
+  document.getElementById("practiceResult").hidden = phase !== "result";
+  if (phase === "result") {
+    const distance = Math.abs(practiceState.guess - PRACTICE_SECRET);
+    document.getElementById("practiceOutcome").textContent = getMessage(distance === 0 ? "exactlyRight" : "practiceAway", { distance: formatNumber(distance) });
+    document.getElementById("practiceNumbers").textContent = getMessage("practiceNumbers", { guess: formatNumber(practiceState.guess), answer: formatNumber(PRACTICE_SECRET) });
+  }
+  const next = document.getElementById("helpDemoBtn");
+  next.hidden = phase === "estimate";
+  next.textContent = getMessage(phase === "demo" ? "tryValue" : phase === "narrowed" ? "yourTurnAction" : "playToday", { value: formatNumber(DEMO_FIRST_GUESS) });
+  document.getElementById("helpCloseBtn").textContent = getMessage(practiceState.firstTime ? "skipPractice" : "close");
 }
 
-function openHelp() {
+function openHelp(options = {}) {
   helpReturnFocus = document.activeElement;
-  helpStep = 0;
-  helpModal.hidden = false;
-  helpModal.style.display = "flex";
+  practiceState = { phase: "demo", guess: null, firstTime: options.firstTime === true };
+  demoRunning = practiceState.firstTime;
+  helpModal.hidden = false; helpModal.style.display = "flex";
   gameShell.inert = true;
+  clearPracticeError();
+  document.getElementById("practiceInput").value = "";
   refreshHelp();
-  document.getElementById("helpCloseBtn").focus();
+  document.getElementById("helpDemoBtn").focus();
+}
+
+function clearPracticeError() {
+  const error = document.getElementById("practiceError");
+  error.hidden = true; error.textContent = "";
+  document.getElementById("practiceInput").removeAttribute("aria-invalid");
+}
+
+function advancePractice() {
+  if (!practiceState) return;
+  if (practiceState.phase === "result") {
+    const firstTime = practiceState.firstTime;
+    closeHelp(false);
+    if (firstTime || currentMode !== MODES.DAILY) startDailyMode();
+    else focusActiveControl();
+    return;
+  }
+  practiceState.phase = practiceState.phase === "demo" ? "narrowed" : "estimate";
+  clearPracticeError();
+  document.getElementById("practiceInput").value = "";
+  refreshHelp();
+  if (practiceState.phase === "estimate") document.getElementById("practiceInput").focus();
+}
+
+function submitPracticeEstimate() {
+  if (practiceState?.phase !== "estimate") return;
+  const estimateInput = document.getElementById("practiceInput");
+  const raw = estimateInput.value.trim(), estimate = Number(raw);
+  if (!raw || !Number.isInteger(estimate) || estimate < PRACTICE_RANGE.min || estimate > PRACTICE_RANGE.max) {
+    const error = document.getElementById("practiceError");
+    error.textContent = getMessage("allowedWhole", { min: formatNumber(PRACTICE_RANGE.min), max: formatNumber(PRACTICE_RANGE.max) });
+    error.hidden = false; estimateInput.setAttribute("aria-invalid", "true"); estimateInput.focus(); return;
+  }
+  clearPracticeError();
+  practiceState.guess = estimate; practiceState.phase = "result";
+  if (typeof gtag === "function") gtag("event", "onboarding_estimate", { correct: estimate === PRACTICE_SECRET, source: practiceState.firstTime ? "first_time" : "how_to_play" });
+  refreshHelp();
+  document.getElementById("helpDemoBtn").focus();
 }
 
 function closeHelp(restoreFocus = true) {
   if (helpModal.hidden) return;
-  helpModal.hidden = true;
-  helpModal.style.display = "none";
+  const firstTime = practiceState?.firstTime;
+  practiceState = null; demoRunning = false; demoTutorialState = null;
+  helpModal.hidden = true; helpModal.style.display = "none";
+  if (firstTime) markDemoSeen();
   gameShell.inert = false;
+  clearPracticeError();
   if (restoreFocus && helpReturnFocus?.isConnected) helpReturnFocus.focus();
   helpReturnFocus = null;
+  if (firstTime) { clearFeedbackMessage(); clearTipMessage(); updateGuessUI(); focusActiveControl(); }
 }
 
-document.getElementById("howToPlayBtn").onclick = openHelp;
+document.getElementById("howToPlayBtn").onclick = () => openHelp();
 document.getElementById("helpCloseBtn").onclick = () => closeHelp();
-document.getElementById("helpDemoBtn").onclick = () => { helpStep = helpStep ? 0 : 1; refreshHelp(); };
+document.getElementById("helpDemoBtn").onclick = advancePractice;
+document.getElementById("practiceForm").onsubmit = event => { event.preventDefault(); submitPracticeEstimate(); };
+document.getElementById("practiceInput").oninput = clearPracticeError;
 helpModal.onclick = event => { if (event.target === helpModal) closeHelp(); };
 document.getElementById("resultReplayBtn").onclick = () => startFreePlay(currentMode === MODES.DAILY ? MODES.CLASSIC : currentMode);
 document.getElementById("resultModesBtn").setAttribute("aria-controls", "freePlayModes");
@@ -4958,7 +6132,7 @@ document.addEventListener("keydown", event => {
   if (event.key !== "Tab") return;
   const modal = !helpModal.hidden ? helpModal : statsModal.style.display === "flex" ? statsModal : null;
   if (!modal) return;
-  const focusable = [...modal.querySelectorAll("button, [tabindex='0']")].filter(el => !el.disabled && el.getClientRects().length);
+  const focusable = [...modal.querySelectorAll("button, input, [tabindex='0']")].filter(el => !el.disabled && el.getClientRects().length);
   const first = focusable[0], last = focusable.at(-1);
   if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
   else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
@@ -5119,6 +6293,7 @@ function refreshStatsModalContent() {
 function renderGameOverState() {
   if (!gameOver) return;
   const wasHidden = resultCard.hidden;
+  if (currentMode !== MODES.DAILY && gameOverDisplaySource === "live") saveFreePlayResult();
   clearFeedbackMessage();
   clearTipMessage();
   clearGuessCountMessage();
@@ -5131,55 +6306,7 @@ function renderGameOverState() {
 }
 
 function renderDemoLanguageState() {
-  if (currentMode !== MODES.DAILY) return false;
-
-  if (demoRunning && demoTutorialState) {
-    guessCount.style.color = "var(--accent)";
-    guessCount.style.fontWeight = "600";
-    tipText.classList.remove("hint");
-    tipText.style.display = "block";
-    tipText.style.opacity = "1";
-
-    if (demoTutorialState.step === 0) {
-      setGuessCountMessage("practiceGuess", { current: 1, total: 2 });
-      setFeedbackMessage("demoWatchHalf");
-      setTipMessage("orbRelative");
-      setDemoSkipVisible(true, getMessage("exitDemo"));
-      setGuessButtonLabel(getMessage("tryValue", { value: formatNumber(DEMO_FIRST_GUESS) }));
-      return true;
-    }
-
-    if (demoTutorialState.step === 1) {
-      setGuessCountMessage("practiceGuess", { current: 2, total: 2 });
-      setFeedbackMessage("demoGuessHigh", { value: formatNumber(DEMO_FIRST_GUESS) });
-      setTipMessage("endpointsChanged");
-      setDemoSkipVisible(true, getMessage("exitDemo"));
-      setGuessButtonLabel(getMessage("tryValue", { value: formatNumber(DEMO_SECOND_GUESS) }));
-      return true;
-    }
-
-    if (demoTutorialState.step >= 2) {
-      setGuessCountMessage("practiceGuess", { current: 2, total: 2 });
-      setFeedbackMessage("demoGuessLow", { value: formatNumber(DEMO_SECOND_GUESS) });
-      setTipMessage("demoSqueezeWholeGame");
-      setGuessButtonLabel(getMessage("starting"));
-      setDemoSkipVisible(false);
-      return true;
-    }
-  }
-
-  if (demoMode && !gameOver && !demoRunning && !onboardingPrompt.hidden) {
-    tipText.classList.remove("hint");
-    tipText.style.display = "block";
-    tipText.style.opacity = "1";
-    setTipMessage("orbShowsPosition");
-    clearFeedbackMessage();
-    setDemoNextVisible(false);
-    setDemoSkipVisible(false);
-    setGuessButtonLabel();
-    return true;
-  }
-
+  if (demoRunning) refreshHelp();
   return false;
 }
 
@@ -5197,6 +6324,7 @@ function updateCountdownText() {
     `${formatCountdownUnit(m)}<span class="colon-blink">:</span>` +
     `${formatCountdownUnit(s)}`;
   countdown.innerHTML = getMessage("nextPuzzleIn", { time: timeText });
+  if (dailyChallenge?.metadata && challengePuzzleDate() !== todayKey) renderDailyChallenge();
 }
 
 function updateThemeToggle(theme) {
@@ -5395,164 +6523,18 @@ function requestDemoSkip() {
   finishFirstTimeDemo(true, originalSecret);
 }
 
-function finishFirstTimeDemo(wasSkipped, originalSecret) {
-  const handoffMessage = getMessage("todaysPuzzleLive");
-  clearTimeout(demoFinishTimer);
-  demoRunning = false;
-  demoTutorialState = null;
+function finishFirstTimeDemo(wasSkipped) {
+  closeHelp(false);
+  demoRunning = false; demoTutorialState = null;
   markDemoSeen();
   clearContextMessages();
-
-  secret = originalSecret;
-  min = MIN_RANGE;
-  max = MAX_RANGE;
-
-  barFill.style.transition = "";
-  bar.classList.remove("hint-ready", "hinted");
-  barFill.classList.remove("hint-animating");
-  barFill.classList.remove("near", "win");
-  bar.classList.remove("near");
-
-  setGuessButtonLabel();
-  btn.classList.remove("demo-pulse");
-  input.classList.remove("demo-highlight");
-
-  input.value = "";
-  tipText.classList.remove("hint");
-  setTipMessage(wasSkipped ? "orbStaysHidden" : "sameRuleRealPuzzle");
-  tipText.style.display = "block";
-  tipText.style.opacity = "1";
-  tipShown = true;
-
-  clearFeedbackMessage();
-  feedback.classList.remove("critical");
-  feedback.style.opacity = "1";
-  guessCount.style.color = "var(--muted)";
-  guessCount.style.fontWeight = "400";
-
-  updateBar();
-  syncInputRange();
-  updateGuessUI();
-
-  demoRunning = false;
-  demoTutorialState = null;
-  markDemoSeen();
-  setDemoNextVisible(false);
-  setDemoSkipVisible(false);
-
-  input.disabled = false;
-  btn.disabled = false;
-  showToast(handoffMessage, 1800);
-
-  if (!isMobile()) {
-    input.focus();
-  }
-}
-
-function setDemoPracticePrompt(index) {
-  const guessValue = DEMO_PRACTICE_GUESSES[index];
-  if (!Number.isFinite(guessValue)) return;
-
-  input.value = String(guessValue);
-  btn.classList.add("demo-pulse");
-  input.classList.add("demo-highlight");
-  setGuessButtonLabel(getMessage("tryValue", { value: formatNumber(guessValue) }));
-}
-
-function focusGuessInputForDemo() {
-  if (isMobile()) return;
-  input.focus();
-  input.select();
+  startDailyMode();
 }
 
 function startFirstTimeDemoPractice() {
-  if (!demoMode || demoRunning || gameOver || currentMode !== MODES.DAILY) return;
-
-  demoRunning = true;
+  if (!demoMode || demoRunning) return;
   setOnboardingVisible(false);
-  demoTutorialState = {
-    originalSecret: secret,
-    step: 0
-  };
-
-  secret = DEMO_SECRET_EXAMPLE;
-  min = MIN_RANGE;
-  max = MAX_RANGE;
-
-  input.disabled = false;
-  btn.disabled = false;
-  barFill.style.transition = "left 0.55s ease, width 0.55s ease";
-  updateBar();
-  syncInputRange();
-
-  setGuessCountMessage("practiceGuess", { current: 1, total: 2 });
-  guessCount.style.color = "var(--accent)";
-  guessCount.style.fontWeight = "600";
-  setFeedbackMessage("demoWatchHalf");
-  tipText.classList.remove("hint");
-  tipText.style.display = "block";
-  tipText.style.opacity = "1";
-  setTipMessage("orbRelative");
-  tipShown = true;
-
-  setDemoNextVisible(false);
-  setDemoSkipVisible(true, getMessage("exitDemo"));
-  setDemoPracticePrompt(0);
-  focusGuessInputForDemo();
-}
-
-function handleDemoGuess(g) {
-  if (!demoRunning || !demoTutorialState) return false;
-
-  const state = demoTutorialState;
-  const expectedGuess = DEMO_PRACTICE_GUESSES[state.step];
-
-  if (!Number.isFinite(expectedGuess)) return false;
-
-  if (g !== expectedGuess) {
-    showToast(getMessage("demoWrongGuess", { value: formatNumber(expectedGuess) }), 1800);
-    setDemoPracticePrompt(state.step);
-    focusGuessInputForDemo();
-    return true;
-  }
-
-  input.value = "";
-
-  if (state.step === 0) {
-    state.step = 1;
-    max = expectedGuess - 1;
-    updateBar();
-    syncInputRange();
-
-    setGuessCountMessage("practiceGuess", { current: 2, total: 2 });
-    setFeedbackMessage("demoGuessHigh", { value: formatNumber(expectedGuess) });
-    setTipMessage("endpointsChanged");
-    setDemoPracticePrompt(1);
-    focusGuessInputForDemo();
-    return true;
-  }
-
-  state.step = 2;
-  min = expectedGuess + 1;
-  updateBar();
-  syncInputRange();
-
-  setFeedbackMessage("demoGuessLow", { value: formatNumber(expectedGuess) });
-  setTipMessage("demoSqueezeWholeGame");
-  btn.classList.remove("demo-pulse");
-  input.classList.remove("demo-highlight");
-  input.disabled = true;
-  btn.disabled = true;
-  setGuessButtonLabel(getMessage("starting"));
-  setDemoSkipVisible(false);
-
-  demoFinishTimer = window.setTimeout(() => {
-    if (demoRunning && demoTutorialState === state && currentMode === MODES.DAILY) {
-      finishFirstTimeDemo(false, state.originalSecret);
-    }
-  }, 900);
-
-  return true;
+  openHelp({ firstTime: true });
 }
 
 function runFirstTimeDemo() {
@@ -5837,6 +6819,7 @@ function normalizeDailySavedState(rawState) {
   return {
     mode: MODES.DAILY,
     result,
+    resultBoard: normalizeResultBoard(rawState.resultBoard, savedGuesses.at(-1), seededNumber(todayKey), { min: MIN_RANGE, max: MAX_RANGE }),
     guesses: savedGuesses,
     lifelineUsed,
     lifelineGuessIndex,
@@ -5880,6 +6863,7 @@ function restoreDailyState(state) {
   roundGuessHistory = state.guesses.slice();
   lifelineUsed = state.lifelineUsed;
   lifelineGuessIndex = state.lifelineGuessIndex;
+  finalGuessContext = state.resultBoard;
   min = gameOver ? MIN_RANGE : state.min;
   max = gameOver ? MAX_RANGE : state.max;
   hintAnimating = false;
@@ -5974,6 +6958,11 @@ function isIOSDevice() {
 }
 
 function setOrbTrackingTransition(leftSeconds) {
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+    barOrb.style.setProperty("transition-duration", "0s", "important");
+    return;
+  }
+  barOrb.style.removeProperty("transition-duration");
   const duration = Number.isFinite(leftSeconds)
     ? Math.max(0.08, leftSeconds)
     : 0.5;
@@ -5982,8 +6971,7 @@ function setOrbTrackingTransition(leftSeconds) {
   barOrb.style.transition =
     `left ${durationText} cubic-bezier(0.18, 0.88, 0.26, 1), filter 0.24s ease-out, box-shadow 0.24s ease-out`;
 
-  // iOS + Reduce Motion can collapse transition-duration globally to ~0ms.
-  // Force core orb tracking duration so gameplay motion remains readable.
+  // Preserve smooth iOS tracking only when motion has not been reduced.
   if (isIOSDevice()) {
     barOrb.style.setProperty(
       "transition-duration",
@@ -6111,7 +7099,10 @@ function maybeShowOrbTip() {
 }
 
 /* ---------- FREE PLAY ---------- */
-function startFreePlay(mode) {
+function startFreePlay(mode, options = {}) {
+  if (options.restore && restoreFreePlayResult(mode)) return;
+  localStorage.setItem("narroLastMode", mode);
+  localStorage.removeItem(`narroFreePlayResult-${mode}`);
   if (![MODES.CLASSIC, MODES.MILLION, MODES.MICRO, MODES.INVERTED].includes(mode)) return;
   cancelDemo();
   clearContextMessages();
@@ -6234,6 +7225,7 @@ function startFreePlay(mode) {
 }
 
 function startDailyMode() {
+  localStorage.setItem("narroLastMode", MODES.DAILY);
   cancelDemo();
   clearContextMessages();
   stopCelebration();
@@ -6403,8 +7395,8 @@ function maxGuessesForMode() {
   }
 }
 
-function getModeRange() {
-  switch (currentMode) {
+function getModeRange(mode = currentMode) {
+  switch (mode) {
     case MODES.MILLION:
       return { min: 1, max: 1_000_000 };
     case MODES.MICRO:
@@ -6506,20 +7498,6 @@ function suppressSentiment() {
 }
 
 function emitSentiment(messageKey, isCritical = false) {
-  if (!messageKey) return;
-  // Cancel any pending timeout
-  clearTimeout(feedback._fadeT);
-  activeFeedbackMessage = null;
-  activeSentimentMessage = { key: messageKey, isCritical };
-
-  feedback.style.opacity = 0;
-  feedback._fadeT = setTimeout(() => {
-    feedback.textContent = getMessage(messageKey);
-    if (isCritical) feedback.classList.add("critical");
-    else feedback.classList.remove("critical");
-    feedback.style.opacity = 1;
-  }, 100);
-
   sentimentState.lastGuessHadSentiment = true;
 }
 
@@ -6824,7 +7802,7 @@ function updateGuessUI() {
     !lifelineUsed
   ) {
     bar.classList.add("hint-ready");
-    setTipMessage("hintPrompt");
+    clearTipMessage();
     tipText.classList.add("hint");
     tipText.style.display = "block";
     tipText.style.opacity = "1";
@@ -6853,7 +7831,7 @@ function microReward(type) {
 
 /* ---------- GUESS ---------- */
 function submitCurrentGuess() {
-  if (gameOver) return;
+  if (gameOver || !helpModal.hidden) return;
 
   if (currentMode === MODES.INVERTED) return;
   const rawGuess = input.value.trim();
@@ -6869,17 +7847,17 @@ function submitCurrentGuess() {
   hintStatus.hidden = true;
   clearSentiment();
 
-  if (demoRunning) {
-    handleDemoGuess(g);
-    return;
-  }
+  if (demoRunning) return;
 
   if (demoMode) {
     dismissDemoPromptForLiveGame();
   }
 
-  if (!gameOver && guesses.length === maxGuessesForMode() - 2) clearTipMessage();
+  clearTipMessage();
+  tipShown = true;
 
+  if (currentMode === MODES.DAILY) markChallengeRecipientStarted();
+  finalGuessContext = { min, max, guess: g };
   input.value = "";
 
   if (currentMode === MODES.DAILY || currentMode === MODES.CLASSIC) {
@@ -7124,7 +8102,8 @@ function win() {
       guesses,
       lifelineUsed,
       lifelineGuessIndex,
-      mode: currentMode
+      mode: currentMode,
+      resultBoard: finalGuessContext
     }));
     localStorage.setItem(dailyStateKey + "-result", "win");
     dailyResult = "win";
@@ -7195,7 +8174,8 @@ function lose() {
       guesses,
       lifelineUsed,
       lifelineGuessIndex,
-      mode: currentMode
+      mode: currentMode,
+      resultBoard: finalGuessContext
     }));
     localStorage.setItem(dailyStateKey + "-result", "lose");
     dailyResult = "lose";
@@ -7569,6 +8549,224 @@ shareBtn.onclick = async () => {
   }
 };
 
+/* ---------- DAILY CHALLENGES: metadata never includes numbers from the round ---------- */
+const CHALLENGE_CONTEXT_KEY = 'narroDailyChallenge';
+function readChallengeStorage(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
+function writeChallengeStorage(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }
+function persistChallengeContext() {
+  if (dailyChallenge) writeChallengeStorage(CHALLENGE_CONTEXT_KEY, { id: dailyChallenge.id, openedCompleted: dailyChallenge.openedCompleted, started: dailyChallenge.started === true });
+}
+function challengeEventOnce(name, id, fields) {
+  const storedEvents = readChallengeStorage('narroChallengeEvents');
+  const events = storedEvents && typeof storedEvents === 'object' && !Array.isArray(storedEvents) ? storedEvents : {};
+  const key = `${id}:${name}`;
+  if (events[key]) return;
+  events[key] = Date.now();
+  const entries = Object.entries(events).sort((a, b) => b[1] - a[1]).slice(0, 100);
+  writeChallengeStorage('narroChallengeEvents', Object.fromEntries(entries));
+  if (typeof gtag === 'function') gtag('event', name, fields);
+}
+function completedDailyScore() {
+  const saved = normalizeDailySavedState(readChallengeStorage(dailyStateKey));
+  if (!saved || !['win', 'lose'].includes(saved.result)) return null;
+  try { return normalizeChallengeMetadata({ nickname: 'You', puzzleDate: todayKey, result: saved.result, guessCount: saved.guesses.length, hintUsed: saved.lifelineUsed, rulesVersion: CHALLENGE_RULES_VERSION }, { today: challengePuzzleDate() }); } catch { return null; }
+}
+function challengeScoreText(score) {
+  const outcome = score.result === 'win'
+    ? getMessage('shareSolvedIn', { guessCount: formatGuessCount(score.guessCount) })
+    : `${getMessage('lostOutcome')} · ${getMessage('guessesUsed', { count: formatNumber(score.guessCount) })}`;
+  return `${outcome} · ${getMessage(score.hintUsed ? 'shareHintUsed' : 'shareNoHintUsed')}`;
+}
+function challengeEndpoint() { return window.NARRO_CHALLENGE_ENDPOINT || `${SUPABASE_URL}/functions/v1/daily-challenges`; }
+async function requestDailyChallenge(suffix = '', body) {
+  const response = await fetch(`${challengeEndpoint()}${suffix}`, { method: body ? 'POST' : 'GET', headers: { apikey: SUPABASE_ANON_KEY, ...(body ? { 'Content-Type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(8000), credentials: 'omit', referrerPolicy: 'no-referrer' });
+  let data; try { data = await response.json(); } catch { throw new Error('challengeUnavailable'); }
+  if (!response.ok) {
+    const messages = { expired_challenge: 'challengeExpired', future_challenge: 'challengeFuture', incompatible_rules: 'challengeIncompatible', invalid_nickname: 'nicknameError', challenge_not_found: 'challengeInvalid', invalid_challenge: 'challengeInvalid' };
+    throw new Error(messages[data?.error] || 'challengeUnavailable');
+  }
+  return { ...data, challenge: normalizePublicChallenge(data.challenge) };
+}
+function challengeURL(id) {
+  const url = new URL(window.NARRO_CHALLENGE_SHARE_BASE || CANONICAL_URL);
+  url.search = ''; url.hash = ''; url.searchParams.set('challenge', id);
+  return url.href;
+}
+function renderChallengeComposer() {
+  const visible = challengeComposerOpen && currentMode === MODES.DAILY && gameOver;
+  document.getElementById('challengeComposer').hidden = !visible;
+  document.getElementById('challengeFriendBtn').hidden = currentMode !== MODES.DAILY || !gameOver;
+  for (const [id, key] of Object.entries({ challengeFriendBtn: 'challengeFriend', challengeNicknameLabel: 'nickname', challengeCreateBtn: challengeBusy ? 'creating' : 'createChallenge', challengeCancelBtn: 'cancelChallenge', challengeLinkLabel: 'challengeLink', challengeCopyBtn: 'copyChallenge' })) document.getElementById(id).textContent = getMessage(key);
+  document.getElementById('challengeCreateBtn').disabled = challengeBusy;
+  document.getElementById('challengeNickname').disabled = challengeBusy;
+  const ready = visible && !!outgoingChallenge;
+  for (const id of ['challengeLink', 'challengeLinkLabel', 'challengeCopyBtn']) document.getElementById(id).hidden = !ready;
+  const message = document.getElementById('challengeMessage');
+  message.hidden = !visible || !challengeMessageKey;
+  message.textContent = !message.hidden ? getMessage(challengeMessageKey) : '';
+  message.dataset.error = String(challengeMessageError);
+}
+function renderDailyChallenge() {
+  renderChallengeComposer();
+  const panel = document.getElementById('challengePanel');
+  panel.hidden = currentMode !== MODES.DAILY || (!dailyChallenge && !challengeStatusKey);
+  const comparison = document.getElementById('challengeVerdict');
+  const scores = document.getElementById('challengeScores');
+  const recipientColumn = document.getElementById('recipientScoreColumn');
+  comparison.hidden = true; comparison.textContent = '';
+  scores.hidden = true; recipientColumn.hidden = true;
+  for (const id of ['challengeHeading', 'challengeStatus', 'challengerName', 'challengerScore', 'recipientName', 'recipientScore']) document.getElementById(id).textContent = '';
+  document.getElementById('challengeCompareBtn').hidden = true;
+  document.getElementById('challengeRetryBtn').hidden = true;
+  document.getElementById('challengeTodayBtn').hidden = true;
+  if (panel.hidden) return;
+  document.getElementById('challengeHeading').textContent = getMessage('challengeFriend');
+  const challenge = dailyChallenge?.metadata;
+  let status = challengeStatusKey;
+  if (challenge && !status) {
+    const classification = classifyChallenge(challenge, challengePuzzleDate());
+    status = { expired_challenge: 'challengeExpired', future_challenge: 'challengeFuture', incompatible_rules: 'challengeIncompatible' }[classification];
+    if (!status && challenge.puzzleDate !== todayKey) status = 'challengeExpired';
+  }
+  if (status) {
+    document.getElementById('challengeStatus').textContent = getMessage(status);
+    document.getElementById('challengeTodayBtn').hidden = status === 'challengeLoading';
+    document.getElementById('challengeTodayBtn').textContent = getMessage('playToday');
+    document.getElementById('challengeRetryBtn').hidden = status !== 'challengeUnavailable' || !dailyChallenge;
+    document.getElementById('challengeRetryBtn').textContent = getMessage('retryChallenge');
+    return;
+  }
+  if (!challenge) return;
+  document.getElementById('challengeHeading').textContent = getMessage('challengeFrom', { name: challenge.nickname });
+  document.getElementById('challengeStatus').textContent = challenge.puzzleDate;
+  scores.hidden = false;
+  document.getElementById('challengerName').textContent = challenge.nickname;
+  document.getElementById('challengerScore').textContent = challengeScoreText(challenge);
+  const eventFields = { puzzle_date: challenge.puzzleDate, rules_version: challenge.rulesVersion, already_completed: dailyChallenge.openedCompleted === true };
+  challengeEventOnce('challenge_opened', challenge.id, eventFields);
+  if (dailyChallenge.started && !dailyChallenge.openedCompleted) challengeEventOnce('challenge_recipient_started', challenge.id, eventFields);
+  const recipient = completedDailyScore();
+  if (!recipient) return;
+  const winner = compareChallengeScores(challenge, recipient);
+  recipientColumn.hidden = false;
+  document.getElementById('recipientName').textContent = getMessage('you');
+  document.getElementById('recipientScore').textContent = challengeScoreText(recipient);
+  comparison.hidden = false;
+  comparison.textContent = getMessage(winner === 'recipient' ? 'youWon' : winner === 'challenger' ? 'friendWon' : 'draw');
+  document.getElementById('challengeCompareBtn').hidden = false;
+  document.getElementById('challengeCompareBtn').textContent = getMessage('shareComparison');
+  if (dailyChallenge.started && !dailyChallenge.openedCompleted) challengeEventOnce('challenge_recipient_completed', challenge.id, { ...eventFields, result: recipient.result, guess_count: recipient.guessCount, hint_used: recipient.hintUsed });
+}
+function markChallengeRecipientStarted() {
+  if (!dailyChallenge || dailyChallenge.openedCompleted || challengeStatusKey && challengeStatusKey !== 'challengeLoading') return;
+  dailyChallenge.started = true; persistChallengeContext();
+  renderDailyChallenge();
+}
+async function loadDailyChallenge() {
+  if (!dailyChallenge) return;
+  const id = dailyChallenge.id, version = ++challengeLoadVersion;
+  challengeStatusKey = 'challengeLoading'; renderDailyChallenge();
+  try {
+    const data = await requestDailyChallenge(`/${id}`);
+    if (version !== challengeLoadVersion || dailyChallenge?.id !== id) return;
+    if (data.challenge.id !== id) throw new Error('challengeInvalid');
+    dailyChallenge.metadata = data.challenge;
+    challengeStatusKey = null;
+  } catch (error) {
+    if (version !== challengeLoadVersion || dailyChallenge?.id !== id) return;
+    challengeStatusKey = ['challengeExpired', 'challengeFuture', 'challengeIncompatible', 'challengeInvalid'].includes(error.message) ? error.message : 'challengeUnavailable';
+  }
+  renderDailyChallenge();
+}
+function initializeDailyChallenge() {
+  const url = new URL(location.href), stored = readChallengeStorage(CHALLENGE_CONTEXT_KEY);
+  const raw = url.searchParams.has('challenge') ? url.searchParams.get('challenge') : stored?.id;
+  if (!raw) { if (url.searchParams.has('challenge')) { localStorage.removeItem(CHALLENGE_CONTEXT_KEY); challengeStatusKey = 'challengeInvalid'; } renderDailyChallenge(); return; }
+  const id = parseChallengeId(raw);
+  if (!id) { dailyChallenge = null; localStorage.removeItem(CHALLENGE_CONTEXT_KEY); challengeStatusKey = 'challengeInvalid'; renderDailyChallenge(); return; }
+  dailyChallenge = { id, openedCompleted: stored?.id === id ? stored.openedCompleted === true : !!completedDailyScore(), started: stored?.id === id && stored.started === true };
+  persistChallengeContext(); loadDailyChallenge();
+}
+async function shareChallengeText(text) {
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Narro', text }); return true; }
+    catch (error) { if (error.name === 'AbortError') return false; }
+  }
+  await navigator.clipboard.writeText(text); return true;
+}
+document.getElementById('challengeFriendBtn').onclick = () => {
+  challengeComposerOpen = !challengeComposerOpen;
+  challengeMessageKey = null; renderChallengeComposer();
+  if (challengeComposerOpen) document.getElementById('challengeNickname').focus();
+};
+document.getElementById('challengeCancelBtn').onclick = () => { challengeComposerOpen = false; challengeMessageKey = null; renderChallengeComposer(); document.getElementById('challengeFriendBtn').focus(); };
+document.getElementById('challengeNickname').oninput = () => { outgoingChallenge = null; outgoingChallengeText = ''; challengeMessageKey = null; challengeMessageError = false; renderChallengeComposer(); };
+document.getElementById('challengeComposer').onsubmit = async event => {
+  event.preventDefault();
+  if (challengeBusy || currentMode !== MODES.DAILY || !gameOver) return;
+  const context = roundContextVersion;
+  let metadata;
+  try {
+    const score = completedDailyScore(); if (!score) throw new Error('unavailable');
+    metadata = normalizeChallengeMetadata({ ...score, nickname: document.getElementById('challengeNickname').value }, { today: challengePuzzleDate() });
+  } catch (error) { challengeMessageKey = error.message === 'invalid_nickname' ? 'nicknameError' : 'challengeUnavailable'; challengeMessageError = true; renderChallengeComposer(); return; }
+  challengeBusy = true; challengeMessageKey = null; challengeMessageError = false; renderChallengeComposer();
+  try {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(metadata)));
+    const cacheKey = `narroChallengeCreated-${metadata.puzzleDate}-${Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('')}`;
+    let cached = readChallengeStorage(cacheKey);
+    if (!parseChallengeId(cached?.requestKey)) cached = { requestKey: crypto.randomUUID() };
+    writeChallengeStorage(cacheKey, cached); // Persist the nonce before networking, so retrying a lost response is idempotent.
+    let challenge;
+    if (cached.challenge) {
+      challenge = normalizePublicChallenge(cached.challenge);
+      const { id, ...savedMetadata } = challenge;
+      if (JSON.stringify(savedMetadata) !== JSON.stringify(metadata)) throw new Error('challengeInvalid');
+    } else {
+      const result = await requestDailyChallenge('', { ...metadata, idempotencyKey: cached.requestKey });
+      challenge = result.challenge;
+      const { id, ...savedMetadata } = challenge;
+      if (JSON.stringify(savedMetadata) !== JSON.stringify(metadata)) throw new Error('challengeInvalid');
+      writeChallengeStorage(cacheKey, { ...cached, challenge });
+    }
+    challengeEventOnce('challenge_created', challenge.id, { puzzle_date: challenge.puzzleDate, rules_version: challenge.rulesVersion, result: challenge.result, guess_count: challenge.guessCount, hint_used: challenge.hintUsed });
+    if (context !== roundContextVersion || !challengeComposerOpen) return;
+    outgoingChallenge = challenge;
+    const link = challengeURL(challenge.id);
+    document.getElementById('challengeLink').value = link;
+    outgoingChallengeText = `${getMessage('challengeFriend')}\n${challenge.nickname} · Narro · ${challenge.puzzleDate}\n${challengeScoreText(challenge)}\n\n${link}`;
+    challengeMessageKey = 'challengeReady'; renderChallengeComposer();
+    try { if (await shareChallengeText(outgoingChallengeText) && context === roundContextVersion) challengeMessageKey = 'challengeCopied'; }
+    catch { if (context === roundContextVersion) challengeMessageKey = 'challengeReady'; }
+  } catch (error) {
+    if (context === roundContextVersion) { challengeMessageKey = ['nicknameError', 'challengeExpired', 'challengeFuture', 'challengeIncompatible', 'challengeInvalid'].includes(error.message) ? error.message : 'challengeUnavailable'; challengeMessageError = true; }
+  } finally { challengeBusy = false; renderChallengeComposer(); }
+};
+document.getElementById('challengeCopyBtn').onclick = async () => {
+  const context = roundContextVersion, text = outgoingChallengeText;
+  try { await navigator.clipboard.writeText(text); if (context === roundContextVersion) challengeMessageKey = 'challengeCopied'; }
+  catch { if (context === roundContextVersion) { challengeMessageKey = 'challengeReady'; document.getElementById('challengeLink').focus(); document.getElementById('challengeLink').select(); } }
+  renderChallengeComposer();
+};
+document.getElementById('challengeRetryBtn').onclick = loadDailyChallenge;
+document.getElementById('challengeTodayBtn').onclick = () => {
+  challengeLoadVersion++; dailyChallenge = null; challengeStatusKey = null;
+  localStorage.removeItem(CHALLENGE_CONTEXT_KEY);
+  const url = new URL(location.href); url.searchParams.delete('challenge');
+  if (challengePuzzleDate() !== todayKey) { location.replace(url.href); return; }
+  try { history.replaceState(null, '', url.href); } catch {}
+  renderDailyChallenge(); focusActiveControl();
+};
+document.getElementById('challengeCompareBtn').onclick = async () => {
+  const challenge = dailyChallenge?.metadata, recipient = completedDailyScore();
+  if (!challenge || !recipient || challengeStatusKey || classifyChallenge(challenge, challengePuzzleDate()) !== 'current') return;
+  const winner = compareChallengeScores(challenge, recipient);
+  const text = `Narro · ${challenge.puzzleDate}\n${challenge.nickname}: ${challengeScoreText(challenge)}\n${getMessage('you')}: ${challengeScoreText(recipient)}\n${getMessage(winner === 'recipient' ? 'youWon' : winner === 'challenger' ? 'friendWon' : 'draw')}\n\n${challengeURL(challenge.id)}`;
+  try {
+    if (await shareChallengeText(text)) challengeEventOnce('challenge_comparison_shared', challenge.id, { puzzle_date: challenge.puzzleDate, rules_version: challenge.rulesVersion, already_completed: dailyChallenge?.openedCompleted === true });
+  } catch { document.getElementById('challengeStatus').textContent = getMessage('shareCopyFailed'); }
+};
+
 /* ---------- COUNTDOWN ---------- */
 updateCountdownText();
 setInterval(updateCountdownText, 1000);
@@ -7590,7 +8788,9 @@ if (demoMode) {
   runFirstTimeDemo();
 }
 
+if (!new URL(location.href).searchParams.has("challenge")) restoreFreePlayResult(localStorage.getItem("narroLastMode"));
 refreshRoundUI();
+initializeDailyChallenge();
 
 document.getElementById("feedbackBtn")?.addEventListener("click", (e) => {
   e.preventDefault();
